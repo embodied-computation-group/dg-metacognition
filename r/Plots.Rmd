@@ -1,0 +1,88 @@
+---
+title: "Plots"
+author: "Nanna Kildahl Mathiasen"
+date: "6/24/2020"
+output: html_document
+---
+
+setting working directory and loading data
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+library(ggpol)
+
+Absolute_Directory <- dirname(rstudioapi::getSourceEditorContext()$path)
+
+setwd(Absolute_Directory)
+getwd()
+
+data_mean <- read_csv("clean_data_rejecting_meancontrast.csv")
+data_median <- read_csv("clean_data_rejecting_mediancontrast.csv")
+
+metacognition_data <- read_csv("Data/metacognition_data_master_Camile.csv")
+
+```
+
+## preparing data
+
+```{r cars}
+source("Functions/remove_outliers.R")
+metacognition_data = metacognition_data %>%
+  group_by(subject, modality) %>%
+  drop_na()%>%
+#  filter(trial > 10) %>%
+  filter(rt > 0.05) %>%
+  filter(rt_conf > 0.05) %>%    
+  mutate_at(vars(rt, rt_conf), funs(remove_outliers)) %>%
+  drop_na()
+
+pre_MLE_rejected23 = metacognition_data %>%
+  group_by(subject, modality) %>%
+  filter(subject != 148, subject !=168, subject !=214,  subject !=22, subject != 23, subject !=277, subject != 29, subject !=290, subject !=306, subject != 31,  subject !=41, subject !=  7,subject != 115,subject != 131,subject != 212)
+
+write.csv(pre_MLE_rejected23, file = "pre_MLE_rejected23.csv")
+
+```
+
+## Including Plots
+
+```{r pressure, echo=FALSE}
+
+p1 <- ggplot(data_mean,aes(x=modality, y=mean_acc,fill=modality)) + geom_violin() + geom_boxplot(width=0.1) + ylim(0,1) +theme_classic() + labs(title="",x="Modality", y = "Mean Accuracy")
+ggsave("mean_acc_307.svg",width=6,height=6,dpi=300)
+```
+
+```{r pressure, echo=FALSE}
+conf_model = aov_ez(data = pre_MLE_rejected23, id = "subject", dv = "confidence", within = c("accuracy", "modality"))
+print(conf_model)
+
+afex_plot(conf_model, x = "modality", trace = "accuracy", error = "within")
+
+
+afex_plot(conf_model, x = "modality", trace = "accuracy", error = "within",
+ mapping = c("shape", "fill"), dodge = 0.7,
+          data_geom = ggpol::geom_boxjitter, 
+          data_arg = list(
+            width = 0.5,
+            jitter.color = "gray",
+            jitter.width = 0.1,
+            jitter.height = 0,
+            outlier.color = "gray",
+            outlier.intersect = TRUE),
+          point_arg = list(size = 2.5), 
+          error_arg = list(size = 1.5, width = 0),
+          factor_levels = list(modality = c("Memory","Nutritional", "Economic", "Visual"),
+                               accuracy = c("Correct", "Incorrect")), 
+          legend_title = "Decision Accuracy") +
+  labs(y = "Average Confidence", x = "Decision Modality") +
+  scale_y_continuous(breaks=seq(1, 7, length.out = 7)) +
+  scale_fill_manual(values=c("green", "red"))+
+  theme_bw(base_size = 15) + 
+  theme(legend.position="bottom", panel.grid.major.x = element_blank())
+
+ggsave(path = getwd(),filename = "confidence_bycorrect_307.svg", dpi = 300,
+       width = 12, height = 8, units = "cm") 
+```
