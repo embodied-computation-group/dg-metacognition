@@ -4,67 +4,68 @@ Setup
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(readr, dplyr, tidyr, ggplot2, cowplot, devtools, here)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggpubr, ggmcmc, foreach, doParallel, ggpol, ggstatsplot, ggcorrplot)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
 
+source(here("r", "remove_outliers.R"))
+source(here("r", "trials2counts.R"))
+source(here("r", "metad_indiv.R"))
 
+
+library(foreach)
+library(doParallel)
+
+#setup parallel backend to use many processors
+cores=detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
 ```
 
 
 
 ```{r}
+# read in the data
 
-metacognition_data <- read_csv("C:/Users/Micah Allen/Google Drive/ECG_root/Projects/in_progress/Domain_General_Metacognition/COBE_LAB/metacognition_data_master.csv")
-View(metacognition_data_master)
+metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialData_master.csv"), 
+    col_types = cols(confidence = col_double(), 
+        rt_conf = col_double()))
 
-metacognition_data$modality <- as.factor(metacognition_data$modality)
+metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
 
-head(metacognition_data)
+# remove any rows containing NaNs (i.e., missing data)
 
-metadata <- na.omit(metacognition_data)
+metacognition_trial_data <- na.omit(metacognition_trial_data)
 
-metadata <- tbl_df(metadata)
+head(metacognition_trial_data)
 
 
 
-dt2 <- metadata %>%
+```
+
+```{r}
+
+
+
+
+
+metadata <- metacognition_trial_data %>%
   group_by(subject, modality) %>%
-  mutate(rt = remove_outliers(rt))
+  mutate(rt = remove_outliers(rt)) # remove RT outliers using MAD - see prereg
 
 
-dt2 <- na.omit(dt2)
-
-
-dt2 %>%
-  group_by(subject, modality) %>%
-  mutate(rt = remove_outliers(rt_conf))
-
-
-dt2 <- na.omit(dt2)
-
-
-nrow(metadata)-nrow(dt2)
-
-metadata<-dt2
 
 glimpse(metadata)
-
 ```
-
 
 
 ```{r}
 
-d1 <- filter(metadata, subject == 121 & modality == "GDP")
+d1 <- filter(metadata, subject == 120 & modality == "GDP")
 
-newlist <- trials2counts(d1$signal, d1$response,d1$confidence,7, padAmount = 1,padCells=1)
-
-Absolute_Directory <- dirname(rstudioapi::getSourceEditorContext()$path)
-
-setwd(Absolute_Directory)
-getwd()
+#newlist <- trials2counts(d1$signal, d1$response,d1$confidence,7, padAmount = 1,padCells=1)
+newlist <- trials2counts(d1$signal, d1$response,d1$confidence,7, padAmount = 0,padCells=0)
 
 
 #Seperating output into vectors containing the total number of responses in
@@ -73,38 +74,28 @@ nR_S1 <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
 nR_S2 <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
 
 # bayesian individual fit
-fit1 <- metad_indiv(nR_S1 = nR_S1, nR_S2 = nR_S2)
+fit_bayes <- metad_indiv(nR_S1 = nR_S1, nR_S2 = nR_S2) # from some old code of audrey's, cerca March 2020. Does not exactly match the new version on steve's github...
 
 # MLE fit
-fit2 <- fit_meta_d_MLE(nR_S1, nR_S2)
+fit_mle <- fit_meta_d_MLE(nR_S1, nR_S2) # from a different package... 
 
-# 'balance' fit
-fit3 <- fit_meta_d_bal(nR_S1, nR_S2)
-
-# sse fit 
-fit4 <- fit_meta_d_SSE(nR_S1, nR_S2)
 
 ```
 
 plot parameters from three fits
 
 ```{r}
-obs <- data.frame("mratio" = rbind(fit1$mratio, fit2$M_ratio[1],fit3$meta_d_ratio[1], fit4$M_ratio[1]))
-obs$fit_type <- c("Bayes", "MLE", "Bal", "SSE")
+obs <- data.frame("mratio" = rbind(fit_bayes$mratio, fit_mle$M_ratio[1]))
+obs$fit_type <- c("Bayes", "MLE")
 
 ggplot(obs, aes(x = fit_type, y = mratio)) +
   geom_point()
 
 ```
 
-Let's try to loop
+Let's loop over subjects now and fit the MLE model. 
 
 ```{r}
-
-Absolute_Directory <- dirname(rstudioapi::getSourceEditorContext()$path)
-
-setwd(Absolute_Directory)
-getwd()
 
 subjects = unique(metadata$subject)
 modalities = as.character(unique(metadata$modality))
@@ -112,9 +103,11 @@ modalities = as.character(unique(metadata$modality))
 fit_data = data.frame()
 
 for(s in 1:length(subjects)) {
+#foreach (s = 1:length(subjects), .combine=rbind) %dopar%  { # for parallel computing.. wip.. 
   
   
   for(m in 1:length(modalities)) {
+    
     
     tryCatch(
       expr = {
@@ -154,13 +147,35 @@ for(s in 1:length(subjects)) {
   
 }
 
-write.csv(fit_data, file = "mle_mratio_fit_data.csv")
+# write out the data file
+
+write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
 ```
 
+
+Pivot the data frame to wide. 
+
 ```{r}
-head(fit_data)
+
+fit_data_wide <- fit_data %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio)
+)
+  
+
+write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.csv"))
+
+head(fit_data_wide)
+```
+
+Let's plot the M-ratio by condition after some filtering
+```{r}
+
 
 plot_data <- filter(fit_data, mratio > 0)
+plot_data <- filter(fit_data, da > 0)
+
+plot_data <- filter(fit_data, da > 0.5)
 
 plot_data <- plot_data %>%
   group_by(subject, modality) %>%
@@ -176,12 +191,48 @@ plot_data <- plot_data %>%
 plot_data <-  na.omit(plot_data)
 
 ggplot(plot_data, aes(x = modality, y = mratio)) +
-  geom_boxjitter()
+  geom_boxjitter() +
+  ggtitle("filtered")
+
+ggplot(fit_data, aes(x = modality, y = mratio)) +
+  geom_boxjitter() +
+  ggtitle("unfiltered")
 
 
-model = aov_ez(data = plot_data, id = "subject", dv = "mratio", within = c("modality"))
-print(model)
+#model = aov_ez(data = plot_data, id = "subject", dv = "mratio", within = c("modality"))
+#print(model)
 ```
+
+```{r}
+ggcorrmat(data = fit_data_wide[ , 10:13],
+          type= "parametric", p.adjust.method = "none")+
+  ggtitle("unfiltered")
+
+
+
+plot_data_wide <- plot_data %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio)
+)
+
+ggcorrmat(data = plot_data_wide[ , 10:13],
+          type= "parametric", p.adjust.method = "none")+
+  ggtitle("filtered")
+
+
+```
+
+Filter wide data
+```{r}
+
+fit_data_wide <- fit_data_wide %>%
+  mutate(across(starts_with("da")), ~ remove_outliers(.x))
+
+
+
+```
+
+
 
 ```{r}
 
@@ -192,6 +243,8 @@ library(ggpol)
 library(ggbeeswarm)
 afex_plot(model, x = "modality", error = "within")
 ```
+
+
 ```{r}
 ggplot(plot_data, aes(x = modality, y = mratio, fill = modality)) +
   geom_violin() +
@@ -219,18 +272,13 @@ loop and get bayes fit
 
 ```{r}
 
-Absolute_Directory <- dirname(rstudioapi::getSourceEditorContext()$path)
-
-setwd(Absolute_Directory)
-getwd()
-
 subjects = unique(metadata$subject)
 modalities = as.character(unique(metadata$modality))
 
 fit_data_bayes = data.frame()
 
 for(s in 1:length(subjects)) {
-  
+#foreach (s = 1:length(subjects), .combine=rbind) %dopar%  { # for parallel computing.. wip.. 
   
   for(m in 1:length(modalities)) {
     
