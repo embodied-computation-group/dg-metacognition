@@ -1,11 +1,22 @@
-clearvars a b c metacognition_data_master
-a = combine_mem_data();
+function [all_mem_data, all_trivia_data, all_percept_data, all_data] = merge_all_data(params)
 
-b = combine_trivia_data();
 
-c = combine_percept_data();
+%% get memory, trivia, and percept data
+all_mem_data = combine_mem_data(params);
 
-metacognition_data_master = vertcat(a,b);
-metacognition_data_master = vertcat(metacognition_data_master,c);
+all_trivia_data = combine_trivia_data(params);
 
-writetable(metacognition_data_master, 'metacognition_data_master.csv')
+all_percept_data = combine_percept_data(params);
+
+%% concatenate into one giant matrix
+
+all_data = vertcat(all_mem_data,all_trivia_data);
+all_data = vertcat(all_data,all_percept_data);
+
+
+%% write data to dir
+filename = [params.sumdatdir 'metacognition_trialData_master.csv'];
+writetable(all_data, filename)
+
+
+end

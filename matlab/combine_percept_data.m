@@ -1,15 +1,9 @@
-function [all_data] = combine_percept_data(do_plot)
+function [all_data] = combine_percept_data(params)
 
-%%
-if nargin < 1
-    
-    do_plot = 0;
-end
+%% setup
+sID = params.sID;
 
-%% setup paths and subject vector
-setup_paths;
 
-load sID
 
 %%
 
@@ -20,7 +14,7 @@ for n=1:numel(sID)
     subject_data = [];
     
     
-    datfile = [metadir 'perceptData_' sprintf('%03d', sID(n)) '.mat'];
+    datfile = [params.rawdatdir 'perceptData_' sprintf('%03d', sID(n)) '.mat'];
     
     clear DATA
     
@@ -87,15 +81,7 @@ for n=1:numel(sID)
         subject = subject_id_vector';
         output_table = table(subject, modality, trial, signal, response, accuracy, confidence, rt, rt_conf, contrast);
         
-        
-        if do_plot
-            
-            f1 = figure;
-            plot(trial, contrast, '-o');
-            pause
-            close(f1)
-            
-        end
+       
         
         
         %% dump into all data vector, save subject file

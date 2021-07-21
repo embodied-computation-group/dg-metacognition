@@ -1,9 +1,8 @@
-function [all_data] = combine_trivia_data()
+function [all_data] = combine_trivia_data(params)
 
 %% setup paths and subject vector
-setup_paths;
 
-load sID
+sID = params.sID;
 
 
 %%
@@ -24,7 +23,7 @@ for n = 1:numel(sID)
     
     clear results
     
-    datfile = [metadir 'triviaData_' sprintf('%03d', sID(n)) '.mat'];
+    datfile = [params.rawdatdir 'triviaData_' sprintf('%03d', sID(n)) '.mat'];
     
     try
         load(datfile)

@@ -1,15 +1,11 @@
-function [all_data] = combine_mem_data()
+function [all_mem_data] = combine_mem_data(params)
 %% function to combine all memory data into one master table
 
+sID = params.sID;
 
-%% setup paths
-setup_paths;
-load sID
-%load exclude 
-% Micah added. 
+%% loop and combine
+all_mem_data =[];
 
-%% loop and combineinate
-all_data =[];
 for n=1:numel(sID)
      
     
@@ -32,7 +28,7 @@ for n=1:numel(sID)
         block_contrast = [];
         
         
-        datfile = [metadir 'memExpData_' sprintf('%03d', sID(n)) '_' int2str(block) '.mat'];
+        datfile = [params.rawdatdir 'memExpData_' sprintf('%03d', sID(n)) '_' int2str(block) '.mat'];
         
         
         clear results
@@ -132,7 +128,7 @@ for n=1:numel(sID)
     
     
     
-    all_data = vertcat(all_data, subject_data);
+    all_mem_data = vertcat(all_mem_data, subject_data);
     
     end
 
