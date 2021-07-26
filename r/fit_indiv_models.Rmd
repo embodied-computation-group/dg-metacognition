@@ -16,7 +16,7 @@ source(here("r", "trials2counts.R"))
 source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 
-
+#Hi it's Astrid 
 
 ```
 
