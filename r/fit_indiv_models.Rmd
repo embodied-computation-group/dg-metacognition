@@ -16,8 +16,6 @@ source(here("r", "trials2counts.R"))
 source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 
-#Hi it's Astrid 
-# Hi Astrid! Welcome :) 
 
 ```
 
@@ -43,21 +41,38 @@ head(metacognition_trial_data)
 
 ```
 
-clean data for RT outliers using MAD rule
+Trial-level exclusion:
 ```{r}
 
 
 metadata <- metacognition_trial_data %>%
   group_by(subject, modality) %>%
-  mutate(rt = remove_outliers(rt)) # remove RT outliers using MAD Rule - see prereg
+  mutate(rt = remove_outliers(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
 
 metadata <- na.omit(metadata)
+
+#Exclude those with rt <50ms 
+metadata <- metadata%>%filter(rt>=0.05) 
+
+#Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
+metadata<-metadata%>%mutate(modality=as.factor(modality))
+
+metadata$modality <-fct_collapse (metadata$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks DO IT IN A WAY SO I create new dataframe (metadatac)?? not working atm.. 
+
+metadatac <- metadata %>%
+  group_by(subject, modality)%>% count(subject) #count number of trials
+
+excD <- subset(metadatac, metadatac$n<100) 
+excID <-unique(excD$subject) #Identify participants for exclusion
+
+#Exclude IDs from that vector                   
+metadata <- subset(metadata, !is.element(metadata$subject, excID)) #exclude
+
 
 glimpse(metadata)
 
 
 ```
-
 
 Let's loop over subjects now and fit the MLE model. 
 
@@ -96,6 +111,44 @@ stopCluster(cl = my.cluster)
 write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
 ```
 
+Group-level exclusion based on MAD rule (confidence, d', criterion)
+```{r}
+
+#Confidence:
+Avgmeta <- metadata %>% 
+  group_by(subject, modality) %>% 
+  summarise(avg_conf=mean(confidence, na_rm=TRUE)) #Mean confidence for each modality
+
+#join Avgmeta with fit_data 
+fitAvg_data<- fit_data %>% full_join(Avgmeta, 
+                                   by= c('subject'='subject', 
+                                         'modality' = 'modality'))
+metadata_exc <- fitAvg_data%>%
+  group_by(subject, modality) %>%
+  mutate(avg_conf = remove_outliers(avg_conf)) # remove RT outliers using MAD Rule 
+
+metadata_exc <- na.omit(metadata_exc)
+
+#d' 
+metadata_exc <- fitAvg_data%>%
+  group_by(subject, modality) %>%
+  mutate(da = remove_outliers(da)) # remove RT outliers using MAD Rule 
+
+metadata_exc <- na.omit(metadata_exc)
+
+#criterion: INCLUDE THIS IN THE FIT RESULTS
+metadata_exc <- fitAvg_data%>%
+  group_by(subject) %>%
+  mutate(da = remove_outliers(cr)) # remove RT outliers using MAD Rule 
+
+metadata_exc <- na.omit(metadata_exc)
+
+
+#identify those where mratio could not be estimated: 
+
+
+```
+
 
 Pivot the data frame to wide. 
 
@@ -111,6 +164,8 @@ write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.cs
 
 head(fit_data_wide)
 ```
+
+
 
 Let's plot the M-ratio by condition after some filtering
 ```{r}
