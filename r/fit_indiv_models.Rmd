@@ -57,7 +57,7 @@ metadata <- metadata%>%filter(rt>=0.05)
 #Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
 metadata<-metadata%>%mutate(modality=as.factor(modality))
 
-metadata$modality <-fct_collapse (metadata$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks DO IT IN A WAY SO I create new dataframe (metadatac)?? not working atm.. 
+metadata$modality <-fct_collapse (metadata$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks (DO IT IN A WAY SO I create new dataframe (metadatac)?? not working atm..) 
 
 metadatac <- metadata %>%
   group_by(subject, modality)%>% count(subject) #count number of trials
@@ -109,11 +109,18 @@ stopCluster(cl = my.cluster)
 # write out the data file
 
 write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
+
+
+head(fit_data)
 ```
 
 Group-level exclusion based on MAD rule (confidence, d', criterion)
 ```{r}
 
+#exclude those where mratio could not be estimated  
+metadata_exc <- fit_data%>%filter(mratio!="NaN")
+
+#Exclude outliers based on MAD rule (confidence, d' and criterion)
 #Confidence:
 Avgmeta <- metadata %>% 
   group_by(subject, modality) %>% 
@@ -144,9 +151,6 @@ metadata_exc <- fitAvg_data%>%
 metadata_exc <- na.omit(metadata_exc)
 
 
-#identify those where mratio could not be estimated: 
-
-
 ```
 
 
@@ -164,8 +168,6 @@ write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.cs
 
 head(fit_data_wide)
 ```
-
-
 
 Let's plot the M-ratio by condition after some filtering
 ```{r}
@@ -201,6 +203,14 @@ ggplot(fit_data, aes(x = modality, y = mratio)) +
 #model = aov_ez(data = plot_data, id = "subject", dv = "mratio", within = c("modality"))
 #print(model)
 ```
+Correlation (X) between domains: 
+```{r}
+
+
+
+
+```
+
 
 ```{r}
 ggcorrmat(data = fit_data_wide[ , 10:13],
