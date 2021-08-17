@@ -54,20 +54,41 @@ metadata <- na.omit(metadata)
 #Exclude those with rt <50ms 
 metadata <- metadata%>%filter(rt>=0.05) 
 
+
 #Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
 metadata<-metadata%>%mutate(modality=as.factor(modality))
-
-metadata$modality <-fct_collapse (metadata$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks (DO IT IN A WAY SO I create new dataframe (metadatac)?? not working atm..) 
-
-metadatac <- metadata %>%
+metadatac<-metadata #create new dataframe
+metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks in new dataframe
+metadatac <- metadatac %>%
   group_by(subject, modality)%>% count(subject) #count number of trials
-
 excD <- subset(metadatac, metadatac$n<100) 
 excID <-unique(excD$subject) #Identify participants for exclusion
+metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs from that vector in original dataframe
 
-#Exclude IDs from that vector                   
-metadata <- subset(metadata, !is.element(metadata$subject, excID)) #exclude
+#Check staircase procedure: First create individual dataframes. 
+memory <- metadata %>%filter(modality == c('memory')) 
+knowledge <- metadata %>%filter(modality == c('trivia')) 
+percept <- metadata %>%filter(modality == c('vision')) 
 
+#Perception: 
+Pplot_list = list() 
+
+for(t in 1:length(percept$subject)) { 
+  Pplots <- (ggplot(percept) +
+    geom_step(aes(x=(trial), y=contrast)) +
+    xlab("trial") +
+    ylab("contrast") + theme_bw() + facet_wrap(percept$subject))
+ Pplot_list[[t]] = Pplots
+  } #Create plots for each participant
+
+#save to pdf with 20 participants on each page: 
+pdf("staircaseplots.pdf")
+for (k in 20:length(percept$subject)) {
+    print(Pplot_list[[k]])
+}
+dev.off()
+
+## MUST DE_COLLAPSE TRIVIA FOR THE NEXT ANALYSIS/FIGURE OUT HOW TO DO ANOTHER DATAFRAME HERE. 
 
 glimpse(metadata)
 
