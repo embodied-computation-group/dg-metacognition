@@ -173,15 +173,63 @@ metadata_exc <- fitAvg_data%>%
 
 metadata_exc <- na.omit(metadata_exc)
 
+head(metadata_exc)
+
 
 ```
 
+Let's plot the M-ratio by condition      #(after some filtering)
 
+```{r}
+
+#plot_data <- filter(fit_data_wide, mratio > 0)
+#plot_data <- filter(fit_data_wide, da > 0)
+
+#plot_data <- filter(fit_data_wide, da > 0.5)
+
+#plot_data <- plot_data %>%
+ # group_by(subject, modality) %>%
+#  mutate(da = remove_outliers(da))
+
+#plot_data <-  na.omit(plot_data)
+
+
+#plot_data <- plot_data %>%
+ # group_by(subject, modality) %>%
+  #mutate(mratio = remove_outliers(mratio))
+
+#plot_data <-  na.omit(plot_data)
+
+ggplot(metadata_exc, aes(x = modality, y = mratio)) +
+  geom_boxjitter() +
+  ggtitle("Metacognitive Efficiency")
+
+ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
+  geom_boxjitter() +
+  ggtitle("Metacognitive Bias")
+
+ggplot(metadata_exc, aes(x = modality, y = mda)) +
+  geom_boxjitter() +
+  ggtitle("Metacognitive Sensitivity")
+
+ggplot(metadata_exc, aes(x = modality, y = da)) +
+  geom_boxjitter() +
+  ggtitle("Cognitive Sensitivity")
+
+
+#ggplot(fit_data, aes(x = modality, y = mratio)) +
+#  geom_boxjitter() +
+ # ggtitle("unfiltered")
+
+
+#model = aov_ez(data = plot_data, id = "subject", dv = "mratio", within = c("modality"))
+#print(model)
+```
 Pivot the data frame to wide. 
 
 ```{r}
 
-fit_data_wide <- fit_data %>% pivot_wider(
+fit_data_wide <- metadata_exc %>% pivot_wider(
   names_from = modality,
   values_from = c(da, mda, mratio)
 )
@@ -192,44 +240,21 @@ write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.cs
 head(fit_data_wide)
 ```
 
-Let's plot the M-ratio by condition after some filtering
+
+Correlation  between domains: 
 ```{r}
 
-
-plot_data <- filter(fit_data, mratio > 0)
-plot_data <- filter(fit_data, da > 0)
-
-plot_data <- filter(fit_data, da > 0.5)
-
-plot_data <- plot_data %>%
-  group_by(subject, modality) %>%
-  mutate(da = remove_outliers(da))
-
-plot_data <-  na.omit(plot_data)
-
-
-plot_data <- plot_data %>%
-  group_by(subject, modality) %>%
-  mutate(mratio = remove_outliers(mratio))
-
-plot_data <-  na.omit(plot_data)
-
-ggplot(plot_data, aes(x = modality, y = mratio)) +
-  geom_boxjitter() +
-  ggtitle("filtered")
-
-ggplot(fit_data, aes(x = modality, y = mratio)) +
-  geom_boxjitter() +
+ggcorrmat(data = fit_data_wide[ , 10:13],
+          type= "robust", p.adjust.method = "none")+
   ggtitle("unfiltered")
 
 
-#model = aov_ez(data = plot_data, id = "subject", dv = "mratio", within = c("modality"))
-#print(model)
-```
-Correlation (X) between domains: 
-```{r}
+ggcorrmat(data = fit_data_wide[ , 10:13],
+          type= "robust", p.adjust.method = "none")+
+  ggtitle("unfiltered")
 
 
+#Plot Correlations: 
 
 
 ```
@@ -300,12 +325,61 @@ write.csv(jasp_data, "M_Ratio_summary.csv")
 ```
 
 
-loop and get bayes fit
+
+
+
+
+
+
+loop and get Individual Bayesian fit
 
 ```{r}
 
 subjects = unique(metadata$subject)
 modalities = as.character(unique(metadata$modality))
+
+## THIS NEEDS TO BE EDITED - IT IS NOT THE RIGHT FIT.. THE ORIGINAL SCRIPT IS BELOW (NO PARALLEL)
+
+
+# setup cluster
+n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+#create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores, 
+  type = "PSOCK"
+)
+
+#register it to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
+
+
+# fit all subjects in parallel
+
+
+source(here("r", "parindBayes.R"))
+
+
+# stop the cluster
+
+stopCluster(cl = my.cluster)
+
+# write out the data file
+
+write.csv(indBayes_data, file = here("data_summary","indvBay_mratio_fit_data.csv"))
+
+
+head(indBayes_data)
+
+
+
+
+
+
+
+
+# THIS IS THE ORIGINAL SCRIPT: 
+
 
 fit_data_bayes = data.frame()
 
@@ -396,12 +470,18 @@ remove_outliers <- function(x, na.rm = TRUE, ...) {
 }
 ```
 
+
+
+
+
 Hierarchical Bayesian fit + direct Correlation: Running in parallel
 
 ```{r}
 
 subjects = unique(metadata$subject)
 modalities = as.character(unique(metadata$modality))
+
+## THIS IS NOT WORKING ATM
 
 
 # setup cluster
@@ -432,3 +512,4 @@ head(Hmeta_data)
 
 
 ```
+
