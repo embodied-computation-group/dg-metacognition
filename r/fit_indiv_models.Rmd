@@ -244,21 +244,29 @@ head(fit_data_wide)
 Correlation  between domains: 
 ```{r}
 
-ggcorrmat(data = fit_data_wide[ , 10:13],
+submetad <- data.frame(
+                     mda_memory = na.omit(fit_data_wide$mda_memory),
+                     mda_Calories =na.omit(fit_data_wide$mda_Calories),
+                     mda_GDP = na.omit(fit_data_wide$mda_GDP),
+                     mda_vision =na.omit(fit_data_wide$mda_vision))
+
+#GGCormat - why is correlation between vision and GDP not visualised? Missing data issues. 
+#nonparameteric + bootstrapping? just winsorised...? 
+
+ggcorrmat(data = fit_data_wide, cor.vars = c(mda_memory,mda_Calories,mda_GDP,mda_vision),
+          cor.vars.names = c("memory", "Calories", "GDP", "vision"),
           type= "robust", p.adjust.method = "none")+
-  ggtitle("unfiltered")
+  ggtitle("Metacognitive sensitivity")
 
+#Rousselet 
 
-ggcorrmat(data = fit_data_wide[ , 10:13],
-          type= "robust", p.adjust.method = "none")+
-  ggtitle("unfiltered")
+```
+Bayes Factor: 
+```{r}
 
-
-#Plot Correlations: 
 
 
 ```
-
 
 ```{r}
 ggcorrmat(data = fit_data_wide[ , 10:13],
@@ -478,8 +486,8 @@ Hierarchical Bayesian fit + direct Correlation: Running in parallel
 
 ```{r}
 
-subjects = unique(metadata$subject)
-modalities = as.character(unique(metadata$modality))
+subjects = unique(metadata_exc$subject)
+modalities = as.character(unique(metadata_exc$modality))
 
 ## THIS IS NOT WORKING ATM
 
