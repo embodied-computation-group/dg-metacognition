@@ -1,0 +1,27 @@
+---
+title: "Analysis of Survey Data"
+output: html_notebook
+---
+
+Import data
+
+```{r}
+library(readr)
+library(tidyr)
+# get pre ratings
+survey_data_pre <- read_delim("data_summary/self_belief_pre_labels.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+head(self_belief_pre_labels)
+
+survey_data_pre$gender <-as.factor(survey_data_pre$gender)
+survey_data_pre <- filter(survey_data_pre, Sid!=996) # remove bogus subject
+
+# get post ratings
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
