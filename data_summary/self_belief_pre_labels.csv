@@ -1,4 +1,4 @@
-Timestamp;Sid;age;gender;years_edu;self_memory;self_visual;self_calories;self_gdp;maia_1;maia_2;maia_3;maia_4;maia_5;maia_6;maia_7;maia_8;maia_9;maia_10;maia_11;maia_12;maia_13;maia_14;maia_15;maia_16;maia_17;maia_18;maia_19;maia_20;maia_21;maia_22;maia_23;maia_24;maia_25;maia_26;maia_27;maia_28;maia_29;maia_30;maia_31;maia_32;maia_33;maia_34;maia_35;maia_36;maia_37
+Timestamp;Sid;age;gender;years_edu;self_memory_pre;self_visual_pre;self_calories_pre;self_gdp_pre;maia_1;maia_2;maia_3;maia_4;maia_5;maia_6;maia_7;maia_8;maia_9;maia_10;maia_11;maia_12;maia_13;maia_14;maia_15;maia_16;maia_17;maia_18;maia_19;maia_20;maia_21;maia_22;maia_23;maia_24;maia_25;maia_26;maia_27;maia_28;maia_29;maia_30;maia_31;maia_32;maia_33;maia_34;maia_35;maia_36;maia_37
 30/01/2020 11:19:46;996;44;Masculin;22;20;100;0;22;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1
 03/02/2020 09:23:52;1;23;Feminin;14;70;60;70;60;1;4;3;2;3;3;3;2;1;3;2;1;3;3;1;1;1;3;3;1;2;2;1;1;3;2;3;1;1;1;1;3;0;4;4;5;4
 03/02/2020 09:24:40;7;31;Masculin;17;50;50;70;60;4;4;4;2;2;1;3;3;2;3;1;3;2;3;5;2;3;3;3;2;2;3;4;4;5;2;4;1;2;1;3;1;2;2;2;3;3
