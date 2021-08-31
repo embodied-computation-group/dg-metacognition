@@ -11,7 +11,7 @@ pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidy
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
 
-source(here("r", "remove_outliers.R"))
+source(here("r", "remove_outliers_robust.R"))
 source(here("r", "trials2counts.R"))
 source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
@@ -198,9 +198,9 @@ p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Bias Filtered")
 
-p7<-ggplot(metadata_exc, aes(x = modality, y = mda)) +
+p7<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Sensitivity Filtered")
+  ggtitle("Metacognitive Efficiency")
 
 p8<-ggplot(metadata_exc, aes(x = modality, y = da)) +
   geom_boxjitter() +
@@ -212,8 +212,8 @@ p2 + p6
 p3 + p7
 p4 + p8
 
-p8
-ggsave("dPrimeFilt.png")
+p7
+ggsave("Mratio.png")
 
 ```
 Pivot the data frame to wide. 
