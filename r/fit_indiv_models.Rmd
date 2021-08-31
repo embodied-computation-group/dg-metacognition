@@ -6,7 +6,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggpubr, ggmcmc, foreach, doParallel, ggpol, ggstatsplot, ggcorrplot)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -17,6 +17,8 @@ source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 source(here("r", "Bayes_metad_hierarchical.R"))
 source(here("r", "fit_hMetaCorr.R"))
+source(here("r", "sdt_functions.R"))
+source(here("r", "outliers.R"))
 
 
 ```
@@ -47,6 +49,7 @@ Trial-level exclusion:
 ```{r}
 
 
+
 metadata <- metacognition_trial_data %>%
   group_by(subject, modality) %>%
   mutate(rt = remove_outliers(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
@@ -67,46 +70,34 @@ excD <- subset(metadatac, metadatac$n<100)
 excID <-unique(excD$subject) #Identify participants for exclusion
 metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs from that vector in original dataframe
 
-#Check staircase procedure: First create individual dataframes. 
-memory <- metadata %>%filter(modality == c('memory')) 
-knowledge <- metadata %>%filter(modality == c('trivia')) 
-percept <- metadata %>%filter(modality == c('vision')) 
+```
 
-#Perception: 
-Pplot_list = list() 
+Create individual level staircase plots
 
-for(t in 1:length(percept$subject)) { 
-  Pplots <- (ggplot(percept) +
-    geom_step(aes(x=(trial), y=contrast)) +
-    xlab("trial") +
-    ylab("contrast") + theme_bw() + facet_wrap(percept$subject))
- Pplot_list[[t]] = Pplots
-  } #Create plots for each participant
+```{r}
+# note that this procedure can take a long time - uncomment to make individual plots for QC procedure
 
-#save to pdf with 20 participants on each page: 
-pdf("staircaseplots.pdf")
-for (k in 20:length(percept$subject)) {
-    print(Pplot_list[[k]])
-}
-dev.off()
-
-## MUST DE_COLLAPSE TRIVIA FOR THE NEXT ANALYSIS/FIGURE OUT HOW TO DO ANOTHER DATAFRAME HERE. 
-
-glimpse(metadata)
-
+# source(here("r", "make_indivi_plots.R"))
 
 ```
+
 
 Let's loop over subjects now and fit the MLE model. 
 
 ```{r}
 
-subjects = unique(metadata$subject)
-modalities = as.character(unique(metadata$modality))
+subjects = unique(metadata$subject) # subjects vector, for looping
+modalities = as.character(unique(metadata$modality)) # modalities vector, for looping
 
 
 # setup cluster
 n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+# since R can only work with around 120 cores maximum, set an upper limit if needed
+if (n.cores > 120) {
+n.cores <- 120
+}
+
 
 #create the cluster
 my.cluster <- parallel::makeCluster(
@@ -119,29 +110,25 @@ doParallel::registerDoParallel(cl = my.cluster)
 
 
 # fit all subjects in parallel
-
-
 source(here("r", "parMLEfit.R"))
 
-
-
 # stop the cluster
-
 stopCluster(cl = my.cluster)
 
 # write out the data file
-
 write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
 
-
 head(fit_data)
+
 ```
 
 Group-level exclusion based on MAD rule (confidence, d', criterion)
 ```{r}
 
+
 #exclude those where mratio could not be estimated  
 metadata_exc <- fit_data%>%filter(mratio!="NaN")
+
 
 #Exclude outliers based on MAD rule (confidence, d' and criterion)
 #Confidence:
@@ -153,23 +140,23 @@ Avgmeta <- metadata %>%
 fitAvg_data<- fit_data %>% full_join(Avgmeta, 
                                    by= c('subject'='subject', 
                                          'modality' = 'modality'))
-metadata_exc <- fitAvg_data%>%
-  group_by(subject, modality) %>%
-  mutate(avg_conf = remove_outliers(avg_conf)) # remove RT outliers using MAD Rule 
 
-metadata_exc <- na.omit(metadata_exc)
+fitAvg_data <- fitAvg_data%>%filter(mratio!="NaN")
+
+metadata_exc <- fitAvg_data%>%
+  group_by(modality) %>%
+  mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove RT outliers using MAD Rule 
 
 #d' 
-metadata_exc <- fitAvg_data%>%
-  group_by(subject, modality) %>%
-  mutate(da = remove_outliers(da)) # remove RT outliers using MAD Rule 
+metadata_exc <- metadata_exc%>%
+  group_by(modality) %>%
+  mutate(da = remove_outliers_robust(da)) # remove RT outliers using MAD Rule 
 
-metadata_exc <- na.omit(metadata_exc)
 
-#criterion: INCLUDE THIS IN THE FIT RESULTS
-metadata_exc <- fitAvg_data%>%
-  group_by(subject) %>%
-  mutate(da = remove_outliers(cr)) # remove RT outliers using MAD Rule 
+#criterion 
+metadata_exc <- metadata_exc%>%
+  group_by(modality) %>%
+  mutate(c = remove_outliers_robust(c)) # remove RT outliers using MAD Rule 
 
 metadata_exc <- na.omit(metadata_exc)
 
@@ -178,52 +165,56 @@ head(metadata_exc)
 
 ```
 
-Let's plot the M-ratio by condition      #(after some filtering)
+Let's plot the key filtered variables to check what was excluded.
 
 ```{r}
 
-#plot_data <- filter(fit_data_wide, mratio > 0)
-#plot_data <- filter(fit_data_wide, da > 0)
-
-#plot_data <- filter(fit_data_wide, da > 0.5)
-
-#plot_data <- plot_data %>%
- # group_by(subject, modality) %>%
-#  mutate(da = remove_outliers(da))
-
-#plot_data <-  na.omit(plot_data)
-
-
-#plot_data <- plot_data %>%
- # group_by(subject, modality) %>%
-  #mutate(mratio = remove_outliers(mratio))
-
-#plot_data <-  na.omit(plot_data)
-
-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
+#unfiltered
+p1<-ggplot(fitAvg_data, aes(x = modality, y =c)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Efficiency")
+  ggtitle("Criterion Unfiltered")
 
-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
+p2<-ggplot(fitAvg_data, aes(x = modality, y = avg_conf)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Bias")
+  ggtitle("Metacognitive Bias Unfiltered")
 
-ggplot(metadata_exc, aes(x = modality, y = mda)) +
+p3<-ggplot(fitAvg_data, aes(x = modality, y = mda)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Sensitivity")
+  ggtitle("Metacognitive Sensitivity Unfiltered")
 
-ggplot(metadata_exc, aes(x = modality, y = da)) +
+p4<-ggplot(fitAvg_data, aes(x = modality, y = da)) +
   geom_boxjitter() +
-  ggtitle("Cognitive Sensitivity")
+ # ylim(-2,2)+
+  ggtitle("Cognitive Sensitivity Unfiltered")
 
 
-#ggplot(fit_data, aes(x = modality, y = mratio)) +
-#  geom_boxjitter() +
- # ggtitle("unfiltered")
+#filtered
 
+p5<-ggplot(metadata_exc, aes(x = modality, y =c)) +
+  geom_boxjitter() +
+  ggtitle("Criterion Filtered")
 
-#model = aov_ez(data = plot_data, id = "subject", dv = "mratio", within = c("modality"))
-#print(model)
+p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
+  geom_boxjitter() +
+  ggtitle("Metacognitive Bias Filtered")
+
+p7<-ggplot(metadata_exc, aes(x = modality, y = mda)) +
+  geom_boxjitter() +
+  ggtitle("Metacognitive Sensitivity Filtered")
+
+p8<-ggplot(metadata_exc, aes(x = modality, y = da)) +
+  geom_boxjitter() +
+  #ylim(-2,2)+
+  ggtitle("Cognitive Sensitivity Filtered")
+
+p1 + p5
+p2 + p6
+p3 + p7
+p4 + p8
+
+p8
+ggsave("dPrimeFilt.png")
+
 ```
 Pivot the data frame to wide. 
 
@@ -231,7 +222,7 @@ Pivot the data frame to wide.
 
 fit_data_wide <- metadata_exc %>% pivot_wider(
   names_from = modality,
-  values_from = c(da, mda, mratio)
+  values_from = c(da, mda, mratio, c, avg_conf)
 )
   
 
@@ -244,22 +235,35 @@ head(fit_data_wide)
 Correlation  between domains: 
 ```{r}
 
-submetad <- data.frame(
-                     mda_memory = na.omit(fit_data_wide$mda_memory),
-                     mda_Calories =na.omit(fit_data_wide$mda_Calories),
-                     mda_GDP = na.omit(fit_data_wide$mda_GDP),
-                     mda_vision =na.omit(fit_data_wide$mda_vision))
+corr_matt <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("mda"))
 
-#GGCormat - why is correlation between vision and GDP not visualised? Missing data issues. 
-#nonparameteric + bootstrapping? just winsorised...? 
 
-ggcorrmat(data = fit_data_wide, cor.vars = c(mda_memory,mda_Calories,mda_GDP,mda_vision),
+ggcorrmat(data = corr_matt,
           cor.vars.names = c("memory", "Calories", "GDP", "vision"),
-          type= "robust", p.adjust.method = "none")+
+          type= "robust")+
   ggtitle("Metacognitive sensitivity")
 
-#Rousselet 
+ggcorrplot(cor(as.matrix(corr_matt)), method = "circle")
 
+#Rousselet 
+ggpairs(corr_matt) 
+
+lowerFn <- function(data, mapping, method = "lm", ...) {
+  p <- ggplot(data = data, mapping = mapping) +
+    geom_point(colour = "black") +
+    geom_smooth(method = method, color = "gray", ...)
+  p
+}
+
+ggpairs(
+  corr_matt, lower = list(continuous = wrap(lowerFn, method = "lm")),
+  diag = list(continuous = wrap("barDiag", colour = "black")),
+  upper = list(continuous = wrap("cor", size = 8))
+)
+
+ggsave("CorrMatMda.png", height = 7, width = 10)
 ```
 Bayes Factor: 
 ```{r}

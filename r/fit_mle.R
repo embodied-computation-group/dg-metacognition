@@ -25,7 +25,7 @@ fit_mle <- function (subjects, modalities, s, m) {
       
       Results <- data.frame("subject" = subjects[s],"modality"=modalities[m],
                            "da" = fit$da[1], "mda" = fit$meta_da[1],
-                           "mratio" = fit$M_ratio[1])  
+                           "mratio" = fit$M_ratio[1], "c" = fit$criterion[1])  
       return(Results)  
       
     },
@@ -34,7 +34,7 @@ fit_mle <- function (subjects, modalities, s, m) {
      # print(e)
       Results <- data.frame("subject" = subjects[s],
                            "modality"=modalities[m],"da" = NaN,
-                           "mda" = NaN, "mratio" = NaN) 
+                           "mda" = NaN, "mratio" = NaN, "c" = NaN) 
       
       return(Results)  
     }

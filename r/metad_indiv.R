@@ -6,7 +6,7 @@ library(rjags)
 library(coda)
 library(lattice)
 library(broom)
-library(ggpubr)
+#library(ggpubr)
 library(ggmcmc)
 
 metad_indiv <- function (nR_S1, nR_S2) {
