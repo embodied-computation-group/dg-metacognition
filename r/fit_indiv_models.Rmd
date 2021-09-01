@@ -10,15 +10,19 @@ pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidy
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
+# load Rousselet correlation package 
+if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
 
-source(here("r", "remove_outliers.R"))
+
+source(here("r", "remove_outliers_robust.R"))
+source(here("r", "outliers.R"))
 source(here("r", "trials2counts.R"))
 source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
+source(here("r", "sdt_functions.R"))
+
 source(here("r", "Bayes_metad_hierarchical.R"))
 source(here("r", "fit_hMetaCorr.R"))
-source(here("r", "sdt_functions.R"))
-source(here("r", "outliers.R"))
 
 
 ```
@@ -49,10 +53,9 @@ Trial-level exclusion:
 ```{r}
 
 
-
 metadata <- metacognition_trial_data %>%
   group_by(subject, modality) %>%
-  mutate(rt = remove_outliers(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
+  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
 
 metadata <- na.omit(metadata)
 
@@ -73,6 +76,7 @@ metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs
 ```
 
 Create individual level staircase plots
+NOT DONE 
 
 ```{r}
 # note that this procedure can take a long time - uncomment to make individual plots for QC procedure
@@ -188,32 +192,50 @@ p4<-ggplot(fitAvg_data, aes(x = modality, y = da)) +
   ggtitle("Cognitive Sensitivity Unfiltered")
 
 
-#filtered
-
+#filtered Plots: 
 p5<-ggplot(metadata_exc, aes(x = modality, y =c)) +
   geom_boxjitter() +
-  ggtitle("Criterion Filtered")
+  ggtitle("Cognitive Criterion") +
+  ylab("c") + xlab("Modality")
 
 p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Bias Filtered")
+  ggtitle("Metacognitive Bias")+
+  ylab("Average Confidence") + xlab("Modality")
 
 p7<-ggplot(metadata_exc, aes(x = modality, y = mda)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Sensitivity Filtered")
+  ggtitle("Metacognitive Sensitivity")+
+  ylab("Meta-d'") + xlab("Modality")
 
 p8<-ggplot(metadata_exc, aes(x = modality, y = da)) +
   geom_boxjitter() +
-  #ylim(-2,2)+
-  ggtitle("Cognitive Sensitivity Filtered")
+  ggtitle("Cognitive Sensitivity")+ 
+  ylab("d'") + xlab("Modality")
 
-p1 + p5
-p2 + p6
-p3 + p7
-p4 + p8
+# Filtered versus unfiltered 
+filunfil1 <- ggarrange(p1, p5)
+annotate_figure(filunfil1, top = text_grob("Cognitive Criterion filtered/unfiltered", color = "black", 
+                                         face = "bold", size = 14))
+filunfil2 <- ggarrange(p2, p6)
+annotate_figure(filunfil2, top = text_grob("Metaognitive Bias filtered/unfiltered", color = "black", 
+                                         face = "bold", size = 14))
+filunfil3 <- ggarrange(p3, p7)
+annotate_figure(filunfil3, top = text_grob("Metacognitive Sensitivity filtered/unfiltered", color = "black", 
+                                         face = "bold", size = 14))
+filunfil4 <- ggarrange(p4, p8)
+annotate_figure(filunfil4, top = text_grob("Metacognitive Efficiency filtered/unfiltered", color = "black", 
+                                         face = "bold", size = 14))
 
-p8
-ggsave("dPrimeFilt.png")
+#Filtered data´: 
+Datafil1 <- ggarrange(p8, p5)
+annotate_figure(Datafil1, top = text_grob("MLE Estimation of Cognitive performance", color = "black", 
+                                         face = "bold", size = 14))  
+Datafi2 <- ggarrange(p7, p6)
+annotate_figure(Datafi2, top = text_grob("MLE Estimation of Metacognitive performance", 
+                                         color = "black", 
+                                         face = "bold", size = 14))  
+
 
 ```
 Pivot the data frame to wide. 
@@ -231,40 +253,379 @@ write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.cs
 head(fit_data_wide)
 ```
 
-
-Correlation  between domains: 
+Correlation  between domains: Using GRousselet bootcorci
 ```{r}
 
-corr_matt <- fit_data_wide %>%
+# Each correlation pair is estimated for sensitivity: 
+corr <- fit_data_wide %>%
   na.omit() %>%
   select(starts_with("mda"))
+res1 <- corci(corr$mda_memory, corr$mda_Calories, method="spearman")
+res2 <- corci(corr$mda_memory, corr$mda_vision, method="spearman")
+res3 <- corci(corr$mda_memory, corr$mda_GDP, method="spearman")
+res4 <- corci(corr$mda_GDP, corr$mda_vision, method="spearman")
+res5 <- corci(corr$mda_GDP, corr$mda_Calories, method="spearman")
+res6 <- corci(corr$mda_Calories, corr$mda_vision, method="spearman")
+
+# Each correlation pair is estimated for efficiency: 
+corr1 <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+res1.1 <- corci(corr1$mratio_memory, corr1$mratio_Calories, method="spearman")
+res1.2 <- corci(corr1$mratio_memory, corr1$mratio_vision, method="spearman")
+res1.3 <- corci(corr1$mratio_memory, corr1$mratio_GDP, method="spearman")
+res1.4 <- corci(corr1$mratio_GDP, corr1$mratio_vision, method="spearman")
+res1.5 <- corci(corr1$mratio_GDP, corr1$mratio_Calories, method="spearman")
+res1.6 <- corci(corr1$mratio_Calories, corr1$mratio_vision, method="spearman")
+
+# Each correlation pair is estimated for bias: 
+corr2 <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("avg"))
+res2.1 <- corci(corr2$avg_conf_memory, corr2$avg_conf_Calories, method="spearman")
+res2.2 <- corci(corr2$avg_conf_memory, corr2$avg_conf_vision, method="spearman")
+res2.3 <- corci(corr2$avg_conf_memory, corr2$avg_conf_GDP, method="spearman")
+res2.4 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_vision, method="spearman")
+res2.5 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_Calories, method="spearman")
+res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman")
 
 
-ggcorrmat(data = corr_matt,
-          cor.vars.names = c("memory", "Calories", "GDP", "vision"),
-          type= "robust")+
-  ggtitle("Metacognitive sensitivity")
+#Table with correlation coefficents for all pairwise correlations: 
+corrtable <- data.frame(Metric=character(),
+                 CorrCoef1=double(),
+                 CI_lower1=double(),
+                 CI_upper1=double(),
+                 P_value1=double(),
+                 CorrCoef2=double(),
+                 CI_lower2=double(),
+                 CI_upper2=double(),
+                 P_value2=double(),
+                 CorrCoef3=double(),
+                 CI_lower3=double(),
+                 CI_upper3=double(),
+                 P_value3=double(),
+                 CorrCoef4=double(),
+                 CI_lower4=double(),
+                 CI_upper4=double(),
+                 P_value4=double(),
+                 CorrCoef5=double(),
+                 CI_lower5=double(),
+                 CI_upper5=double(),
+                 P_value5=double(),
+                 CorrCoef6=double(),
+                 CI_lower6=double(),
+                 CI_upper6=double(),
+                 P_value6=double(),
+                stringsAsFactors=FALSE)
 
-ggcorrplot(cor(as.matrix(corr_matt)), method = "circle")
+#Insert vaules in dataframe: 
+corrtable[1,] <- list("Meta-d",res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
+                       res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
+                       res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
+                       res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value,
+                       res5$estimate,res5$conf.int[1], res5$conf.int[2],  res5$p.value,
+                       res6$estimate,res6$conf.int[1],  res6$conf.int[2], res6$p.value)
+corrtable[2,] <- list("Mratio",res1.1$estimate,res1.1$conf.int[1], res1.1$conf.int[2], res1.1$p.value,
+                       res1.2$estimate,res1.2$conf.int[1], res1.2$conf.int[2], res1.2$p.value,
+                       res1.3$estimate,res1.3$conf.int[1], res1.3$conf.int[2],  res1.3$p.value,
+                       res1.4$estimate,res1.4$conf.int[1], res1.4$conf.int[2],  res1.4$p.value,
+                       res1.5$estimate,res1.5$conf.int[1], res1.5$conf.int[2],  res1.5$p.value,
+                       res1.6$estimate,res1.6$conf.int[1],  res1.6$conf.int[2], res1.6$p.value)
+corrtable[3,] <- list("Bias",res1$estimate,res2.1$conf.int[1], res2.1$conf.int[2], res2.1$p.value,
+                       res2.2$estimate,res2.2$conf.int[1], res2.2$conf.int[2], res2.2$p.value,
+                       res2.3$estimate,res2.3$conf.int[1], res2.3$conf.int[2],  res2.3$p.value,
+                       res2.4$estimate,res2.4$conf.int[1], res2.4$conf.int[2],  res2.4$p.value,
+                       res2.5$estimate,res2.5$conf.int[1], res2.5$conf.int[2],  res2.5$p.value,
+                       res2.6$estimate,res2.6$conf.int[1],  res2.6$conf.int[2], res2.6$p.value)
+head(corrtable)
+```
+Scatter plots and linear regressions: 
 
-#Rousselet 
-ggpairs(corr_matt) 
+```{r}
 
-lowerFn <- function(data, mapping, method = "lm", ...) {
-  p <- ggplot(data = data, mapping = mapping) +
-    geom_point(colour = "black") +
-    geom_smooth(method = method, color = "gray", ...)
-  p
+#Metacognitive Sensitivity
+scat1 <- as_tibble(corr)
+s1 <- ggplot(data=scat1, aes(x=mda_memory, y=mda_Calories)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)) +  scale_y_continuous("Calories")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s2 <- ggplot(data=scat1, aes(x=mda_memory, y=mda_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s3 <- ggplot(data=scat1, aes(x=mda_memory, y=mda_GDP)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("GDP")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s4 <- ggplot(data=scat1, aes(x=mda_GDP, y=mda_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
+  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
+s5 <- ggplot(data=scat1, aes(x=mda_GDP, y=mda_Calories)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Calories")+
+  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
+s6 <- ggplot(data=scat1, aes(x=mda_Calories, y=mda_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  + scale_y_continuous("Vision")+
+  scale_x_continuous("Calories") + geom_smooth(method="lm", se=FALSE, size=1)
+
+comPlot1 <- ggarrange(s1, s2, s3, s4, s5, s6)
+annotate_figure(comPlot1, top = text_grob("Metacognitive Sensitivity", color = "black", 
+                                         face = "bold", size = 14))  
+
+#Metacognitive Efficiency
+scat2 <- as_tibble(corr1)
+s11 <- ggplot(data=scat2, aes(x=mratio_memory, y=mratio_Calories)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)) +  scale_y_continuous("Calories")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s12 <- ggplot(data=scat2, aes(x=mratio_memory, y=mratio_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s13 <- ggplot(data=scat2, aes(x=mratio_memory, y=mratio_GDP)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("GDP")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s14 <- ggplot(data=scat2, aes(x=mratio_GDP, y=mratio_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
+  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
+s15 <- ggplot(data=scat2, aes(x=mratio_GDP, y=mratio_Calories)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Calories")+
+  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
+s16 <- ggplot(data=scat2, aes(x=mratio_Calories, y=mratio_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  + scale_y_continuous("Vision")+
+  scale_x_continuous("Calories") + geom_smooth(method="lm", se=FALSE, size=1)
+
+comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16)
+annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
+                                         face = "bold", size = 14))    
+
+
+#Metacognitive Bias
+scat3 <- as_tibble(corr2)
+s21 <- ggplot(data=scat3, aes(x=avg_conf_memory, y=avg_conf_Calories)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16)) +  scale_y_continuous("Calories")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s22 <- ggplot(data=scat3, aes(x=avg_conf_memory, y=avg_conf_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s23 <- ggplot(data=scat3, aes(x=avg_conf_memory, y=avg_conf_GDP)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("GDP")+
+  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
+s24 <- ggplot(data=scat3, aes(x=avg_conf_GDP, y=avg_conf_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
+  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
+s25 <- ggplot(data=scat3, aes(x=avg_conf_GDP, y=avg_conf_Calories)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  +  scale_y_continuous("Calories")+
+  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
+s26 <- ggplot(data=scat3, aes(x=avg_conf_Calories, y=avg_conf_vision)) + theme_bw() +
+  geom_point() +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16))  + scale_y_continuous("Vision")+
+  scale_x_continuous("Calories") + geom_smooth(method="lm", se=FALSE, size=1)
+
+comPlot3 <- ggarrange(s21, s22, s23, s24, s25, s26)
+annotate_figure(comPlot3, top = text_grob("Metacognitive Bias", color = "black", 
+                                         face = "bold", size = 14))     
+
+
+```
+Bootstrap samples 
+NOT DONE!!!
+
+```{r}
+#Bootstrap sample characteristics:
+df1 <- as_tibble(with(density(res1$bootsamples),data.frame(x,y)))
+ci1 <- res1$conf.int
+df2 <- as_tibble(with(density(res2$bootsamples),data.frame(x,y)))
+ci2 <- res2$conf.int
+df3 <- as_tibble(with(density(res3$bootsamples),data.frame(x,y)))
+ci3 <- res3$conf.int
+df4 <- as_tibble(with(density(res4$bootsamples),data.frame(x,y)))
+ci4 <- res4$conf.int
+df5 <- as_tibble(with(density(res5$bootsamples),data.frame(x,y)))
+ci5 <- res5$conf.int
+df6 <- as_tibble(with(density(res6$bootsamples),data.frame(x,y)))
+ci6 <- res6$conf.int
+
+df <- c(df1, df2, df3, df4, df5, df6)
+ci <- c(ci1, ci2, ci3, ci4, ci5, ci6)
+#THE CI IS WRONG HERE BECAUSE IT NORMALLY IS FORMATED AS TWO DIFFERENT ROWS AND NOT COLUMNS. 
+
+for (h in 1:length(df)) {
+  for (k in 1:length(ci)) {
+    boot[k] <- ggplot(df[h], aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res1$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci[k,1], xend = ci[k,2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci[k,1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci[k,1], digits = 2))) +
+  annotate(geom = "label", x = ci[k,2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci[k,2], digits = 2)))
+
+  }
+  boot[h] <- boot[k]
 }
 
-ggpairs(
-  corr_matt, lower = list(continuous = wrap(lowerFn, method = "lm")),
-  diag = list(continuous = wrap("barDiag", colour = "black")),
-  upper = list(continuous = wrap("cor", size = 8))
-)
+    
+    
+    
+b1 <- ggplot(df1, aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res1$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci1[1], xend = ci1[2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci1[1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci1[1], digits = 2))) +
+  annotate(geom = "label", x = ci1[2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci1[2], digits = 2)))
+b2 <- ggplot(df2, aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res2$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci2[1], xend = ci2[2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci2[1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci1[1], digits = 2))) +
+  annotate(geom = "label", x = ci2[2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci2[2], digits = 2)))
+b3 <- ggplot(df3, aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res3$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci3[1], xend = ci3[2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci3[1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci1[1], digits = 2))) +
+  annotate(geom = "label", x = ci3[2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci3[2], digits = 2)))
+b4 <- ggplot(df4, aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res4$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci4[1], xend = ci4[2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci4[1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci1[1], digits = 2))) +
+  annotate(geom = "label", x = ci4[2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci4[2], digits = 2)))
+b5 <- ggplot(df5, aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res5$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci5[1], xend = ci5[2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci5[1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci5[1], digits = 2))) +
+  annotate(geom = "label", x = ci1[2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci5[2], digits = 2)))
+b6<- ggplot(df6, aes(x=x, y=y)) + theme_bw() +
+  geom_vline(xintercept = res6$estimate, colour = "grey", size = 1) +
+  geom_line(size = 2) +
+  scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = "Bootstrap means", y = "Density") +
+    # confidence interval ----------------------
+  geom_segment(x = ci6[1], xend = ci6[2],
+               y = 0, yend = 0,
+               lineend = "round", size = 3, colour = "orange") +
+  annotate(geom = "label", x = ci6[1], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("L = ", round(ci6[1], digits = 2))) +
+  annotate(geom = "label", x = ci1[2], y = 0.1*max(corr$mda_Calories), size = 7,
+             colour = "white", fill = "orange", fontface = "bold",
+             label = paste("U = ", round(ci6[2], digits = 2)))
 
-ggsave("CorrMatMda.png", height = 7, width = 10)
 ```
+
+re 
 Bayes Factor: 
 ```{r}
 
@@ -272,217 +633,29 @@ Bayes Factor:
 
 ```
 
-```{r}
-ggcorrmat(data = fit_data_wide[ , 10:13],
-          type= "parametric", p.adjust.method = "none")+
-  ggtitle("unfiltered")
-
-
-
-plot_data_wide <- plot_data %>% pivot_wider(
-  names_from = modality,
-  values_from = c(da, mda, mratio)
-)
-
-ggcorrmat(data = plot_data_wide[ , 10:13],
-          type= "parametric", p.adjust.method = "none")+
-  ggtitle("filtered")
-
-
-```
-
-Filter wide data
-```{r}
-
-fit_data_wide <- fit_data_wide %>%
-  mutate(across(starts_with("da")), ~ remove_outliers(.x))
-
-
-
-```
-
-
-
-```{r}
-
-library(ez)
-library(emmeans)
-library(afex)
-library(ggpol)
-library(ggbeeswarm)
-afex_plot(model, x = "modality", error = "within")
-```
-
-
-```{r}
-ggplot(plot_data, aes(x = modality, y = mratio, fill = modality)) +
-  geom_violin() +
-  geom_boxjitter(
-            width = 0.5,
-            jitter.color = "gray",
-            jitter.width = 0.1,
-            jitter.height = 0,
-            outlier.color = "gray",
-            outlier.intersect = TRUE)
-
-
-```
-
-```{r}
-jasp_data <- plot_data
-jasp_data <- pivot_wider(data = jasp_data, names_from = modality, values_from = c(da, mda, mratio)) 
-
-
-write.csv(jasp_data, "M_Ratio_summary.csv")
-```
-
-
-
-
-
-
-
-
-loop and get Individual Bayesian fit
-
+Hierarchical bayesian fit without parallel processing: 
 ```{r}
 
 subjects = unique(metadata$subject)
-modalities = as.character(unique(metadata$modality))
+modalities = as.character(unique(metadatac$modality)) 
+s = 1:length(subjects)
+m = 1:length(modalities)
 
-## THIS NEEDS TO BE EDITED - IT IS NOT THE RIGHT FIT.. THE ORIGINAL SCRIPT IS BELOW (NO PARALLEL)
+subdata[s,m] <- filter(metadata, subject == subjects[s] & modality == modalities[m]) 
 
-
-# setup cluster
-n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
-
-#create the cluster
-my.cluster <- parallel::makeCluster(
-  n.cores, 
-  type = "PSOCK"
-)
-
-#register it to be used by %dopar%
-doParallel::registerDoParallel(cl = my.cluster)
-
-
-# fit all subjects in parallel
-
-
-source(here("r", "parindBayes.R"))
-
-
-# stop the cluster
-
-stopCluster(cl = my.cluster)
-
-# write out the data file
-
-write.csv(indBayes_data, file = here("data_summary","indvBay_mratio_fit_data.csv"))
-
-
-head(indBayes_data)
-
-
-
-
-
-
-
-
-# THIS IS THE ORIGINAL SCRIPT: 
-
-
-fit_data_bayes = data.frame()
-
-for(s in 1:length(subjects)) {
-#foreach (s = 1:length(subjects), .combine=rbind) %dopar%  { # for parallel computing.. wip.. 
-  
-  for(m in 1:length(modalities)) {
+#put into correct format
+newlist <- trials2counts(subdata$signal,
+                               subdata$response, subdata$confidence, 7,
+                               padAmount = 1,padCells=1)
     
-    tryCatch(
-      expr = {
-        # subset data for subject and modality 
-        subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m])  
-        
-        #transform trial data to counts
-        newlist <- trials2counts(subdata$signal, subdata$response, subdata$confidence,7, padAmount = 0,padCells=1)
-        nR_S1 <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
-        nR_S2 <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
-        
-        #fit model
-        fit <- metad_indiv(nR_S1, nR_S2)
-        #glimpse(subdata)
-        #Sys.sleep(1)
-        
-        output <- data.frame("subject" = subjects[s],"modality"=modalities[m],
-                             "da" = fit$d, "mda" = fit$mean,
-                             "mratio" = fit$mratio)  
-        
-        fit_data_bayes <- rbind(fit_data_bayes, output)
-      },
-      error = function(e) {
-        message("* caught an error on subject ", subjects[s])
-        print(e)
-        output <- data.frame("subject" = subjects[s],
-                             "modality"=modalities[m],"da" = NaN,
-                             "mda" = NaN, "mratio" = NaN) 
-        fit_data_bayes <- rbind(fit_data_bayes, output)
-        
-        }
+nR_S1 <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
+nR_S2 <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
       
-      
-    )
-    
-  }
-  
-}
-
-write.csv(fit_data_bayes, file = "bayes_mratio_fit_data.csv")
-```
-
-```{r}
-head(fit_data_bayes)
-
-plot_data <- fit_data_bayes
-
-
-
-plot_data <- filter(fit_data_bayes, mratio > 0)
-plot_data <- filter(plot_data, da > 0)
-plot_data <- filter(plot_data, mda > 0)
-
-
-
-trim_data = plot_data %>%
-  group_by(modality) %>%
-  mutate_at(vars(da, mda, mratio), funs(remove_outliers))
-  
-
-ggplot(trim_data, aes(x = modality, y = mratio))+
-  geom_boxplot()
-
-jasp_data <- trim_data
-jasp_data <- pivot_wider(data = jasp_data, names_from = modality, values_from = c(da, mda, mratio)) 
-
-
-write.csv(jasp_data, "bayes_MR_summary.csv")
+#Fit the model: 
+fit <- metad_groupcorr(nR_S1, nR_S2)
 
 
 ```
-
-```{r}
-remove_outliers <- function(x, na.rm = TRUE, ...) {
-  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
-  H <- 1.5 * IQR(x, na.rm = na.rm)
-  y <- x
-  y[x < (qnt[1] - H)] <- NA
-  y[x > (qnt[2] + H)] <- NA
-  y
-}
-```
-
-
 
 
 
@@ -490,14 +663,18 @@ Hierarchical Bayesian fit + direct Correlation: Running in parallel
 
 ```{r}
 
-subjects = unique(metadata_exc$subject)
-modalities = as.character(unique(metadata_exc$modality))
 
-## THIS IS NOT WORKING ATM
+
 
 
 # setup cluster
 n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+# since R can only work with around 120 cores maximum, set an upper limit if needed
+if (n.cores > 120) {
+n.cores <- 120
+}
+
 
 #create the cluster
 my.cluster <- parallel::makeCluster(
@@ -505,10 +682,8 @@ my.cluster <- parallel::makeCluster(
   type = "PSOCK"
 )
 
-#register it to be used by %dopar%
+#register it to be    used by %dopar%
 doParallel::registerDoParallel(cl = my.cluster)
-
-# fit all subjects in parallel
 
 source(here("r", "parHmetaCor.R"))
 
