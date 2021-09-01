@@ -203,7 +203,7 @@ p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
   ggtitle("Metacognitive Bias")+
   ylab("Average Confidence") + xlab("Modality")
 
-p7<-ggplot(metadata_exc, aes(x = modality, y = mda)) +
+p7<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Sensitivity")+
   ylab("Meta-d'") + xlab("Modality")

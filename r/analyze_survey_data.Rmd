@@ -1,0 +1,207 @@
+---
+title: "Analysis of Survey Data"
+output: html_notebook
+---
+
+Set up
+
+```{r}
+# clean slate to be sure
+rm(list = ls())
+library(CCA)
+library(CCP)
+library(readr)
+library(tidyr)
+library(here)
+library(dplyr)
+library(psych)
+library(ggstatsplot)
+```
+
+
+
+Import data
+
+```{r}
+
+# get pre ratings
+
+survey_data_pre <- read_delim(here("data_summary", "/self_belief_pre_labels.csv"), 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+head(survey_data_pre)
+
+survey_data_post <- read_delim(here("data_summary", "/self_belief_post_labels.csv"), 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+head(survey_data_post)
+
+metacog_data <- read_csv(here("data_summary", "/mle_mratio_fit_data_wide.csv"))
+
+
+```
+
+some data wrangling
+
+```{r}
+
+
+
+survey_data_pre$gender <- as.factor(survey_data_pre$gender)
+survey_data_pre <- survey_data_pre %>%
+  filter(Sid!=996) # remove bogus subject
+
+
+names(survey_data_pre)[names(survey_data_pre) == "Timestamp"] <- "Timestamp_1"
+names(survey_data_post)[names(survey_data_post) == "Timestamp"] <- "Timestamp_2"
+
+metacog_data <- subset(metacog_data, select=-c(1))
+names(metacog_data)[names(metacog_data) == "subject"] <- "Sid"
+
+all_data <- full_join(survey_data_pre, survey_data_post, by = "Sid")
+all_data <- full_join(all_data, metacog_data, by = "Sid")
+
+all_data <- all_data %>%
+  mutate(self_vis_diff = self_visual_pre - self_visual_post) %>%
+  mutate(self_mem_diff = self_memory_pre - self_memory_post) %>%
+  mutate(self_calorie_diff = self_calories_pre - self_calories_post) %>%
+  mutate(self_gdp_diff = self_gdp_pre - self_gdp_post) %>%
+  na.omit()
+
+# export data
+write_csv(all_data, here("data_summary", "all_group_data.csv"))
+
+```
+
+Lets do some PCA on the thought probes.
+```{r}
+probe_data <- all_data %>%
+  dplyr::select(starts_with("mw_")) 
+
+mw_model = principal(probe_data, rotate = "Oblique", nfactors = 5)
+
+scores<-factor.scores(probe_data, mw_model, method = "Bartlett")
+scores<-as.data.frame(scores$scores)
+scores$Sid = all_data$Sid
+mw_model
+
+png('fa_diag.png')
+fa.diagram(mw_model)
+dev.off()
+
+
+```
+
+
+Lets run some correlations - a bit more data wrangling first
+
+```{r}
+
+
+xmat <- dplyr::select(all_data, starts_with("mratio") | 
+                 starts_with("da") | 
+                 starts_with("avg_conf") |
+                 starts_with("mratio") |
+                 starts_with("Sid") |
+                 ends_with("diff"))
+
+#xmat <- select(all_data, starts_with("da") | 
+#                 starts_with("mda") | 
+#                 starts_with("avg_conf") |
+#                 starts_with("mratio") |
+#                 starts_with("Sid"))
+
+#xmat <- select(all_data, starts_with("self") | 
+         #        starts_with("Sid"))
+
+xmat <- full_join(xmat, scores, by = "Sid")
+
+xmat <- select(xmat, -starts_with("Sid"))
+xmat <- na.omit(xmat)
+
+```
+
+And some correlations
+
+```{r}
+
+ggcorrmat(
+  data = xmat, # all numeric variables from data will be used
+  type = "spearman",
+  p.adjust.method = "none",
+  partial = "False",
+  sig.level = 1,
+  pch = "bullet",
+  matrix.type = "upper"
+)
+ggsave("corrmat_spear.png", height = 7, width = 16)
+
+
+
+ggcorrmat(
+  data = xmat, # all numeric variables from data will be used
+  type = "parametric",
+  p.adjust.method = "holm",
+  partial = "False",
+  sig.level = 0.05,
+  pch = "bullet",
+  matrix.type = "upper"
+)
+ggsave("corrmat_parametric.png", height = 7, width = 16)
+
+```
+
+```{r}
+ggscatter(xmat, "self_calorie_diff", "mratio_Calories",
+          add = "reg.line", 
+          conf.int = TRUE, # Add confidence interval
+   cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+   cor.coeff.args = list(method = "spearman", label.x = 3, label.sep = "\n")
+   )
+
+ggsave("corrscat.png", height = 7, width = 12)
+```
+
+Let's try CCA
+
+```{r}
+
+xmat <- dplyr::select(all_data, starts_with("mratio") | 
+                 starts_with("da") | 
+                 starts_with("avg_conf") |
+                 ends_with("diff"))
+
+x <- na.omit(xmat)
+y <- na.omit(probe_data)
+cc1 <- cc(probe_data, xmat)
+
+cc1$cor
+cc1[3:4]
+
+# compute canonical loadings
+cc2 <- comput(probe_data, xmat, cc1)
+
+# display canonical loadings
+cc2[3:6]
+
+rho <- cc1$cor
+
+## Define number of observations, number of variables in first set, and number of variables in the second set.
+n <- dim(probe_data)[1]
+p <- length(probe_data)
+q <- length(xmat)
+
+## Calculate p-values using the F-approximations of different test statistics:
+p.asym(rho, n, p, q, tstat = "Wilks")
+
+out1<-p.perm(x, y, nboot = 999, rhostart = 1, type = "Wilks")
+
+cc1_results <- cancor(x,y)
+heatmap(cc1_results$ycoef)
+heatmap(cc1_results$ycoef, Colv = NA, Rowv = NA, scale="column")
+
+plt.perm(out1)
+```
+
+
+
+
+
