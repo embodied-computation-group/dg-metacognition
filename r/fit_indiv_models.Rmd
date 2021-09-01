@@ -6,7 +6,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -205,7 +205,7 @@ p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
 
 p7<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
   geom_boxjitter() +
-  ggtitle("Metacognitive Sensitivity")+
+  ggtitle("Metacognitive Efficiency")+
   ylab("Meta-d'") + xlab("Modality")
 
 p8<-ggplot(metadata_exc, aes(x = modality, y = da)) +
@@ -231,11 +231,10 @@ annotate_figure(filunfil4, top = text_grob("Metacognitive Efficiency filtered/un
 Datafil1 <- ggarrange(p8, p5)
 annotate_figure(Datafil1, top = text_grob("MLE Estimation of Cognitive performance", color = "black", 
                                          face = "bold", size = 14))  
-Datafi2 <- ggarrange(p7, p6)
+Datafi2 <- ggarrange(p6, p8, p7, ncol = 3)
 annotate_figure(Datafi2, top = text_grob("MLE Estimation of Metacognitive performance", 
                                          color = "black", 
                                          face = "bold", size = 14))  
-
 
 ```
 Pivot the data frame to wide. 
@@ -291,6 +290,7 @@ res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman
 
 
 #Table with correlation coefficents for all pairwise correlations: 
+#SOME BETTER VARIABLES NAMES HERE!! 
 corrtable <- data.frame(Metric=character(),
                  CorrCoef1=double(),
                  CI_lower1=double(),
@@ -338,6 +338,8 @@ corrtable[3,] <- list("Bias",res1$estimate,res2.1$conf.int[1], res2.1$conf.int[2
                        res2.5$estimate,res2.5$conf.int[1], res2.5$conf.int[2],  res2.5$p.value,
                        res2.6$estimate,res2.6$conf.int[1],  res2.6$conf.int[2], res2.6$p.value)
 head(corrtable)
+
+
 ```
 Scatter plots and linear regressions: 
 
@@ -461,7 +463,7 @@ Bootstrap samples
 NOT DONE!!!
 
 ```{r}
-#Bootstrap sample characteristics:
+#Bootstrap sample characteristics: Sensitivity. 
 df1 <- as_tibble(with(density(res1$bootsamples),data.frame(x,y)))
 ci1 <- res1$conf.int
 df2 <- as_tibble(with(density(res2$bootsamples),data.frame(x,y)))
@@ -475,8 +477,7 @@ ci5 <- res5$conf.int
 df6 <- as_tibble(with(density(res6$bootsamples),data.frame(x,y)))
 ci6 <- res6$conf.int
 
-df <- c(df1, df2, df3, df4, df5, df6)
-ci <- c(ci1, ci2, ci3, ci4, ci5, ci6)
+#CAN I LOOP OVER THIS?!?!?! must be done for efficiency, sensitivity and bias 
 #THE CI IS WRONG HERE BECAUSE IT NORMALLY IS FORMATED AS TWO DIFFERENT ROWS AND NOT COLUMNS. 
 
 for (h in 1:length(df)) {
@@ -625,15 +626,61 @@ b6<- ggplot(df6, aes(x=x, y=y)) + theme_bw() +
 
 ```
 
-re 
-Bayes Factor: 
+Bayes Factor: NOT DONE 
+```{r}
+
+# Metacognitive sensitivity 
+bf1 = correlationBF(y = corr$mda_memory, x = corr$mda_Calories)
+bf1
+## Sample from the corresponding posterior distribution
+samples = correlationBF(y = corr$mda_memory, x = corr$mda_Calories,
+          posterior = TRUE, iterations = 10000)
+plot(samples[,"rho"])
+# }
+
+# Each correlation pair is estimated for sensitivity: 
+corr <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("mda"))
+res1 <- corci(corr$mda_memory, corr$mda_Calories, method="spearman")
+res2 <- corci(corr$mda_memory, corr$mda_vision, method="spearman")
+res3 <- corci(corr$mda_memory, corr$mda_GDP, method="spearman")
+res4 <- corci(corr$mda_GDP, corr$mda_vision, method="spearman")
+res5 <- corci(corr$mda_GDP, corr$mda_Calories, method="spearman")
+res6 <- corci(corr$mda_Calories, corr$mda_vision, method="spearman")
+
+# Each correlation pair is estimated for efficiency: 
+corr1 <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+res1.1 <- corci(corr1$mratio_memory, corr1$mratio_Calories, method="spearman")
+res1.2 <- corci(corr1$mratio_memory, corr1$mratio_vision, method="spearman")
+res1.3 <- corci(corr1$mratio_memory, corr1$mratio_GDP, method="spearman")
+res1.4 <- corci(corr1$mratio_GDP, corr1$mratio_vision, method="spearman")
+res1.5 <- corci(corr1$mratio_GDP, corr1$mratio_Calories, method="spearman")
+res1.6 <- corci(corr1$mratio_Calories, corr1$mratio_vision, method="spearman")
+
+# Each correlation pair is estimated for bias: 
+corr2 <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("avg"))
+res2.1 <- corci(corr2$avg_conf_memory, corr2$avg_conf_Calories, method="spearman")
+res2.2 <- corci(corr2$avg_conf_memory, corr2$avg_conf_vision, method="spearman")
+res2.3 <- corci(corr2$avg_conf_memory, corr2$avg_conf_GDP, method="spearman")
+res2.4 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_vision, method="spearman")
+res2.5 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_Calories, method="spearman")
+res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman")
+
+```
+
+A summary table of most important findings.  
 ```{r}
 
 
 
 ```
 
-Hierarchical bayesian fit without parallel processing: 
+Hierarchical bayesian fit without parallel processing: NOT DONE
 ```{r}
 
 subjects = unique(metadata$subject)
