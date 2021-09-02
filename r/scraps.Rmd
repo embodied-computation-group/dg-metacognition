@@ -1,0 +1,244 @@
+```{r}
+corr_matt <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("mda"))
+
+ggcorrmat(data = corr_matt,
+          cor.vars.names = c("memory", "Calories", "GDP", "vision"),
+          type= "robust")+
+  ggtitle("Metacognitive sensitivity")
+
+ggcorrplot(cor(as.matrix(corr_matt)), method = "circle")
+
+#Rousselet 
+ggpairs(corr_matt) 
+
+lowerFn <- function(data, mapping, method = "lm", ...) {
+  p <- ggplot(data = data, mapping = mapping) +
+    geom_point(colour = "black") +
+    geom_smooth(method = method, color = "gray", ...)
+  p
+}
+
+ggpairs(
+  corr_matt, lower = list(continuous = wrap(lowerFn, method = "lm")),
+  diag = list(continuous = wrap("barDiag", colour = "black")),
+  upper = list(continuous = wrap("cor", size = 8))
+)
+
+ggsave("CorrMatMda.png", height = 7, width = 10)
+```
+
+
+```{r}
+ggcorrmat(data = fit_data_wide[ , 10:13],
+          type= "parametric", p.adjust.method = "none")+
+  ggtitle("unfiltered")
+
+
+
+plot_data_wide <- plot_data %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio)
+)
+
+ggcorrmat(data = plot_data_wide[ , 10:13],
+          type= "parametric", p.adjust.method = "none")+
+  ggtitle("filtered")
+
+
+```
+
+Filter wide data
+```{r}
+
+fit_data_wide <- fit_data_wide %>%
+  mutate(across(starts_with("da")), ~ remove_outliers(.x))
+
+
+
+```
+
+
+
+```{r}
+
+library(ez)
+library(emmeans)
+library(afex)
+library(ggpol)
+library(ggbeeswarm)
+afex_plot(model, x = "modality", error = "within")
+```
+
+
+```{r}
+ggplot(plot_data, aes(x = modality, y = mratio, fill = modality)) +
+  geom_violin() +
+  geom_boxjitter(
+            width = 0.5,
+            jitter.color = "gray",
+            jitter.width = 0.1,
+            jitter.height = 0,
+            outlier.color = "gray",
+            outlier.intersect = TRUE)
+
+
+```
+
+```{r}
+jasp_data <- plot_data
+jasp_data <- pivot_wider(data = jasp_data, names_from = modality, values_from = c(da, mda, mratio)) 
+
+
+write.csv(jasp_data, "M_Ratio_summary.csv")
+```
+
+
+
+
+
+
+
+
+loop and get Individual Bayesian fit
+
+```{r}
+
+subjects = unique(metadata$subject)
+modalities = as.character(unique(metadata$modality))
+
+## THIS NEEDS TO BE EDITED - IT IS NOT THE RIGHT FIT.. THE ORIGINAL SCRIPT IS BELOW (NO PARALLEL)
+
+
+# setup cluster
+n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+#create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores, 
+  type = "PSOCK"
+)
+
+#register it to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
+
+
+# fit all subjects in parallel
+
+
+source(here("r", "parindBayes.R"))
+
+
+# stop the cluster
+
+stopCluster(cl = my.cluster)
+
+# write out the data file
+
+write.csv(indBayes_data, file = here("data_summary","indvBay_mratio_fit_data.csv"))
+
+
+head(indBayes_data)
+
+
+
+
+
+
+
+
+# THIS IS THE ORIGINAL SCRIPT: 
+
+
+fit_data_bayes = data.frame()
+
+for(s in 1:length(subjects)) {
+#foreach (s = 1:length(subjects), .combine=rbind) %dopar%  { # for parallel computing.. wip.. 
+  
+  for(m in 1:length(modalities)) {
+    
+    tryCatch(
+      expr = {
+        # subset data for subject and modality 
+        subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m])  
+        
+        #transform trial data to counts
+        newlist <- trials2counts(subdata$signal, subdata$response, subdata$confidence,7, padAmount = 0,padCells=1)
+        nR_S1 <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
+        nR_S2 <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
+        
+        #fit model
+        fit <- metad_indiv(nR_S1, nR_S2)
+        #glimpse(subdata)
+        #Sys.sleep(1)
+        
+        output <- data.frame("subject" = subjects[s],"modality"=modalities[m],
+                             "da" = fit$d, "mda" = fit$mean,
+                             "mratio" = fit$mratio)  
+        
+        fit_data_bayes <- rbind(fit_data_bayes, output)
+      },
+      error = function(e) {
+        message("* caught an error on subject ", subjects[s])
+        print(e)
+        output <- data.frame("subject" = subjects[s],
+                             "modality"=modalities[m],"da" = NaN,
+                             "mda" = NaN, "mratio" = NaN) 
+        fit_data_bayes <- rbind(fit_data_bayes, output)
+        
+        }
+      
+      
+    )
+    
+  }
+  
+}
+
+write.csv(fit_data_bayes, file = "bayes_mratio_fit_data.csv")
+```
+
+```{r}
+head(fit_data_bayes)
+
+plot_data <- fit_data_bayes
+
+
+
+plot_data <- filter(fit_data_bayes, mratio > 0)
+plot_data <- filter(plot_data, da > 0)
+plot_data <- filter(plot_data, mda > 0)
+
+
+
+trim_data = plot_data %>%
+  group_by(modality) %>%
+  mutate_at(vars(da, mda, mratio), funs(remove_outliers))
+  
+
+ggplot(trim_data, aes(x = modality, y = mratio))+
+  geom_boxplot()
+
+jasp_data <- trim_data
+jasp_data <- pivot_wider(data = jasp_data, names_from = modality, values_from = c(da, mda, mratio)) 
+
+
+write.csv(jasp_data, "bayes_MR_summary.csv")
+
+
+```
+
+```{r}
+remove_outliers <- function(x, na.rm = TRUE, ...) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+  H <- 1.5 * IQR(x, na.rm = na.rm)
+  y <- x
+  y[x < (qnt[1] - H)] <- NA
+  y[x > (qnt[2] + H)] <- NA
+  y
+}
+```
+
+
+
