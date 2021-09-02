@@ -206,12 +206,12 @@ p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
 p7<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Efficiency")+
-  ylab("Meta-d'") + xlab("Modality")
+  ylab("Meta-d'/d'") + xlab("Modality")
 
 p8<-ggplot(metadata_exc, aes(x = modality, y = da)) +
   geom_boxjitter() +
   ggtitle("Cognitive Sensitivity")+ 
-  ylab("d'") + xlab("Modality")
+  ylab("meta-d'") + xlab("Modality")
 
 # Filtered versus unfiltered 
 filunfil1 <- ggarrange(p1, p5)
@@ -255,6 +255,8 @@ head(fit_data_wide)
 Correlation  between domains: Using GRousselet bootcorci
 ```{r}
 
+
+
 # Each correlation pair is estimated for sensitivity: 
 corr <- fit_data_wide %>%
   na.omit() %>%
@@ -265,6 +267,15 @@ res3 <- corci(corr$mda_memory, corr$mda_GDP, method="spearman")
 res4 <- corci(corr$mda_GDP, corr$mda_vision, method="spearman")
 res5 <- corci(corr$mda_GDP, corr$mda_Calories, method="spearman")
 res6 <- corci(corr$mda_Calories, corr$mda_vision, method="spearman")
+
+ress <- NULL
+ress1 <- NULL
+for (w in 1:ncol(corr)){
+  for (r in 1:ncol(corr)){
+  ress[r] <-corci(y = corr[,w], x = corr[,r], method="spearman")
+  }
+  ress1[w] =data.frame(ress)
+}
 
 # Each correlation pair is estimated for efficiency: 
 corr1 <- fit_data_wide %>%
@@ -630,12 +641,27 @@ Bayes Factor: NOT DONE
 ```{r}
 
 # Metacognitive sensitivity 
-bf1 = correlationBF(y = corr$mda_memory, x = corr$mda_Calories)
-bf1
+
 ## Sample from the corresponding posterior distribution
+bf1 = correlationBF(y = corr$mda_memory, x = corr$mda_Calorie,
+          posterior = TRUE, iterations = 10000)
+bf1
+
 samples = correlationBF(y = corr$mda_memory, x = corr$mda_Calories,
           posterior = TRUE, iterations = 10000)
 plot(samples[,"rho"])
+plot(bf1)
+
+bf <- NULL
+bf1 <- NULL
+for (m in 1:ncol(corr)){
+  for (n in 1:ncol(corr)){
+  bf[n] <-correlationBF(y = corr[,m], x = corr[,n])
+  }
+  bf1[m] =data.frame(bf)
+}
+
+
 # }
 
 # Each correlation pair is estimated for sensitivity: 
