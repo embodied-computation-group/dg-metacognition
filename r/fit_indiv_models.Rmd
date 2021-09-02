@@ -272,7 +272,7 @@ ress <- NULL
 ress1 <- NULL
 for (w in 1:ncol(corr)){
   for (r in 1:ncol(corr)){
-  ress[r] <-corci(y = corr[,w], x = corr[,r], method="spearman")
+  ress[r] <-corci(corr[,w], corr[,r], method="spearman")
   }
   ress1[w] =data.frame(ress)
 }
@@ -303,30 +303,30 @@ res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman
 #Table with correlation coefficents for all pairwise correlations: 
 #SOME BETTER VARIABLES NAMES HERE!! 
 corrtable <- data.frame(Metric=character(),
-                 CorrCoef1=double(),
-                 CI_lower1=double(),
-                 CI_upper1=double(),
-                 P_value1=double(),
-                 CorrCoef2=double(),
-                 CI_lower2=double(),
-                 CI_upper2=double(),
-                 P_value2=double(),
-                 CorrCoef3=double(),
-                 CI_lower3=double(),
-                 CI_upper3=double(),
-                 P_value3=double(),
-                 CorrCoef4=double(),
-                 CI_lower4=double(),
-                 CI_upper4=double(),
-                 P_value4=double(),
-                 CorrCoef5=double(),
-                 CI_lower5=double(),
-                 CI_upper5=double(),
-                 P_value5=double(),
-                 CorrCoef6=double(),
-                 CI_lower6=double(),
-                 CI_upper6=double(),
-                 P_value6=double(),
+                 MemCalCoef=double(),
+                 CI_lowerMC=double(),
+                 CI_upperMC=double(),
+                 P_valueMC=double(),
+                 MemVisCoef=double(),
+                 CI_lowerMV=double(),
+                 CI_upperMV=double(),
+                 P_valueMV=double(),
+                 MemGDPCoef=double(),
+                 CI_lowerMG=double(),
+                 CI_upperMG=double(),
+                 P_valueMG=double(),
+                 GDPVisCoef=double(),
+                 CI_lowerGS=double(),
+                 CI_upperGS=double(),
+                 P_valueGS=double(),
+                 GDPCalCoef=double(),
+                 CI_lowerGC=double(),
+                 CI_upperGC=double(),
+                 P_valueGC=double(),
+                 CalVisCoef=double(),
+                 CI_lowerCV=double(),
+                 CI_upperCV=double(),
+                 P_valueCV=double(),
                 stringsAsFactors=FALSE)
 
 #Insert vaules in dataframe: 
@@ -702,6 +702,11 @@ res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman
 A summary table of most important findings.  
 ```{r}
 
+CoefCorr <- corrtable %>%
+  na.omit() %>%
+  select(ends_with("Coef"))
+
+head(CoefCorr)
 
 
 ```
