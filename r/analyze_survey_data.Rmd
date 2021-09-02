@@ -164,14 +164,32 @@ Let's try CCA
 
 ```{r}
 
-xmat <- dplyr::select(all_data, starts_with("mratio") | 
-                 starts_with("da") | 
-                 starts_with("avg_conf") |
-                 ends_with("diff"))
-
+xmat <- dplyr::select(all_data, starts_with("maia"))
+ymat <- all_data %>%
+  dplyr::select(starts_with("mw_")) 
+                      
+                      
 x <- na.omit(xmat)
-y <- na.omit(probe_data)
-cc1 <- cc(probe_data, xmat)
+
+y <- na.omit(ymat)
+
+
+confounds <- dplyr::select(all_data, starts_with("age") | 
+                 starts_with("gender") | 
+                 starts_with("years") )
+                 
+confounds <- na.omit(confounds)
+
+write.csv(x, here("data_summary", "cca_x.csv"))
+write.csv(y, here("data_summary", "cca_y.csv"))
+write.csv(confounds, here("data_summary", "cca_confounds.csv"))
+
+
+```
+
+```{r}
+
+cc1 <- cc(y, x)
 
 cc1$cor
 cc1[3:4]
@@ -194,13 +212,15 @@ p.asym(rho, n, p, q, tstat = "Wilks")
 
 out1<-p.perm(x, y, nboot = 999, rhostart = 1, type = "Wilks")
 
+write.csv(x, here("data_summary", "cca_x.csv"))
+write.csv(scores, here("data_summary", "cca_y.csv"))
+
 cc1_results <- cancor(x,y)
 heatmap(cc1_results$ycoef)
 heatmap(cc1_results$ycoef, Colv = NA, Rowv = NA, scale="column")
 
 plt.perm(out1)
 ```
-
 
 
 
