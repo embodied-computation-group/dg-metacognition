@@ -21,18 +21,14 @@ fit_HmetaCorr  <- function (subjects, modalities, s, m) {
       #glimpse(subdata)
       #Sys.sleep(1)
       
-      Results <- coda.samples(model = fit$model, variable.names = fit$variable.names,
-                              n.iter=fit$n.iter, thin=fit$thin)
+      #Results <- coda.samples(model = fit$model, variable.names = fit$variable.names,
+                              #n.iter=fit$n.iter, thin=fit$thin)
         
-        "subject" = subjects[s],"modality"=modalities[m],
+      Results <- data.frame("modality"= modalities,
                             "Corr" = fit$model, "mda" = fit$meta_da[1],
-                            "mratio" = fit$M_ratio[1], "c" = fit$criterion[1])  
-      
-      output <- coda.samples( 
-        model          = cor_model,
-        variable.names = c("mu_logMratio", "sigma_logMratio", "rho", "Mratio", "mu_c2"),
-        n.iter         = 10000,
-        thin           = 1 )
+                            "mratio" = fit$M_ratio[1], "c" = fit$criterion[1],
+                            "rho" =fit$rho)
+  
       
       
       return(Results)  
@@ -41,9 +37,8 @@ fit_HmetaCorr  <- function (subjects, modalities, s, m) {
     error = function(e) {
       # message("* caught an error on subject ", subjects[s])
       # print(e)
-      Results <- data.frame("subject" = subjects[s],
-                            "modality"=modalities[m],"da" = NaN,
-                            "mda" = NaN, "mratio" = NaN, "c" = NaN) 
+      Results <- data.frame("modality"=modalities,"da" = NaN,
+                            "mda" = NaN, "mratio" = NaN, "c" = NaN, "rho"=NaN) 
       
       return(Results)  
     }

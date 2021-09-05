@@ -25,9 +25,16 @@ library(ggpubr)
 library(ggmcmc)
 
 
+
+
 ####################################
 
 metad_groupcorr <- function (nR_S1, nR_S2) {
+  
+  nTot <- sum(nR_S1[[1]]$V1, nR_S2[[1]]$V1)
+  nratings <- nrow(nR_S1[[1]])/2
+  nsubj <- ncol(nR_S1[[1]])
+  nTask <- length(nR_S1)
  
   # FOR 4 TASKS  
   if(nTask == 4) {

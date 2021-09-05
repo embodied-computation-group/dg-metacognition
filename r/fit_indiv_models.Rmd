@@ -21,7 +21,9 @@ source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 
-source(here("r", "Bayes_metad_hierarchical.R"))
+source(here("r", "Function_metad_groupcorr.R"))
+
+#source(here("r", "Bayes_metad_hierarchical.R"))
 
 source(here("r", "BootCorci.R"))
 
@@ -257,7 +259,7 @@ head(fit_data_wide)
 Correlation  between domains: Using GRousselet bootcorci
 ```{r}
 
-# Each correlation pair is estimated for sensitivity: 
+# Each correlation pair is estimated for Metacognitive sensitivity: 
 corr <- fit_data_wide %>%
   na.omit() %>%
   select(starts_with("mda"))
@@ -289,6 +291,17 @@ res2.3 <- corci(corr2$avg_conf_memory, corr2$avg_conf_GDP, method="spearman")
 res2.4 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_vision, method="spearman")
 res2.5 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_Calories, method="spearman")
 res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman")
+
+# Each correlation pair is estimated for Cognitive sensitivity: 
+corr3 <- fit_data_wide %>%
+  na.omit() %>%
+  select(starts_with("da"))
+res31 <- corci(corr3$da_memory, corr3$da_Calories, method="spearman")
+res32 <- corci(corr3$da_memory, corr3$da_vision, method="spearman")
+res33 <- corci(corr3$da_memory, corr3$da_GDP, method="spearman")
+res34 <- corci(corr3$da_GDP, corr3$da_vision, method="spearman")
+res35 <- corci(corr3$da_GDP, corr3$da_Calories, method="spearman")
+res36 <- corci(corr3$da_Calories, corr3$da_vision, method="spearman")
 
 
 #Table with correlation coefficents for all pairwise correlations: 
@@ -339,6 +352,13 @@ corrtable[3,] <- list("Bias",res1$estimate,res2.1$conf.int[1], res2.1$conf.int[2
                        res2.4$estimate,res2.4$conf.int[1], res2.4$conf.int[2],  res2.4$p.value,
                        res2.5$estimate,res2.5$conf.int[1], res2.5$conf.int[2],  res2.5$p.value,
                        res2.6$estimate,res2.6$conf.int[1],  res2.6$conf.int[2], res2.6$p.value)
+corrtable[4,] <- list("d'",res31$estimate,res31$conf.int[1], res31$conf.int[2], res31$p.value,
+                       res32$estimate,res32$conf.int[1], res32$conf.int[2], res32$p.value,
+                       res33$estimate,res33$conf.int[1], res33$conf.int[2],  res33$p.value,
+                       res34$estimate,res34$conf.int[1], res34$conf.int[2],  res34$p.value,
+                       res35$estimate,res35$conf.int[1], res35$conf.int[2],  res35$p.value,
+                       res36$estimate,res36$conf.int[1],  res36$conf.int[2], res36$p.value)
+
 head(corrtable)
 
 
@@ -538,14 +558,8 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 
 ```
 
-A summary table of most important findings. e.g. this + indication of sig level. 
+A summary table
 ```{r}
-
-CoefCorr <- corrtable %>%
-  na.omit() %>%
-  select(ends_with("Coef"))
-
-head(CoefCorr)
 
 
 ```
@@ -553,24 +567,17 @@ head(CoefCorr)
 Hierarchical bayesian fit without parallel processing: NOT DONE
 ```{r}
 
-subjects = unique(metadata$subject)
-modalities = as.character(unique(metadatac$modality)) 
-s = 1:length(subjects)
-m = 1:length(modalities)
+source(here("r", "Function_metad_groupcorr.R"))
 
-subdata[s,m] <- filter(metadata, subject == subjects[s] & modality == modalities[m]) 
+ subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m]) 
 
-#put into correct format
-newlist <- trials2counts(subdata$signal,
-                               subdata$response, subdata$confidence, 7,
-                               padAmount = 1,padCells=1)
-    
-nR_S1 <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
-nR_S2 <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
-      
-#Fit the model: 
+subdata <- trials2counts(metadata$signal, metadata$response, metadata$confidence, 7, padAmount = 1,)
+nR_S1 <- unlist(subdata[1], recursive = TRUE, use.names = TRUE)
+nR_S2 <- unlist(subdata[2], recursive = TRUE, use.names = TRUE)
+
+
+
 fit <- metad_groupcorr(nR_S1, nR_S2)
-
 
 ```
 
@@ -579,6 +586,8 @@ fit <- metad_groupcorr(nR_S1, nR_S2)
 Hierarchical Bayesian fit + direct Correlation: Running in parallel
 
 ```{r}
+
+source(here("r", "fit_hMetaCorr.R"))
 
 # setup cluster
 n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
