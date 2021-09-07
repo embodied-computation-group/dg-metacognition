@@ -27,7 +27,7 @@ source(here("r", "Function_metad_groupcorr.R"))
 
 source(here("r", "BootCorci.R"))
 
-source(here("r", "fit_hMetaCorr.R"))
+#source(here("r", "fit_hMetaCorr.R"))
 ```
 
 
@@ -131,7 +131,6 @@ head(fit_data)
 
 Group-level exclusion based on MAD rule (confidence, d', criterion)
 ```{r}
-
 
 #exclude those where mratio could not be estimated  
 metadata_exc <- fit_data%>%filter(mratio!="NaN")
@@ -486,7 +485,6 @@ annotate_figure(comPlot3, top = text_grob("Metacognitive Bias", color = "black",
 Bootstrap samples 
 ```{r}
 
-source(here("r", "BootCorci.R"))
 
 b1 <- plotBoot(res1) + ggtitle("Memory and Calories")
 b2 <- plotBoot(res2) + ggtitle("Memory and Vision")
@@ -561,6 +559,11 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 A summary table
 ```{r}
 
+nmetadata <- metadata%>% mutate(modality =recode_factor(modality, memory = "1", vision = "2", Calories = "3", GDP = "4", default = NULL, .missing = NULL, .ordered = FALSE)) #Rename factor levels. Is this necessary?  
+
+
+
+
 
 ```
 
@@ -569,13 +572,13 @@ Hierarchical bayesian fit without parallel processing: NOT DONE
 
 source(here("r", "Function_metad_groupcorr.R"))
 
- subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m]) 
+subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m]) 
 
-subdata <- trials2counts(metadata$signal, metadata$response, metadata$confidence, 7, padAmount = 1,)
+for 
+subdata <- trials2counts(nmetadata$signal, metadata$response, metadata$confidence, 7, padAmount = 1,)
+
 nR_S1 <- unlist(subdata[1], recursive = TRUE, use.names = TRUE)
 nR_S2 <- unlist(subdata[2], recursive = TRUE, use.names = TRUE)
-
-
 
 fit <- metad_groupcorr(nR_S1, nR_S2)
 
