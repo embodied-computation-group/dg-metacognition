@@ -32,6 +32,7 @@ source(here("r", "Function_metad_groupcorr.R"))
 
 #source(here("r", "Bayes_metad_hierarchical.R"))
 
+
 source(here("r", "BootCorci.R"))
 
 #source(here("r", "fit_hMetaCorr.R"))
@@ -118,8 +119,8 @@ for (m in 1:length(modalities)){
     
       
   } 
-  nR_S1[m] <- nR_S1_tmp_modality
-  nR_S2[m] <- nR_S2_tmp_modality
+  nR_S1 [[m]]<- nR_S1_tmp_modality
+  nR_S2 [[m]]<- nR_S2_tmp_modality
 
 }
 
