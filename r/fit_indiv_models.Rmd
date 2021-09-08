@@ -4,6 +4,8 @@ Setup
 # clean slate to be sure
 rm(list = ls())
 
+# hey its astrid! 
+
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor)
