@@ -10,7 +10,6 @@ First we need to setup
 # clean slate to be sure
 rm(list = ls())
 
-# hey its astrid! 
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
@@ -123,6 +122,7 @@ for (m in 1:length(modalities)){
   nR_S2[m] <- nR_S2_tmp_modality
 
 }
+
 
 #Fit the hierarhical model and correlation: 
 output <- metad_groupcorr(nR_S1, nR_S2)
