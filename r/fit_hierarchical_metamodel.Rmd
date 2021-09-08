@@ -94,7 +94,9 @@ modalities = as.character(unique(metadata$modality)) # modalities vector, for
 
 subjects <- subjects[-320]
 
-nR_S1 = list()
+#Loop over modalities and subjects to get into correct format for model. 
+
+nR_S1 = list() 
 nR_S2 = list()
       
 for (m in 1:length(modalities)){
@@ -112,18 +114,66 @@ for (m in 1:length(modalities)){
       nR_S1_tmp <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
       nR_S2_tmp <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
       
-      nR_S1_tmp_modality <- append(nR_S1_tmp_modality, list(nR_S1_tmp))
-      nR_S2_tmp_modality <- append(nR_S2_tmp_modality, list(nR_S2_tmp))
+      nR_S1_tmp_modality <- rbind(nR_S1_tmp_modality, nR_S1_tmp)
+      nR_S2_tmp_modality <- rbind(nR_S2_tmp_modality, nR_S2_tmp)
     
       
   } 
-  
-  nR_S1 <- append(nR_S1, nR_S1_tmp_modality)
-  nR_S2 <- append(nR_S2, nR_S2_tmp_modality)
-  
+  nR_S1[m] <- nR_S1_tmp_modality
+  nR_S2[m] <- nR_S2_tmp_modality
+
 }
 
-```
+#Fit the hierarhical model and correlation: 
+output <- metad_groupcorr(nR_S1, nR_S2)
 
+### Organise output from model fit: 
+# Values 
+Value <- summary(output)
+stat <- data.frame(mean = Value$statistics[,"Mean"])
+stat %<>%
+  rownames_to_column(var = "name")
+
+# Rhat 
+Value <- gelman.diag(output, confidence = 0.95)
+Rhat <- data.frame(conv = Value$psrf)
+
+# HDI 
+HDI <- data.frame(HPDinterval(output, prob = 0.95))
+HDI %<>%
+    rownames_to_column(var = "name")
+
+# All values in the same dataframe
+Fit <- stat %>%
+  cbind(lower = HDI$lower,
+        upper = HDI$upper,
+        Rhat = Rhat[,1])
+
+
+#Plots: LIKELY NOT APPROPRIATE FOR 4 TASKS 
+
+# Plot trace mcmc
+traceplot(output)
+
+# mcmc values in df for plot posterior distributions
+mcmc.sample <- ggs(output)
+
+# Plot posterior distribution for rho value
+Rho_plot <- mcmc.sample %>%
+  filter(Parameter == "rho") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho"], y = 50, xend = HDI$upper[HDI$name == "rho"], yend = 50), colour = "white", size = 2.5) +
+  xlim(c(-1, 1)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho_plot
+
+  
+```  
+      nR_S1_tmp_modality <- append(nR_S1_tmp_modality, list(nR_S1_tmp))
+      nR_S2_tmp_modality <- append(nR_S2_tmp_modality, list(nR_S2_tmp))
 
 
