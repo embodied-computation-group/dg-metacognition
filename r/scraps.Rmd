@@ -1,4 +1,68 @@
+
+The circle and normal matrix correlations figures 
+- they don't show the same results as the Rousselet 
+
 ```{r}
+#THESE don't show the same results as the Roussellet
+
+CoefCorrMDA <- corr %>%
+  na.omit() %>%
+  select(ends_with("mda"))
+
+CoefCorrMra <- corr1 %>%
+  na.omit() %>%
+  select(ends_with("Mratio"))
+
+CoefCorrMb <- corr2 %>%
+  na.omit() %>%
+  select(ends_with("avg_conf"))
+
+ggcorrmat(data = corr,
+          cor.vars.names = c("memory", "Calories", "GDP", "vision"),
+          type= "robust")+
+  ggtitle("Metacognitive sensitivity")
+
+ggcorrplot(cor(as.matrix(corr)), method = "circle")
+
+
+ggcorrmat(data = corr1,
+          cor.vars.names = c("memory", "Calories", "GDP", "vision"),
+          type= "robust")+
+  ggtitle("Metacognitive Efficiency")
+
+ggcorrplot(cor(as.matrix(corr1)), method = "circle")
+
+ggcorrmat(data = corr2,
+          cor.vars.names = c("memory", "Calories", "GDP", "vision"),
+          type= "robust")+
+  ggtitle("Metacognitive Efficiency")
+
+ggcorrplot(cor(as.matrix(corr1)), method = "circle")
+
+
+#Rousselet This also doesn't show the same results 
+ggpairs(corr) 
+
+lowerFn <- function(data, mapping, method = "lm", ...) {
+  p <- ggplot(data = data, mapping = mapping) +
+    geom_point(colour = "black") +
+    geom_smooth(method = method, color = "gray", ...)
+  p
+}
+
+ggpairs(
+  corr, lower = list(continuous = wrap(lowerFn, method = "lm")),
+  diag = list(continuous = wrap("barDiag", colour = "black")),
+  upper = list(continuous = wrap("cor", size = 8))
+)
+
+```
+
+
+
+
+```{r}
+
 corr_matt <- fit_data_wide %>%
   na.omit() %>%
   select(starts_with("mda"))
