@@ -1,0 +1,129 @@
+---
+title: "Fit Hierarchical Metacognition Model"
+output: html_notebook
+---
+
+First we need to setup
+
+```{r}
+
+# clean slate to be sure
+rm(list = ls())
+
+# hey its astrid! 
+
+# check for pacman package and install if not found
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor)
+
+# load the metaSDT package from github
+if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
+# load Rousselet correlation package 
+if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
+
+
+source(here("r", "remove_outliers_robust.R"))
+source(here("r", "outliers.R"))
+source(here("r", "trials2counts.R"))
+source(here("r", "metad_indiv.R"))
+source(here("r", "fit_mle.R"))
+source(here("r", "sdt_functions.R"))
+
+source(here("r", "Function_metad_groupcorr.R"))
+
+#source(here("r", "Bayes_metad_hierarchical.R"))
+
+source(here("r", "BootCorci.R"))
+
+#source(here("r", "fit_hMetaCorr.R"))
+
+```
+
+
+Then get the data
+
+```{r}
+
+# read in the data
+
+metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialData_master.csv"), 
+    col_types = cols(confidence = col_double(), 
+        rt_conf = col_double()))
+
+# set modality as factor
+metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
+
+# remove any rows containing NaNs (i.e., missing data)
+
+metacognition_trial_data <- na.omit(metacognition_trial_data)
+
+head(metacognition_trial_data)
+
+
+
+metadata <- metacognition_trial_data %>%
+  group_by(subject, modality) %>%
+  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
+
+metadata <- na.omit(metadata)
+
+#Exclude those with rt <50ms 
+metadata <- metadata%>%filter(rt>=0.05) 
+
+
+#Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
+metadata<-metadata%>%mutate(modality=as.factor(modality))
+metadatac<-metadata #create new dataframe
+metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks in new dataframe
+metadatac <- metadatac %>%
+  group_by(subject, modality)%>% count(subject) #count number of trials
+excD <- subset(metadatac, metadatac$n<100) 
+excID <-unique(excD$subject) #Identify participants for exclusion
+metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs from that vector in original dataframe
+
+
+```
+
+
+Then fit the model
+
+```{r}
+
+subjects = unique(metadata$subject) # subjects vector, for looping
+modalities = as.character(unique(metadata$modality)) # modalities vector, for
+
+subjects <- subjects[-320]
+
+nR_S1 = list()
+nR_S2 = list()
+      
+for (m in 1:length(modalities)){
+  
+  nR_S1_tmp_modality = data_frame()
+  nR_S2_tmp_modality = data_frame()
+
+  for (s in 1:length(subjects)){
+    
+
+     subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m])  
+      
+      #transform trial data to counts
+      newlist <- trials2counts(subdata$signal, subdata$response, subdata$confidence, 7, padAmount = 1,padCells=1)
+      nR_S1_tmp <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
+      nR_S2_tmp <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
+      
+      nR_S1_tmp_modality <- append(nR_S1_tmp_modality, list(nR_S1_tmp))
+      nR_S2_tmp_modality <- append(nR_S2_tmp_modality, list(nR_S2_tmp))
+    
+      
+  } 
+  
+  nR_S1 <- append(nR_S1, nR_S1_tmp_modality)
+  nR_S2 <- append(nR_S2, nR_S2_tmp_modality)
+  
+}
+
+```
+
+
+
