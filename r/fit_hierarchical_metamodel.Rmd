@@ -20,7 +20,6 @@ if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
 # load Rousselet correlation package 
 if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
 
-
 source(here("r", "remove_outliers_robust.R"))
 source(here("r", "outliers.R"))
 source(here("r", "trials2counts.R"))
@@ -28,6 +27,7 @@ source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 
+source(here("r", "Bayes_metad_group_corr4_R.txt"))
 source(here("r", "Function_metad_groupcorr.R"))
 
 #source(here("r", "Bayes_metad_hierarchical.R"))
