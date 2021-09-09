@@ -101,8 +101,8 @@ nR_S2 = list()
       
 for (m in 1:length(modalities)){
   
-  nR_S1_tmp_modality = data_frame()
-  nR_S2_tmp_modality = data_frame()
+  nR_S1_tmp_modality = data.frame((matrix(NA, nrow=14, ncol=319)))
+  nR_S2_tmp_modality = data.frame((matrix(NA, nrow=14, ncol=319)))
 
   for (s in 1:length(subjects)){
     
@@ -114,16 +114,15 @@ for (m in 1:length(modalities)){
       nR_S1_tmp <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
       nR_S2_tmp <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
       
-      nR_S1_tmp_modality <- rbind(nR_S1_tmp_modality, nR_S1_tmp)
-      nR_S2_tmp_modality <- rbind(nR_S2_tmp_modality, nR_S2_tmp)
-    
+      nR_S1_tmp_modality[,s] <- nR_S1_tmp
+      nR_S2_tmp_modality[,s] <- nR_S2_tmp
+  
       
   } 
   nR_S1 [[m]]<- nR_S1_tmp_modality
   nR_S2 [[m]]<- nR_S2_tmp_modality
 
 }
-
 
 #Fit the hierarhical model and correlation: 
 output <- metad_groupcorr(nR_S1, nR_S2)
