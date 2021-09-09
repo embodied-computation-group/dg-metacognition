@@ -1,14 +1,15 @@
 %%
+clear all
+load data
 
-%load allgroupdata.mat
+ccax(:,1) = [];
+ccay(:,1) = [];
+ccaconfounds(:,1) = [];
 
-A = allgroupdata.age;
 
-B = allgroupdata.years_edu;
-
-C = allgroupdata.gender;
-
-cbin = zeros(length(C),1);
+%%
+C = ccaconfounds.gender;
+cbin = zeros(length(ccaconfounds.gender),1);
 
 cbin(C=='Masculin') = 1;
 
@@ -16,15 +17,21 @@ cbin(C=='Feminin') = 2;
 
 cbin(C=='non-binary') = 3;
 
+ccaconfounds.gender = cbin;
+confounds = table2array(ccaconfounds);
 
+X = table2array(ccax);
+Y = table2array(ccay);
 
-confounds = [A,B,cbin];
 
 %%
 
 
 
-[pfwer,r,A,B,U,V] = permcca(table2array(ccay1),table2array(ccax),1000, confounds);
+%[pfwer,r,A,B,U,V] = permcca(Y,X,1000, confounds);
+
+[pfwer,r,A,B,U,V,pA,pB] = permloads(Y,X,1000,confounds,[],[],true,false,2)
+
 
 %%
 
