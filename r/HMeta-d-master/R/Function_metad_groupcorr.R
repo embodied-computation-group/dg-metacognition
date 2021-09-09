@@ -46,8 +46,8 @@ metad_groupcorr <- function (nR_S1, nR_S2) {
 ##NOTE: ncol and nrow is opposite from Steve Fleming's original script here!! 
   #I've also changed V1 to X1 as it is now... 
   nTot <- sum(nR_S1[[1]]$X1, nR_S2[[1]]$X1)
-  nratings <- ncol(nR_S1[[1]])/2
-  nsubj <- nrow(nR_S1[[1]])
+  nratings <- nrow(nR_S1[[1]])/2
+  nsubj <- ncol(nR_S1[[1]])
   nTask <- length(nR_S1)
   
 
