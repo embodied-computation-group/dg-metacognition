@@ -27,7 +27,7 @@ source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 
-source(here("r", "Bayes_metad_group_corr4_R.txt"))
+#(here("r", "Bayes_metad_group_corr4_R.txt"))
 source(here("r", "Function_metad_groupcorr.R"))
 
 #source(here("r", "Bayes_metad_hierarchical.R"))
