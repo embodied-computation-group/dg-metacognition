@@ -38,6 +38,7 @@ library(ggpubr)
 library(ggmcmc)
 
 library(here)
+source(here("txt", "Bayes_metad_group_corr4_R.txt"))
 
 metad_groupcorr <- function (nR_S1, nR_S2) {
   
