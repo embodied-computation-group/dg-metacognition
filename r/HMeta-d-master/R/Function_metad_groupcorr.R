@@ -37,13 +37,20 @@ library(broom)
 library(ggpubr)
 library(ggmcmc)
 
+library(here)
+source(here("r", "Bayes_metad_group_corr4_R.txt"))
+
 metad_groupcorr <- function (nR_S1, nR_S2) {
   
   # Type 1 parameters
-  nTot <- sum(nR_S1[[1]]$V1, nR_S2[[1]]$V1)
+##NOTE: ncol and nrow is opposite from Steve Fleming's original script here!! 
+  #I've also changed V1 to X1 as it is now... 
+  nTot <- sum(nR_S1[[1]]$X1, nR_S2[[1]]$X1)
   nratings <- nrow(nR_S1[[1]])/2
   nsubj <- ncol(nR_S1[[1]])
   nTask <- length(nR_S1)
+  
+
   
   # FOR 2 TASKS
   if(nTask == 2) {
