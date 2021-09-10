@@ -15,6 +15,7 @@ rm(list = ls())
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor)
 
+
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
 # load Rousselet correlation package 
@@ -130,7 +131,7 @@ output <- metad_groupcorr(nR_S1, nR_S2)
 ### Organise output from model fit: 
 # Values 
 Value <- summary(output)
-stat <- data.frame(mean = Value$statistics[,"Mean"])
+stat <- data.frame(mean = [,"Mean"])
 stat %<>%
   rownames_to_column(var = "name")
 
@@ -159,21 +160,24 @@ traceplot(output)
 mcmc.sample <- ggs(output)
 
 # Plot posterior distribution for rho value
+
+corr_str = "rho[1]"
+
 Rho_plot <- mcmc.sample %>%
-  filter(Parameter == "rho") %>% 
+  filter(Parameter == corr_str) %>%
   ggplot(aes(value)) +
   geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho"], y = 50, xend = HDI$upper[HDI$name == "rho"], yend = 50), colour = "white", size = 2.5) +
+  geom_vline(xintercept = stat$mean[stat$name == corr_str],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == corr_str], y = 50, xend = HDI$upper[HDI$name == corr_str], yend = 50), colour = "white", size = 2.5) +
   xlim(c(-1, 1)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
-
-Rho_plot
-
   
+Rho_plot
+  
+
+
 ```  
       nR_S1_tmp_modality <- append(nR_S1_tmp_modality, list(nR_S1_tmp))
       nR_S2_tmp_modality <- append(nR_S2_tmp_modality, list(nR_S2_tmp))
-
 
