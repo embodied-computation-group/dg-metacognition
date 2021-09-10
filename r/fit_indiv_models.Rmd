@@ -15,7 +15,6 @@ if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
 # load Rousselet correlation package 
 if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
 
-
 source(here("r", "remove_outliers_robust.R"))
 source(here("r", "outliers.R"))
 source(here("r", "trials2counts.R"))
@@ -24,6 +23,7 @@ source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
+source(here("r", "scatterplot.R"))
 
 ```
 
@@ -163,71 +163,68 @@ head(metadata_exc)
 ```
 
 Let's plot the key filtered variables to check what was excluded.
-
 ```{r}
 
 #unfiltered
 p1<-ggplot(fitAvg_data, aes(x = modality, y =c)) +
   geom_boxjitter() +
   ggtitle("Criterion Unfiltered")
-
 p2<-ggplot(fitAvg_data, aes(x = modality, y = avg_conf)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Bias Unfiltered")
-
 p3<-ggplot(fitAvg_data, aes(x = modality, y = mda)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Sensitivity Unfiltered")
-
 p4<-ggplot(fitAvg_data, aes(x = modality, y = da)) +
   geom_boxjitter() +
  # ylim(-2,2)+
   ggtitle("Cognitive Sensitivity Unfiltered")
-
+p5<-ggplot(fitAvg_data, aes(x = modality, y = mratio)) +
+  geom_boxjitter() +
+ # ylim(-2,2)+
+  ggtitle("Metacognitive efficiency Unfiltered")
 
 #filtered Plots: 
-p5<-ggplot(metadata_exc, aes(x = modality, y =c)) +
+p6<-ggplot(metadata_exc, aes(x = modality, y =c)) +
   geom_boxjitter() +
   ggtitle("Cognitive Criterion") +
   ylab("c") + xlab("Modality")
-
-p6<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
+p7<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Bias")+
   ylab("Average Confidence") + xlab("Modality")
-
-p7<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
+p8<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
   geom_boxjitter() +
   ggtitle("Metacognitive Efficiency")+
   ylab("Meta-d'/d'") + xlab("Modality")
-
-p8<-ggplot(metadata_exc, aes(x = modality, y = da)) +
+p9<-ggplot(metadata_exc, aes(x = modality, y = da)) +
   geom_boxjitter() +
   ggtitle("Cognitive Sensitivity")+ 
+  ylab("d'") + xlab("Modality")
+p10<-ggplot(metadata_exc, aes(x = modality, y = mda)) +
+  geom_boxjitter() +
+  ggtitle("Metacognitive Sensitivity")+ 
   ylab("meta-d'") + xlab("Modality")
 
 # Filtered versus unfiltered 
-filunfil1 <- ggarrange(p1, p5)
-annotate_figure(filunfil1, top = text_grob("Cognitive Criterion filtered/unfiltered", color = "black", 
-                                         face = "bold", size = 14))
-filunfil2 <- ggarrange(p2, p6)
-annotate_figure(filunfil2, top = text_grob("Metaognitive Bias filtered/unfiltered", color = "black", 
-                                         face = "bold", size = 14))
-filunfil3 <- ggarrange(p3, p7)
-annotate_figure(filunfil3, top = text_grob("Metacognitive Sensitivity filtered/unfiltered", color = "black", 
-                                         face = "bold", size = 14))
-filunfil4 <- ggarrange(p4, p8)
-annotate_figure(filunfil4, top = text_grob("Metacognitive Efficiency filtered/unfiltered", color = "black", 
-                                         face = "bold", size = 14))
+filunfil1 <- ggarrange(p1, p6)
+  annotate_figure(filunfil1, top = text_grob("Cognitive Criterion filtered/unfiltered", color = "black", face = "bold", size = 14))
+filunfil5 <- ggarrange(p4, p9)
+  annotate_figure(filunfil5, top = text_grob("Cognitive Sensitivity filtered/unfiltered", color = "black",face = "bold", size = 14))
+filunfil2 <- ggarrange(p2, p7)
+  annotate_figure(filunfil2, top = text_grob("Metaognitive Bias filtered/unfiltered", color = "black", face = "bold", size = 14))
+filunfil3 <- ggarrange(p3, p10)
+  annotate_figure(filunfil3, top = text_grob("Metacognitive Sensitivity filtered/unfiltered",   color = "black", face = "bold", size = 14))
+filunfil4 <- ggarrange(p5, p8)
+  annotate_figure(filunfil4, top = text_grob("Metacognitive Efficiency filtered/unfiltered", color = "black",  face = "bold", size = 14))
+
 
 #Filtered data´: 
-Datafil1 <- ggarrange(p8, p5)
-annotate_figure(Datafil1, top = text_grob("MLE Estimation of Cognitive performance", color = "black", 
-                                         face = "bold", size = 14))  
-Datafi2 <- ggarrange(p6, p8, p7, ncol = 3)
-annotate_figure(Datafi2, top = text_grob("MLE Estimation of Metacognitive performance", 
-                                         color = "black", 
-                                         face = "bold", size = 14))  
+Datafil1 <- ggarrange(p9, p6)
+  annotate_figure(Datafil1, top = text_grob("MLE Estimation of Cognitive performance", color = "black",face = "bold", size = 14))  
+Datafi2 <- ggarrange(p7, p10, p8, ncol = 3)
+  annotate_figure(Datafi2, top = text_grob("MLE Estimation of Metacognitive performance", 
+  color = "black", face = "bold", size = 14))  
 
 ```
 
@@ -295,7 +292,6 @@ res36 <- corci(corr3$da_Calories, corr3$da_vision, method="spearman")
 
 
 #Table with correlation coefficents for all pairwise correlations: 
-#SOME BETTER VARIABLES NAMES HERE!! 
 corrtable <- data.frame(Metric=character(),
                  MemCalCoef=double(),
                  CI_lowerMC=double(),
@@ -359,36 +355,18 @@ Scatter plots and linear regressions:
 
 #Metacognitive Sensitivity
 scat1 <- as_tibble(corr)
-s1 <- ggplot(data=scat1, aes(x=mda_memory, y=mda_Calories)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16)) +  scale_y_continuous("Calories")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s2 <- ggplot(data=scat1, aes(x=mda_memory, y=mda_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s3 <- ggplot(data=scat1, aes(x=mda_memory, y=mda_GDP)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("GDP")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s4 <- ggplot(data=scat1, aes(x=mda_GDP, y=mda_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
-  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
-s5 <- ggplot(data=scat1, aes(x=mda_GDP, y=mda_Calories)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Calories")+
-  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
-s6 <- ggplot(data=scat1, aes(x=mda_Calories, y=mda_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  + scale_y_continuous("Vision")+
-  scale_x_continuous("Calories") + geom_smooth(method="lm", se=FALSE, size=1)
+s1 <-scatter(scat1, scat1$mda_memory, scat1$mda_Calories) + 
+  scale_y_continuous("Calories")+ scale_x_continuous("Memory")
+s2 <- scatter(scat1, scat1$mda_memory, scat1$mda_vision) + 
+  scale_y_continuous("Vision")+ scale_x_continuous("Memory")
+s3 <- scatter(scat1, scat1$mda_memory, scat1$mda_GDP) + 
+  scale_y_continuous("GDP")+ scale_x_continuous("Memory")
+s4 <- scatter(scat1, scat1$mda_GDP, scat1$mda_vision) + 
+  scale_y_continuous("Vision")+ scale_x_continuous("GDP")
+s5 <- scatter(scat1, scat1$mda_GDP, scat1$mda_Calories) + 
+  scale_y_continuous("Calories")+ scale_x_continuous("GDP")
+s6 <- scatter(scat1, scat1$mda_Calories, scat1$mda_vision) +
+  scale_y_continuous("Vision") + scale_x_continuous("Calories")
 
 comPlot1 <- ggarrange(s1, s2, s3, s4, s5, s6)
 annotate_figure(comPlot1, top = text_grob("Metacognitive Sensitivity", color = "black", 
@@ -396,36 +374,18 @@ annotate_figure(comPlot1, top = text_grob("Metacognitive Sensitivity", color = "
 
 #Metacognitive Efficiency
 scat2 <- as_tibble(corr1)
-s11 <- ggplot(data=scat2, aes(x=mratio_memory, y=mratio_Calories)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16)) +  scale_y_continuous("Calories")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s12 <- ggplot(data=scat2, aes(x=mratio_memory, y=mratio_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s13 <- ggplot(data=scat2, aes(x=mratio_memory, y=mratio_GDP)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("GDP")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s14 <- ggplot(data=scat2, aes(x=mratio_GDP, y=mratio_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
-  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
-s15 <- ggplot(data=scat2, aes(x=mratio_GDP, y=mratio_Calories)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Calories")+
-  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
-s16 <- ggplot(data=scat2, aes(x=mratio_Calories, y=mratio_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  + scale_y_continuous("Vision")+
-  scale_x_continuous("Calories") + geom_smooth(method="lm", se=FALSE, size=1)
+s11 <-scatter(scat2, scat2$mratio_memory, scat2$mratio_Calories) +
+  scale_y_continuous("Calories")+scale_x_continuous("Memory")
+s12 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_vision) +
+  scale_y_continuous("Vision")+scale_x_continuous("Memory")
+s13 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_GDP) +
+  scale_y_continuous("GDP")+scale_x_continuous("Memory")
+s14 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_vision) + 
+  scale_y_continuous("Vision")+scale_x_continuous("GDP")
+s15 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_Calories) + 
+  scale_y_continuous("Calories")+ scale_x_continuous("GDP")
+s16 <- scatter(scat2, scat2$mratio_Calories, scat2$mratio_vision) + 
+  scale_y_continuous("Vision")+scale_x_continuous("Calories")
 
 comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16)
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
@@ -434,48 +394,28 @@ annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "b
 
 #Metacognitive Bias
 scat3 <- as_tibble(corr2)
-s21 <- ggplot(data=scat3, aes(x=avg_conf_memory, y=avg_conf_Calories)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16)) +  scale_y_continuous("Calories")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s22 <- ggplot(data=scat3, aes(x=avg_conf_memory, y=avg_conf_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s23 <- ggplot(data=scat3, aes(x=avg_conf_memory, y=avg_conf_GDP)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("GDP")+
-  scale_x_continuous("Memory") + geom_smooth(method="lm", se=FALSE, size=1)
-s24 <- ggplot(data=scat3, aes(x=avg_conf_GDP, y=avg_conf_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Vision")+
-  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
-s25 <- ggplot(data=scat3, aes(x=avg_conf_GDP, y=avg_conf_Calories)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  +  scale_y_continuous("Calories")+
-  scale_x_continuous("GDP") + geom_smooth(method="lm", se=FALSE, size=1)
-s26 <- ggplot(data=scat3, aes(x=avg_conf_Calories, y=avg_conf_vision)) + theme_bw() +
-  geom_point() +
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16))  + scale_y_continuous("Vision")+
-  scale_x_continuous("Calories") + geom_smooth(method="lm", se=FALSE, size=1)
+s21 <-scatter(scat3, scat3$avg_conf_memory, scat3$avg_conf_Calories) +
+  scale_y_continuous("Calories") + scale_x_continuous("Memory")
+s22 <- scatter(scat3, scat3$avg_conf_memory, scat3$avg_conf_vision) + 
+  scale_y_continuous("Vision") + scale_x_continuous("Memory")
+s23 <- scatter(scat3, scat3$avg_conf_memory, scat3$avg_conf_GDP) + 
+  scale_y_continuous("GDP") + scale_x_continuous("Memory")
+s24 <- scatter(scat3, scat3$avg_conf_GDP, scat3$avg_conf_vision) + 
+  scale_y_continuous("Vision") + scale_x_continuous("GDP")
+s25 <- scatter(scat3, scat3$avg_conf_GDP, scat3$avg_conf_Calories) + 
+  scale_y_continuous("Calories") + scale_x_continuous("GDP")
+s26 <- scatter(scat3, scat3$avg_conf_Calories, scat3$avg_conf_vision) + 
+  scale_y_continuous("Vision") + scale_x_continuous("Calories")
 
 comPlot3 <- ggarrange(s21, s22, s23, s24, s25, s26)
 annotate_figure(comPlot3, top = text_grob("Metacognitive Bias", color = "black", 
                                          face = "bold", size = 14))     
-
 
 ```
 
 
 Bootstrap samples 
 ```{r}
-
 
 b1 <- plotBoot(res1) + ggtitle("Memory and Calories")
 b2 <- plotBoot(res2) + ggtitle("Memory and Vision")
