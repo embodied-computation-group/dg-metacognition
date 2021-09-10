@@ -3,29 +3,22 @@ title: "Fit Hierarchical Metacognition Model"
 output: html_notebook
 ---
 
-First we need to setup
+This script will fit the metacognition data from all four tasks in one group, using the HMetad approach (see Fleming 2017).
 
 ```{r}
-
-# clean slate to be sure
-rm(list = ls())
 
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally)
 
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
-# load Rousselet correlation package 
-if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
 
 source(here("r", "remove_outliers_robust.R"))
 source(here("r", "outliers.R"))
 source(here("r", "trials2counts.R"))
-source(here("r", "metad_indiv.R"))
-source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 
 #(here("r", "Bayes_metad_group_corr4_R.txt"))
@@ -37,6 +30,15 @@ source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
 
 #source(here("r", "fit_hMetaCorr.R"))
+
+# set apa theme for plots
+apatheme=theme_bw()+ #theme
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border=element_blank(),
+        axis.line=element_line(),
+        text = element_text(size = 15),
+        axis.title = element_text(size = 12))
 
 ```
 
@@ -125,59 +127,305 @@ for (m in 1:length(modalities)){
 
 }
 
-#Fit the hierarhical model and correlation: 
+#Fit the hierarhical model and correlation
+## NOTE THAT THIS WILL TAKE A LONG TIME - SEVERAL HOURS!
+## First check if you already have the file. The file is too large for github, so first time 
+## Users will need to download it from our OSF repo here: www.wwww..www
+
+fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
+
+if (file.exists(fit_filename) == 1 ) {
+
+output <- readRDS(fit_filename)
+  
+}else  {
+  
 output <- metad_groupcorr(nR_S1, nR_S2)
 
-### Organise output from model fit: 
-# Values 
-Value <- summary(output)
-stat <- data.frame(mean = [,"Mean"])
-stat %<>%
-  rownames_to_column(var = "name")
+}
 
-# Rhat 
+```  
+This next chunk pulls out the data from the model needed to plot HDI intervals, point estimates, and correlations. 
+```{r}
+
+## Model output ------------------------------------------------------------
+# note that this section can take a while to run and creates a lot of large variables.
+
+
+# Convergence diagnostic
 Value <- gelman.diag(output, confidence = 0.95)
 Rhat <- data.frame(conv = Value$psrf)
 
-# HDI 
+# Values (mean and CI)
+Value <- summary(output)
+stat <- data.frame(mean = Value$statistics[,"Mean"])
+stat %<>%
+  rownames_to_column(var = "name") %>% 
+  cbind(CILow = Value$quantiles[,"2.5%"]) %>% 
+  cbind(CIUp = Value$quantiles[,"97.5%"])
+
+# HDI function 
 HDI <- data.frame(HPDinterval(output, prob = 0.95))
 HDI %<>%
-    rownames_to_column(var = "name")
-
-# All values in the same dataframe
-Fit <- stat %>%
-  cbind(lower = HDI$lower,
-        upper = HDI$upper,
-        Rhat = Rhat[,1])
+  rownames_to_column(var = "name")
 
 
-#Plots: LIKELY NOT APPROPRIATE FOR 4 TASKS 
-
-# Plot trace mcmc
+## Plot trace mcmc ---------------------------------------------------------
 traceplot(output)
 
-# mcmc values in df for plot posterior distributions
+## Plot posterior distributions -------------------------------------------------------------------
 mcmc.sample <- ggs(output)
 
+```
+
+Next, we plot the samples for point estimates of M-ratio together with the 95% HDI, seperate for each condition.
+
+```{r}
+
+#
+
+memPlot <- mcmc.sample %>%
+  filter(Parameter == "mu_logMratio[1]") %>% 
+  ggplot(aes(exp(value))) +
+  geom_histogram(binwidth = 0.01, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = exp(stat$mean[stat$name == "mu_logMratio[1]"]),linetype="dashed", size = 1) +
+  geom_segment(aes(x = exp(HDI$lower[HDI$name == "mu_logMratio[1]"]), y = 50, xend = exp(HDI$upper[HDI$name == "mu_logMratio[1]"]), yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  xlim(c(1, 1.25)) +
+  ylim(c(0, 7000)) +
+  ylab("Sample count") +
+  ggtitle("Meta-Memory") +
+  xlab(expression(paste(mu, " Mratio")))
+
+calPlot <- mcmc.sample %>%
+  filter(Parameter == "mu_logMratio[2]") %>% 
+  ggplot(aes(exp(value))) +
+  geom_histogram(binwidth = 0.01, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = exp(stat$mean[stat$name == "mu_logMratio[2]"]),linetype="dashed", size = 1) +
+  geom_segment(aes(x = exp(HDI$lower[HDI$name == "mu_logMratio[2]"]), y = 50, xend = exp(HDI$upper[HDI$name == "mu_logMratio[2]"]), yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  xlim(c(0.5, 1)) +
+  ylim(c(0, 7000)) +
+  ggtitle("Meta-Calories") +
+  ylab("Sample count") +
+  xlab(expression(paste(mu, " Mratio")))
+
+gdpPlot <- mcmc.sample %>%
+  filter(Parameter == "mu_logMratio[3]") %>% 
+  ggplot(aes(exp(value))) +
+  geom_histogram(binwidth = 0.01, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = exp(stat$mean[stat$name == "mu_logMratio[3]"]),linetype="dashed", size = 1) +
+  geom_segment(aes(x = exp(HDI$lower[HDI$name == "mu_logMratio[3]"]), y = 50, xend = exp(HDI$upper[HDI$name == "mu_logMratio[3]"]), yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("Meta-GDP") +
+  xlim(c(1, 1.25)) +
+  ylim(c(0, 7000)) +
+  ylab("Sample count") +
+  xlab(expression(paste(mu, " Mratio")))
+
+visPlot <- mcmc.sample %>%
+  filter(Parameter == "mu_logMratio[4]") %>% 
+  ggplot(aes(exp(value))) +
+  geom_histogram(binwidth = 0.01, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = exp(stat$mean[stat$name == "mu_logMratio[4]"]),linetype="dashed", size = 1) +
+  geom_segment(aes(x = exp(HDI$lower[HDI$name == "mu_logMratio[4]"]), y = 50, xend = exp(HDI$upper[HDI$name == "mu_logMratio[4]"]), yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("Meta-Vision") +
+  xlim(c(0.5, 1)) +
+  ylim(c(0, 7000)) +
+  ylab("Sample count") +
+  xlab(expression(paste(mu, " Mratio")))
+
+
+(memPlot | calPlot) / (gdpPlot | visPlot)
 # Plot posterior distribution for rho value
 
-corr_str = "rho[1]"
+ggsave(here("figs", "mratio_hdi.png"))
 
-Rho_plot <- mcmc.sample %>%
-  filter(Parameter == corr_str) %>%
+```
+
+Here we plot the same, but for the correlation (rho) estimate for each condition
+
+```{r}
+mcmc.rho <- mcmc.sample %>% 
+  filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
+
+Rho1 <- mcmc.sample %>%
+  filter(Parameter == "rho[1]") %>% 
   ggplot(aes(value)) +
   geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == corr_str],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == corr_str], y = 50, xend = HDI$upper[HDI$name == corr_str], yend = 50), colour = "white", size = 2.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[1]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[1]"], y = 50, xend = HDI$upper[HDI$name == "rho[1]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
   xlim(c(-1, 1)) +
+  ggtitle("Mem-Cal")+
+ # ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
-  
-Rho_plot
-  
+
+Rho2 <- mcmc.sample %>%
+  filter(Parameter == "rho[2]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[2]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[2]"], y = 50, xend = HDI$upper[HDI$name == "rho[2]"], yend = 50),colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("Mem-GDP")+
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho3 <- mcmc.sample %>%
+  filter(Parameter == "rho[3]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[3]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[3]"], y = 50, xend = HDI$upper[HDI$name == "rho[3]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  xlim(c(-1, 1)) +
+  ggtitle("Mem-Vision")+
+  #ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho4 <- mcmc.sample %>%
+  filter(Parameter == "rho[4]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[4]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[4]"], y = 50, xend = HDI$upper[HDI$name == "rho[4]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("Cal-GDP")+
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho5 <- mcmc.sample %>%
+  filter(Parameter == "rho[5]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[5]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[5]"], y = 50, xend = HDI$upper[HDI$name == "rho[5]"], yend = 50), colour = "white", size = 2.5) +
+  ggtitle("Cal-Vision")+
+  apatheme +
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho6 <- mcmc.sample %>%
+  filter(Parameter == "rho[6]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[6]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[6]"], y = 50, xend = HDI$upper[HDI$name == "rho[6]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("GDP-Vision")+
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
 
 
-```  
-      nR_S1_tmp_modality <- append(nR_S1_tmp_modality, list(nR_S1_tmp))
-      nR_S2_tmp_modality <- append(nR_S2_tmp_modality, list(nR_S2_tmp))
+plot_grid(Rho1, Rho2, Rho3, NULL, Rho4, Rho5, NULL, NULL, Rho6, labels = c("A", "B", "C", "", "D", "E", "", "", "F"), nrow = 3, ncol = 3)
+
+ggsave(here("figs", "mrho_grid.png"), height = 7, width = 12)
+```
+
+Now we will extract the individual participant level Mratio estimates and plot those to visualize the hierarchical correlation model. 
+
+```{r}
+# Create individual Mratio data frame
+Mratio_indiv <- stat %>% 
+  filter(grepl("^M", name)) %>% 
+  mutate(task = ifelse(grepl("1]", name), "Mem",
+                       ifelse(grepl("2]", name), "Cal",
+                              ifelse(grepl("3]", name), "GDP","Vis"))),
+         pp = name %>%
+           str_extract(regex("\\d+(?=,)")) %>% 
+           as.integer()) %>% 
+  dcast(pp ~ task, value.var = "mean")
+
+# Create plot
+Cor1 <- Mratio_indiv %>% 
+  ggplot(aes(x = Mem, y = Cal)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
+  apatheme +
+  ggtitle("Mem-Cal")+
+ #ylim(c(0.2, 2)) +
+ # xlim(c(0.2, 2)) +
+  ylab(expression(paste(mu, " Mratio"))) +
+  xlab(expression(paste(mu, " Mratio")))
+
+Cor2 <- Mratio_indiv %>% 
+  ggplot(aes(x = Mem, y = GDP)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
+  apatheme +
+  ggtitle("Mem-GDP")+
+ # ylim(c(0.2, 2)) +
+ # xlim(c(0.2, 2)) +
+  ylab(expression(paste(mu, " Mratio"))) +
+  xlab(expression(paste(mu, " Mratio")))
+
+Cor3 <- Mratio_indiv %>% 
+  ggplot(aes(x = Mem, y = Vis)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
+  apatheme +
+ # ylim(c(0.2, 2)) +
+ # xlim(c(0.2, 2)) +
+  ggtitle("Mem-Vision")+
+  ylab(expression(paste(mu, " Mratio"))) +
+  xlab(expression(paste(mu, " Mratio")))
+
+Cor4 <- Mratio_indiv %>% 
+  ggplot(aes(x = Cal, y = GDP)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
+  apatheme +
+  ggtitle("Cal-GDP")+
+#  ylim(c(0.2, 2)) +
+ # xlim(c(0.2, 2)) +
+  ylab(expression(paste(mu, " Mratio"))) +
+  xlab(expression(paste(mu, " Mratio")))
+
+Cor5 <- Mratio_indiv %>% 
+  ggplot(aes(x = Cal, y = Vis)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
+  apatheme +
+  ggtitle("Cal-Vision")+
+ # ylim(c(0.2, 2)) +
+ # xlim(c(0.2, 2)) +
+  ylab(expression(paste(mu, " Mratio"))) +
+  xlab(expression(paste(mu, " Mratio")))
+
+
+Cor6 <- Mratio_indiv %>% 
+  ggplot(aes(x = GDP, y = Vis)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
+  apatheme +
+  ggtitle("GDP-Vision")+
+#  ylim(c(0.2, 2)) +
+#  xlim(c(0.2, 2)) +
+  ylab(expression(paste(mu, " Mratio"))) +
+  xlab(expression(paste(mu, " Mratio")))
+
+
+plot_grid(Cor1, Cor2, Cor3, NULL, Cor4, Cor5, NULL, NULL, Cor6, 
+          labels = c("A", "B", "C", "", "D", "E", "", "", "F"), nrow = 3, ncol = 3)
+
+
+ggsave(here("figs", "mrho_scatter_grid.png"), height = 7, width = 12)
+```
+
+```{r}
+write.csv(Mratio_indiv, here("data_summary", "MRatio_GroupEst.csv"))
+```
+
 

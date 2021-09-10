@@ -1,5 +1,5 @@
 
-Setup 
+Setup - install packages and source functions. 
 ```{r}
 # clean slate to be sure
 rm(list = ls())
@@ -8,7 +8,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -22,18 +22,13 @@ source(here("r", "trials2counts.R"))
 source(here("r", "metad_indiv.R"))
 source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
-
 source(here("r", "Function_metad_groupcorr.R"))
-
-#source(here("r", "Bayes_metad_hierarchical.R"))
-
 source(here("r", "BootCorci.R"))
 
-#source(here("r", "fit_hMetaCorr.R"))
 ```
 
 
-
+Load the data. 
 ```{r}
 # read in the data
 
@@ -54,9 +49,8 @@ head(metacognition_trial_data)
 
 ```
 
-Trial-level exclusion:
+Trial-level exclusion (following prereg)
 ```{r}
-
 
 metadata <- metacognition_trial_data %>%
   group_by(subject, modality) %>%
