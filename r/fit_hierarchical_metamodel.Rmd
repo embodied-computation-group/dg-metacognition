@@ -7,7 +7,6 @@ This script will fit the metacognition data from all four tasks in one group, us
 
 ```{r}
 
-
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally)
@@ -20,16 +19,8 @@ source(here("r", "remove_outliers_robust.R"))
 source(here("r", "outliers.R"))
 source(here("r", "trials2counts.R"))
 source(here("r", "sdt_functions.R"))
-
-#(here("r", "Bayes_metad_group_corr4_R.txt"))
 source(here("r", "Function_metad_groupcorr.R"))
-
-#source(here("r", "Bayes_metad_hierarchical.R"))
-
-
 source(here("r", "BootCorci.R"))
-
-#source(here("r", "fit_hMetaCorr.R"))
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme

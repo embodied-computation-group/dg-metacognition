@@ -45,8 +45,6 @@ metacognition_trial_data <- na.omit(metacognition_trial_data)
 
 head(metacognition_trial_data)
 
-
-
 ```
 
 Trial-level exclusion (following prereg)
@@ -74,13 +72,10 @@ metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs
 
 ```
 
-Create individual level staircase plots
-NOT DONE 
-
+Create individual level staircase plots 
 ```{r}
 # note that this procedure can take a long time - uncomment to make individual plots for QC procedure
-
-# source(here("r", "make_indivi_plots.R"))
+#source(here("r", "make_indivi_plots.R"))
 
 ```
 
@@ -358,8 +353,8 @@ head(corrtable)
 
 
 ```
-Scatter plots and linear regressions: 
 
+Scatter plots and linear regressions: 
 ```{r}
 
 #Metacognitive Sensitivity
@@ -552,72 +547,4 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 
 ```
 
-A summary table
-```{r}
-
-nmetadata <- metadata%>% mutate(modality =recode_factor(modality, memory = "1", vision = "2", Calories = "3", GDP = "4", default = NULL, .missing = NULL, .ordered = FALSE)) #Rename factor levels. Is this necessary?  
-
-
-
-
-
-```
-
-Hierarchical bayesian fit without parallel processing: NOT DONE
-```{r}
-
-source(here("r", "Function_metad_groupcorr.R"))
-
-subdata <- filter(metadata, subject == subjects[s] & modality == modalities[m]) 
-
-for 
-subdata <- trials2counts(nmetadata$signal, metadata$response, metadata$confidence, 7, padAmount = 1,)
-
-nR_S1 <- unlist(subdata[1], recursive = TRUE, use.names = TRUE)
-nR_S2 <- unlist(subdata[2], recursive = TRUE, use.names = TRUE)
-
-fit <- metad_groupcorr(nR_S1, nR_S2)
-
-```
-
-
-
-Hierarchical Bayesian fit + direct Correlation: Running in parallel
-
-```{r}
-
-source(here("r", "fit_hMetaCorr.R"))
-
-# setup cluster
-n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
-
-# since R can only work with around 120 cores maximum, set an upper limit if needed
-if (n.cores > 120) {
-n.cores <- 120
-}
-
-
-#create the cluster
-my.cluster <- parallel::makeCluster(
-  n.cores, 
-  type = "PSOCK"
-)
-
-#register it to be    used by %dopar%
-doParallel::registerDoParallel(cl = my.cluster)
-
-source(here("r", "parHmetaCor.R"))
-
-# stop the cluster
-stopCluster(cl = my.cluster)
-
-
-# save output
-write.csv(Hmeta_data, file = here("data_summary","mle_mratio_fit_data.csv"))
-
-
-head(Hmeta_data)
-
-
-```
 
