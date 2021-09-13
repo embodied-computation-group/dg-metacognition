@@ -1,0 +1,75 @@
+---
+title: "Analysis of Gender Difference in Self-Belief, Confidence, and Metacognitive Efficiency"
+output: html_notebook
+---
+
+In this notebook we encode an exploratory analysis of gender differences in metacognition. 
+
+First, setup and data loading. 
+
+```{r}
+# clean slate to be sure
+rm(list = ls())
+
+# hey its astrid! 
+
+# check for pacman package and install if not found
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, gt, gtsummary, kableExtra)
+
+# load the metaSDT package from github
+if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
+# load Rousselet correlation package 
+if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
+
+source(here("r", "remove_outliers_robust.R"))
+source(here("r", "outliers.R"))
+source(here("r", "trials2counts.R"))
+source(here("r", "metad_indiv.R"))
+source(here("r", "fit_mle.R"))
+source(here("r", "sdt_functions.R"))
+source(here("r", "Function_metad_groupcorr.R"))
+source(here("r", "BootCorci.R"))
+source(here("r", "scatterplot.R"))
+
+
+```
+
+Now we load the data. 
+
+```{r}
+
+source(here("r", "gender_data_import.R")) # script to import and wrangle data
+
+source(here("r", "clean_trial_data.R")) # script to exclude bad trial data, per original preregistration
+
+head(metacognition_trial_data)
+head(survey_data_pre)
+
+```
+
+Let's make some APA format demographic tables.
+
+```{r}
+demographics <- survey_data_pre %>%
+  select(age, gender, years_edu) %>%
+  mutate(gender = factor(gender, labels = c("Female", "Male", "Non-Binary"))) %>%
+  #group_by(gender) %>%
+  tbl_summary(
+    by = gender, 
+    missing = "no",
+    type = all_continuous() ~ "continuous2",
+    statistic = all_continuous() ~ c(
+                                     "{mean} ({sd})", 
+                                     "{median} ({p25}, {p75})", 
+                                     "{min}, {max}"),
+    label = list(age ~ "Age (Years)", years_edu ~ "Years Education")
+  ) %>%
+  italicize_levels()
+
+demographics
+
+```
+
+
+
