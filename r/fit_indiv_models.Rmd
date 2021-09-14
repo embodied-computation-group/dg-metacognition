@@ -487,4 +487,93 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 
 ```
 
+The half-split analysis: 
+```{r}
+metadataEven <-metadata %>% filter(trial %% 2==0)
+metadataOdd <- metadata %>% filter(trial %% 2!=0)
+```
+#Fit each the even trials: 
+```{r}
+
+subjects = unique(metadataEven$subject) # subjects vector, for looping
+modalities = as.character(unique(metadataEven$modality)) # modalities vector, for looping
+
+
+# setup cluster
+n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+# since R can only work with around 120 cores maximum, set an upper limit if needed
+if (n.cores > 120) {
+n.cores <- 120
+}
+
+
+#create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores, 
+  type = "PSOCK"
+)
+
+#register it to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
+
+
+# fit all subjects in parallel
+source(here("r", "parMLEEven.R"))
+
+# stop the cluster
+stopCluster(cl = my.cluster)
+
+# write out the data file
+write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
+
+head(fit_data)
+```
+
+
+#Fit the odd trials. 
+```{r}
+
+subjects = unique(metadata$subject) # subjects vector, for looping
+modalities = as.character(unique(metadata$modality)) # modalities vector, for looping
+
+
+# setup cluster
+n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+# since R can only work with around 120 cores maximum, set an upper limit if needed
+if (n.cores > 120) {
+n.cores <- 120
+}
+
+
+#create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores, 
+  type = "PSOCK"
+)
+
+#register it to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
+
+
+# fit all subjects in parallel
+source(here("r", "parMLEfit.R"))
+
+# stop the cluster
+stopCluster(cl = my.cluster)
+
+# write out the data file
+write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
+
+head(fit_data)
+```
+
+
+#Evaluate within-domain correlation between the two fits. 
+
+
+
+
+
 
