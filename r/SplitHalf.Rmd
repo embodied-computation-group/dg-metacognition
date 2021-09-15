@@ -1,0 +1,421 @@
+---
+title: "SplitHalf"
+output: html_document
+---
+This script will give you the split-half analysis of the MLE estimation to
+evaluate its  ability to account for within-subject correlation. 
+
+First setup: 
+
+```{r}
+
+rm(list = ls())
+
+# check for pacman package and install if not found
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra)
+
+# load the metaSDT package from github
+if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
+# load Rousselet correlation package 
+if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
+
+source(here("r", "remove_outliers_robust.R"))
+source(here("r", "outliers.R"))
+source(here("r", "trials2counts.R"))
+source(here("r", "metad_indiv.R"))
+source(here("r", "fit_mle.R"))
+source(here("r", "sdt_functions.R"))
+source(here("r", "Function_metad_groupcorr.R"))
+source(here("r", "BootCorci.R"))
+source(here("r", "scatterplot.R"))
+source(here("r", "fitMLEEven.R"))
+source(here("r", "fitMLEOdd.R"))
+
+
+```
+
+
+Then get the data
+
+```{r}
+
+# read in the data
+
+metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialData_master.csv"), 
+    col_types = cols(confidence = col_double(), 
+        rt_conf = col_double()))
+
+# set modality as factor
+metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
+
+# remove any rows containing NaNs (i.e., missing data)
+
+metacognition_trial_data <- na.omit(metacognition_trial_data)
+
+head(metacognition_trial_data)
+
+
+
+metadata <- metacognition_trial_data %>%
+  group_by(subject, modality) %>%
+  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
+
+metadata <- na.omit(metadata)
+
+#Exclude those with rt <50ms 
+metadata <- metadata%>%filter(rt>=0.05) 
+
+
+#Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
+metadata<-metadata%>%mutate(modality=as.factor(modality))
+metadatac<-metadata #create new dataframe
+metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks in new dataframe
+metadatac <- metadatac %>%
+  group_by(subject, modality)%>% count(subject) #count number of trials
+excD <- subset(metadatac, metadatac$n<100) 
+excID <-unique(excD$subject) #Identify participants for exclusion
+metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs from that vector in original dataframe
+
+
+```
+
+
+The half-split analysis: 
+```{r}
+metadataEven <-metadata %>% filter(trial %% 2==0)
+metadataOdd <- metadata %>% filter(trial %% 2!=0)
+```
+#Fit each the even trials: 
+```{r}
+
+subjects = unique(metadataEven$subject) # subjects vector, for looping
+modalities = as.character(unique(metadataEven$modality)) # modalities vector, for looping
+
+
+# setup cluster
+n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+# since R can only work with around 120 cores maximum, set an upper limit if needed
+if (n.cores > 120) {
+n.cores <- 120
+}
+
+
+#create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores, 
+  type = "PSOCK"
+)
+
+#register it to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
+
+
+# fit all subjects in parallel
+source(here("r", "parMLEEven.R"))
+
+# stop the cluster
+stopCluster(cl = my.cluster)
+
+# write out the data file
+write.csv(fit_dataEven, file = here("data_summary","mle_mratio_fit_data.csv"))
+
+head(fit_dataEven)
+```
+
+
+#Fit the odd trials. 
+```{r}
+
+subjects = unique(metadataOdd$subject) # subjects vector, for looping
+modalities = as.character(unique(metadataOdd$modality)) # modalities vector, for looping
+
+
+# setup cluster
+n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
+
+# since R can only work with around 120 cores maximum, set an upper limit if needed
+if (n.cores > 120) {
+n.cores <- 120
+}
+
+
+#create the cluster
+my.cluster <- parallel::makeCluster(
+  n.cores, 
+  type = "PSOCK"
+)
+
+#register it to be used by %dopar%
+doParallel::registerDoParallel(cl = my.cluster)
+
+
+# fit all subjects in parallel
+source(here("r", "parMLEOdd.R"))
+
+# stop the cluster
+stopCluster(cl = my.cluster)
+
+# write out the data file
+write.csv(fit_dataOdd, file = here("data_summary","mle_mratio_fit_dataOdd.csv"))
+
+head(fit_dataOdd)
+```
+Exclude outliers based on mratio, using the MAD rule 
+Group-level exclusion based on MAD rule  (d', criterion)
+```{r}
+
+#exclude those where mratio could not be estimated  
+metadata_exc_even <- fit_dataEven%>%filter(mratio!="NaN")
+metadata_exc_odd <- fit_dataOdd%>%filter(mratio!="NaN")
+
+#mratio
+metadata_exc_even <- metadata_exc_even%>%
+  group_by(modality) %>%
+  mutate(mratio = remove_outliers_robust(mratio)) # remove RT outliers using MAD Rule 
+metadata_exc_odd <- metadata_exc_odd%>%
+  group_by(modality) %>%
+  mutate(mratio = remove_outliers_robust(mratio)) # remove RT outliers using MAD Rule 
+
+
+head(metadata_exc_even)
+head(metadata_exc_odd)
+
+```
+Pivot the data frame to wide. 
+
+```{r}
+
+##Even data:
+#unfiltered 
+fit_data_wideEven <- fit_dataEven %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c)
+)
+write.csv(fit_data_wideEven, file = here("data_summary","mle_mratio_fit_data_wideEven.csv"))
+head(fit_data_wideEven)
+
+#filtered: 
+fit_data_wideEvenF <- metadata_exc_even %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c)
+)
+write.csv(fit_data_wideEvenF, file = here("data_summary","mle_mratio_fit_data_wideEvenF.csv"))
+head(fit_data_wideEvenF)
+
+
+
+##Odd data:
+#unfiltered 
+fit_data_wideOdd <- fit_dataOdd %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c)
+)
+write.csv(fit_data_wideOdd, file = here("data_summary","mle_mratio_fit_data_wide.csv"))
+head(fit_data_wideOdd)
+#filtered: 
+fit_data_wideOddF <- fit_dataOdd %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c)
+)
+write.csv(fit_data_wideOddF, file = here("data_summary","mle_mratio_fit_data_wideF.csv"))
+head(fit_data_wideOddF)
+
+```
+
+
+
+Evaluate within-domain correlation between the two fits: Using GRousselet bootcorci
+
+```{r}
+###Unfiltered 
+# Each correlation pair is estimated for Metacognitive efficiency: 
+corr1 <- fit_data_wideEven %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+corr2 <- fit_data_wideOdd %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+
+res1 <- corci(corr1$mratio_memory, corr2$mratio_memory, method="spearman")
+res2 <- corci(corr1$mratio_Calories, corr2$mratio_Calories, method="spearman")
+res3 <- corci(corr1$mratio_GDP, corr2$mratio_GDP, method="spearman")
+res4 <- corci(corr1$mratio_vision, corr2$mratio_vision, method="spearman")
+
+corrtable <- data.frame(Metric=character(),
+                 Memory=double(),
+                 CI_lowerM=double(),
+                 CI_upperM=double(),
+                 P_valueM=double(),
+                 Calories=double(),
+                 CI_lowerC=double(),
+                 CI_upperC=double(),
+                 P_valueC=double(),
+                 GDP=double(),
+                 CI_lowerG=double(),
+                 CI_upperG=double(),
+                 P_valueG=double(),
+                 Vision=double(),
+                 CI_lowerV=double(),
+                 CI_upperV=double(),
+                 P_valueV=double()
+                 )
+
+corrtable[1,] <- list("Mratio",res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
+                       res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
+                       res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
+                       res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value)
+
+head(corrtable)
+
+###Filtered 
+# Each correlation pair is estimated for Metacognitive efficiency: 
+res1F <- corci(fit_data_wideEvenF$mratio_memory, fit_data_wideOddF$mratio_memory, method="spearman")
+res2F <- corci(fit_data_wideEvenF$mratio_Calories, fit_data_wideOddF$mratio_Calories, method="spearman")
+res3F <- corci(fit_data_wideEvenF$mratio_GDP, fit_data_wideOddF$mratio_GDP, method="spearman")
+res4F <- corci(fit_data_wideEvenF$mratio_vision, fit_data_wideOddF$mratio_vision, method="spearman")
+
+corrtableF <- data.frame(Metric=character(),
+                 Memory=double(),
+                 CI_lowerM=double(),
+                 CI_upperM=double(),
+                 P_valueM=double(),
+                 Calories=double(),
+                 CI_lowerC=double(),
+                 CI_upperC=double(),
+                 P_valueC=double(),
+                 GDP=double(),
+                 CI_lowerG=double(),
+                 CI_upperG=double(),
+                 P_valueG=double(),
+                 Vision=double(),
+                 CI_lowerV=double(),
+                 CI_upperV=double(),
+                 P_valueV=double()
+                 )
+
+corrtableF[1,] <- list("Mratio",res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
+                       res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
+                       res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
+                       res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value)
+
+head(corrtableF)
+
+
+
+```
+
+Scatter plots and linear regressions: 
+```{r}
+##Unfiltered 
+#combine Corr1 (even) and Corr2(odd) in one dataframe: 
+corrCom <- data.frame(MemEven=corr1$mratio_memory,
+                 CalEven=corr1$mratio_Calories,
+                 GDPEven=corr1$mratio_GDP,
+                 VisEven=corr1$mratio_vision,
+                 MemOdd=corr2$mratio_memory,
+                 CalOdd=corr2$mratio_Calories,
+                 GDPOdd=corr2$mratio_GDP,
+                 VisOdd=corr2$mratio_vision)
+#Metacognitive Sensitivity
+scat1 <- as_tibble(corrCom)
+s1 <-scatter(scat1, scat1$MemEven, scat1$MemOdd) + 
+  scale_y_continuous("Memory Even")+ scale_x_continuous("Memory Odd")
+s2 <- scatter(scat1, scat1$CalEven, scat1$CalOdd) + 
+  scale_y_continuous("Calories Even")+ scale_x_continuous("Calories Odd")
+s3 <- scatter(scat1, scat1$GDPEven, scat1$GDPOdd) + 
+  scale_y_continuous("GDP Even")+ scale_x_continuous("GDP Odd")
+s4 <- scatter(scat1, scat1$VisEven, scat1$VisOdd) +
+  scale_y_continuous("Vision Even") + scale_x_continuous("Vision Odd")
+
+comPlot1 <- ggarrange(s1, s2, s3, s4)
+annotate_figure(comPlot1, top = text_grob("Split-half Analysis of Metacognitive Efficiency", color = "black", face = "bold", size = 14))  
+
+
+##Filetered 
+corrCom <- data.frame(MemEven=fit_data_wideEvenF$mratio_memory,
+                 CalEven=fit_data_wideEvenF$mratio_Calories,
+                 GDPEven=fit_data_wideEvenF$mratio_GDP,
+                 VisEven=fit_data_wideEvenF$mratio_vision,
+                 MemOdd=fit_data_wideOddF$mratio_memory,
+                 CalOdd=fit_data_wideOddF$mratio_Calories,
+                 GDPOdd=fit_data_wideOddF$mratio_GDP,
+                 VisOdd=fit_data_wideOddF$mratio_vision)
+#Metacognitive Sensitivity
+scat1 <- as_tibble(corrCom)
+s1 <-scatter(scat1, scat1$MemEven, scat1$MemOdd) + 
+  scale_y_continuous("Memory Even")+ scale_x_continuous("Memory Odd")
+s2 <- scatter(scat1, scat1$CalEven, scat1$CalOdd) + 
+  scale_y_continuous("Calories Even")+ scale_x_continuous("Calories Odd")
+s3 <- scatter(scat1, scat1$GDPEven, scat1$GDPOdd) + 
+  scale_y_continuous("GDP Even")+ scale_x_continuous("GDP Odd")
+s4 <- scatter(scat1, scat1$VisEven, scat1$VisOdd) +
+  scale_y_continuous("Vision Even") + scale_x_continuous("Vision Odd")
+
+comPlot1 <- ggarrange(s1, s2, s3, s4)
+annotate_figure(comPlot1, top = text_grob("Split-half Analysis of Metacognitive Efficiency", color = "black", face = "bold", size = 14))  
+
+```
+
+Now we fit the hierarhical model but on with half the trials (the even trials)
+
+```{r}
+
+#Include only even number trials: 
+metadataEven <-metadata %>% filter(trial %% 2==0)
+
+subjects = unique(metadataEven$subject) # subjects vector, for looping
+modalities = as.character(unique(metadataEven$modality)) # modalities vector, for
+
+subjects <- subjects[-320] 
+
+#Loop over modalities and subjects to get into correct format for model. 
+
+nR_S1 = list() 
+nR_S2 = list()
+      
+for (m in 1:length(modalities)){
+  
+  nR_S1_tmp_modality = data.frame((matrix(NA, nrow=14, ncol=319)))
+  nR_S2_tmp_modality = data.frame((matrix(NA, nrow=14, ncol=319)))
+
+  for (s in 1:length(subjects)){
+    
+
+     subdata <- filter(metadataEven, subject == subjects[s] & modality == modalities[m])  
+      
+      #transform trial data to counts
+      newlist <- trials2counts(subdata$signal, subdata$response, subdata$confidence, 7, padAmount = 1,padCells=1)
+      nR_S1_tmp <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
+      nR_S2_tmp <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
+      
+      nR_S1_tmp_modality[,s] <- nR_S1_tmp
+      nR_S2_tmp_modality[,s] <- nR_S2_tmp
+  
+      
+  } 
+  nR_S1 [[m]]<- nR_S1_tmp_modality
+  nR_S2 [[m]]<- nR_S2_tmp_modality
+
+}
+
+#Fit the hierarhical model and correlation
+## NOTE THAT THIS WILL TAKE A LONG TIME - SEVERAL HOURS!
+## First check if you already have the file. The file is too large for github, so first time 
+## Users will need to download it from our OSF repo here: www.wwww..www
+
+fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
+
+if (file.exists(fit_filename) == 1 ) {
+
+output <- readRDS(fit_filename)
+  
+}else  {
+  
+output <- metad_groupcorr(nR_S1, nR_S2)
+
+}
+
+saveRDS(output, "ourpurEven.RDS")
+```
