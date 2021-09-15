@@ -119,7 +119,7 @@ source(here("r", "parMLEEven.R"))
 stopCluster(cl = my.cluster)
 
 # write out the data file
-write.csv(fit_dataEven, file = here("data_summary","mle_mratio_fit_data.csv"))
+write.csv(fit_dataEven, file = here("data_summary","mle_mratio_fit_dataEven.csv"))
 
 head(fit_dataEven)
 ```
@@ -212,14 +212,14 @@ fit_data_wideOdd <- fit_dataOdd %>% pivot_wider(
   names_from = modality,
   values_from = c(da, mda, mratio, c)
 )
-write.csv(fit_data_wideOdd, file = here("data_summary","mle_mratio_fit_data_wide.csv"))
+write.csv(fit_data_wideOdd, file = here("data_summary","mle_mratio_fit_data_wideOdd.csv"))
 head(fit_data_wideOdd)
 #filtered: 
 fit_data_wideOddF <- fit_dataOdd %>% pivot_wider(
   names_from = modality,
   values_from = c(da, mda, mratio, c)
 )
-write.csv(fit_data_wideOddF, file = here("data_summary","mle_mratio_fit_data_wideF.csv"))
+write.csv(fit_data_wideOddF, file = here("data_summary","mle_mratio_fit_data_wideOddF.csv"))
 head(fit_data_wideOddF)
 
 ```
