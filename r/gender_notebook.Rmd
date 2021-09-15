@@ -72,4 +72,35 @@ demographics
 ```
 
 
+```{r}
+calories <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('Calories'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+calories$trial_bin <- cut(calories$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+
+
+plot_data <- calories %>%
+  group_by(trial_bin) %>%
+  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+  
+ggplot(data = plot_data, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+
+
+
+```
+
+
+
 
