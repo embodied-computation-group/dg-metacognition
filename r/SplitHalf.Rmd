@@ -187,46 +187,58 @@ Pivot the data frame to wide.
 
 ```{r}
 
-##Even data:
-#unfiltered 
+##unfiltered 
+#Even:
 fit_data_wideEven <- fit_dataEven %>% pivot_wider(
   names_from = modality,
-  values_from = c(da, mda, mratio, c)
+  values_from = c(da, mda, mratio, c)  
 )
-write.csv(fit_data_wideEven, file = here("data_summary","mle_mratio_fit_data_wideEven.csv"))
-head(fit_data_wideEven)
 
-#filtered: 
-fit_data_wideEvenF <- metadata_exc_even %>% pivot_wider(
-  names_from = modality,
-  values_from = c(da, mda, mratio, c)
-)
-write.csv(fit_data_wideEvenF, file = here("data_summary","mle_mratio_fit_data_wideEvenF.csv"))
-head(fit_data_wideEvenF)
+colnames(fit_data_wideEven) <- paste0("Even_", colnames(fit_data_wideEven)) 
 
-
-
-##Odd data:
-#unfiltered 
+#Odd 
 fit_data_wideOdd <- fit_dataOdd %>% pivot_wider(
   names_from = modality,
   values_from = c(da, mda, mratio, c)
 )
-write.csv(fit_data_wideOdd, file = here("data_summary","mle_mratio_fit_data_wideOdd.csv"))
-head(fit_data_wideOdd)
-#filtered: 
-fit_data_wideOddF <- fit_dataOdd %>% pivot_wider(
+colnames(fit_data_wideOdd) <- paste0("Odd_", colnames(fit_data_wideOdd)) 
+
+#Join the two dataframes: 
+wide_data_unfil <- full_join(fit_data_wideEven, fit_data_wideOdd, by =c("Even_subject" = "Odd_subject" )) 
+
+
+write.csv(wide_data_unfil, file = here("data_summary","mle_mratio_fit_data_wide_unfil.csv"))
+head(wide_data_unfil)
+
+
+##filtered: 
+#Even:
+fit_data_wideEvenF <- metadata_exc_even %>% pivot_wider(
   names_from = modality,
   values_from = c(da, mda, mratio, c)
 )
-write.csv(fit_data_wideOddF, file = here("data_summary","mle_mratio_fit_data_wideOddF.csv"))
-head(fit_data_wideOddF)
+colnames(fit_data_wideEvenF) <- paste0("Even_", colnames(fit_data_wideEvenF)) 
+
+#Odd:
+fit_data_wideOddF <- metadata_exc_odd %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c)
+)
+colnames(fit_data_wideOddF) <- paste0("Odd_", colnames(fit_data_wideOddF))
+
+#join the two dataframes: 
+wide_data_fil <- full_join(fit_data_wideEvenF, fit_data_wideOddF, by =c("Even_subject" = "Odd_subject" )) 
+
+write.csv(wide_data_fil, file = here("data_summary","mle_mratio_fit_data_wide_fil.csv"))
+head(wide_data_fil)
+
 
 ```
 
 
 
 Evaluate within-domain correlation between the two fits: Using GRousselet bootcorci
+CHANGE SELECT START WITH 
 
 ```{r}
 ###Unfiltered 
@@ -244,6 +256,7 @@ res3 <- corci(corr1$mratio_GDP, corr2$mratio_GDP, method="spearman")
 res4 <- corci(corr1$mratio_vision, corr2$mratio_vision, method="spearman")
 
 corrtable <- data.frame(Metric=character(),
+                 Filter=character(),
                  Memory=double(),
                  CI_lowerM=double(),
                  CI_upperM=double(),
@@ -262,12 +275,7 @@ corrtable <- data.frame(Metric=character(),
                  P_valueV=double()
                  )
 
-corrtable[1,] <- list("Mratio",res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
-                       res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
-                       res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
-                       res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value)
 
-head(corrtable)
 
 ###Filtered 
 # Each correlation pair is estimated for Metacognitive efficiency: 
@@ -295,11 +303,20 @@ corrtableF <- data.frame(Metric=character(),
                  P_valueV=double()
                  )
 
-corrtableF[1,] <- list("Mratio",res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
+corrtable[1,] <- list("Mratio", "Unfiltered", res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
                        res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
                        res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
                        res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value)
 
+
+
+
+corrtable[2,] <- list("Mratio","filtered", res1$estimate,res1$conf.int[1], res1$conf.int[2], 
+                       res1$p.value,
+                       res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
+                       res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
+                       res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value)
+head(corrtable)
 head(corrtableF)
 
 
