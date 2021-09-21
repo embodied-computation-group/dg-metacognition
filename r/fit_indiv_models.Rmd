@@ -170,7 +170,6 @@ DatafilStair <- ggarrange(SM, SC, SG, SV)
 
 ```
 Average confidence across domains, split by correct and incorrect trials:
-NOT DONE!! 
 ```{r}
 #Average confidence for Correct trials:
 AvgConfCorr <- metadata %>% filter(accuracy==1) %>%
@@ -181,24 +180,14 @@ AvgConfInCo <- metadata %>% filter(accuracy==0) %>%
   group_by(subject, modality) %>% 
   summarise(avgCF_Incor=mean(confidence, na_rm=TRUE))
 
-#Join the two dataframes: 
-Confidence <- full_join(AvgConfCorr, AvgConfInCo , by = c("subject" = "subject", "modality"="modality"))
 
+ggSplit<-ggplot() + geom_boxjitter(data=AvgConfCorr, aes(x = modality, y = avgCF_Corr), color="blue") +
+  geom_boxjitter(data=AvgConfInCo, aes(x = modality, y = avgCF_Incor), color="red")+
+    theme_bw() +
+    ylab("Average Confidence")+
+    xlab("Modality")
+annotate_figure(ggSplit, top = text_grob("Confidence for Correct and Incorrect Trials across Modalities", color = "black",face = "bold", size = 14)) 
 
-
-#plot data
-
-pSplit<-ggplot(AvgConfCorr , aes(x = modality, y = avg_conf)) +
-  geom_boxjitter() + ggplot(AvgConfInCo , aes(x = modality, y = avg_conf)) +
-  geom_boxjitter() +
-  ggtitle("Average confidence for Correct and Incorrect Trials")+
-  ylab("Average Confidence") + xlab("Modality")
-
-ggplot(AvgConfCorr , aes(x = modality, y = avg_conf)) +
-  geom_boxjitter() + ggplot(AvgConfInCo , aes(x = modality, y = avg_conf)) +
-  geom_boxjitter() 
-
-pSplit
 
 ```
 
