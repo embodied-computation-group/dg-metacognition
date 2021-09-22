@@ -67,9 +67,102 @@ demographics <- survey_data_pre %>%
   ) %>%
   italicize_levels()
 
-demographics
+demographics ## this is not yet APA format... for someone to do! 
 
 ```
+
+Let's make a plot of confidence for each modality and gender
+
+```{r}
+
+
+summary_data <- metadata %>%
+  group_by(subject, modality) %>%
+  select(-c(trial, signal,response, rt_conf)) %>%
+  summarise_all(mean) %>%
+  pivot_wider(id_cols = subject, names_from = modality, values_from = c(accuracy,confidence,rt, contrast))
+
+
+names(summary_data)[names(summary_data) == "subject"] <- "Sid"
+
+gender <- as.data.frame(survey_data_pre$gender)
+gender$Sid <- survey_data_pre$Sid
+
+
+names(gender)[names(gender) == "survey_data_pre$gender"] <- "gender"
+
+summary_data <- full_join(summary_data, gender, by = "Sid") %>%
+  pivot_longer(!c(gender,Sid), names_to = c("variable", "modality"), names_sep = "_") 
+
+
+```
+```{r}
+plot_data <- summary_data %>%
+  filter(variable == "rt") %>%
+  filter(gender != "non-binary" ) %>%
+  na.omit()
+
+ggplot(plot_data, aes(x = modality, y = value, fill = gender))+
+ # geom_violin() +
+  geom_boxjitter(notch = "True") + 
+  ylab("Mean RT (s)") +
+  xlab("Modality") +
+#  scale_y_continuous(breaks=seq(1, 7, 1))  +
+  scale_fill_discrete(name="Gender",
+                         breaks=c("Feminin", "Masculin"),
+                         labels=c("Female", "Male")) +
+  theme_cowplot()
+    
+```
+```{r}
+
+plot_data <- summary_data %>%
+  filter(variable == "confidence") %>%
+  filter(gender != "non-binary" ) %>%
+  na.omit()
+
+a<-ggplot(plot_data, aes(x = modality, y = value, fill = gender))+
+ # geom_violin() +
+  geom_boxjitter(notch = "True", varwidth = TRUE, jitter.shape = 1, outlier.shape = NA) + 
+  ylab("Mean Confidence") +
+  xlab("Modality") +
+  scale_y_continuous(breaks=seq(1, 7, 1))  +
+  scale_fill_discrete(name="Gender",
+                         breaks=c("Feminin", "Masculin"),
+                         labels=c("Female", "Male")) +
+  scale_fill_brewer(palette = "Dark2")+
+  guides(fill=FALSE)+
+  ggtitle("A) Trial Confidence") +
+  theme_cowplot()
+    a
+  
+
+plot_data <- summary_data %>%
+  filter(variable == "accuracy") %>%
+  filter(gender != "non-binary" ) %>%
+  filter(value > .4) %>%
+  na.omit()
+
+b<-ggplot(plot_data, aes(x = modality, y = value, fill = gender))+
+ # geom_violin() +
+  geom_boxjitter(notch = "True", varwidth = TRUE, jitter.shape = 1, outlier.shape = NA) + 
+  ylab("Mean Accuracy") +
+  xlab("Modality") +
+  scale_y_continuous(labels = scales::percent, limits = c(.5,1))+
+  scale_fill_discrete(name="Gender",
+                         breaks=c("Feminin", "Masculin"),
+                         labels=c("Female", "Male")) +
+  theme_cowplot() + 
+  guides(fill=FALSE)+
+  scale_fill_brewer(palette = "Dark2")+
+  ggtitle("B) Trial Accuracy")
+
+b
+
+a/b
+ggsave(here("figs", "genderBoxJitter.png"), height = 8, width = 8)
+```
+
 
 
 ```{r}
@@ -77,24 +170,34 @@ calories <- metadata %>%group_by(subject) %>%
   filter(modality == c('Calories'))  %>%  mutate(trial_number = row_number()) %>%
   group_by(subject) 
   
-calories$trial_bin <- cut(calories$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+calories$trial_bin <- cut(calories$trial_number, breaks = 5, labels = c("1st", "2nd", "3rd","4th","5th"))
 
 
 
 plot_data <- calories %>%
+  ungroup() %>%
   group_by(trial_bin) %>%
   summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
   ungroup()
   
   
+ggplot(data = plot_data, aes(x = trial_bin, y = mean, group = trial_bin)) +
+    geom_boxjitter()+
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+
 ggplot(data = plot_data, aes(x = trial_bin, y = mean, group = 1)) +
     geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
     geom_line() +
     geom_point() +
     theme_bw() +
     ylab("Average Accuracy")+
-    xlab("Trial Quarter")+ 
-    ylim(.5, 1)
+    xlab("Trial Quarter") +
+  ggtitle("Calories")
+    #ylim(.6, .8)
 
 
 
@@ -102,5 +205,83 @@ ggplot(data = plot_data, aes(x = trial_bin, y = mean, group = 1)) +
 ```
 
 
+```{r}
 
+
+survey_data_pre$gender <- as.factor(survey_data_pre$gender)
+survey_data_pre <- survey_data_pre %>%
+  filter(Sid!=996) # remove bogus subject
+
+
+names(survey_data_pre)[names(survey_data_pre) == "Timestamp"] <- "Timestamp_1"
+names(survey_data_post)[names(survey_data_post) == "Timestamp"] <- "Timestamp_2"
+
+all_data <- full_join(survey_data_pre, survey_data_post, by = "Sid")
+
+
+
+#all_data <- all_data %>%
+#  mutate(self_vis_diff = self_visual_post - self_visual_pre) %>%
+#  mutate(self_mem_diff = self_memory_post - self_memory_pre) %>%
+#  mutate(self_calorie_diff = self_calories_post - self_calories_pre) %>%
+#  mutate(self_gdp_diff = self_gdp_post - self_gdp_pre) %>%
+#  na.omit()
+
+self_plot_data <- all_data %>%
+  filter(gender != "non-binary") %>%
+  na.omit() %>%
+  select(gender, age, Sid, starts_with("self"))  %>%
+  pivot_longer(!c(gender,Sid, age), values_to = "Rating", names_to = c("modality", "time"), names_sep = "_", names_prefix = "self_")
+  
+
+c<-ggplot(data = self_plot_data, aes(x = time, y = Rating, fill = gender)) +
+  geom_boxjitter(notch = "True", varwidth = TRUE, jitter.shape = 1, outlier.shape = NA)+
+  facet_grid(~modality) +
+  theme_cowplot()+
+  theme(legend.position =  "bottom") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_x_discrete(limits = c("pre", "post"))+
+  ggtitle("C) Self-Beliefs")
+
+c
+ggsave(here("figs", "gender_time_plot.png"), height = 8, width = 12)
+```
+
+
+```{r}
+(a+b)/c
+
+ggsave(here("figs", "multi_panel_plot.png"), height = 7, width = 10)
+```
+
+```{r}
+
+summary_plot_data <- self_plot_data %>%
+  group_by(modality, time, gender) %>%
+  summarise(meanRating = mean(Rating), seRating = sd(Rating)/sqrt(length(Rating)))
+
+d<-ggplot(summary_plot_data, aes(x = time, y = meanRating, colour = gender, group = gender))+
+  geom_errorbar(aes(ymin = meanRating-seRating, ymax = meanRating+seRating), width = 0, size = 1.5) +
+  scale_colour_brewer(palette = "Dark2") +
+  scale_x_discrete(limits = c("pre", "post"))+
+  geom_line(size = 1.5) +
+  geom_point(shape = 21, fill = "white") +
+  facet_wrap(~modality) +
+  ylab("Accuracy Self-Belief")+
+  ggtitle("D) Influence of Task on Self-Beliefs") +
+  theme_cowplot() +
+  theme(legend.position =  "bottom") 
+
+d
+ggsave(here("figs", "gender_line_plot.png"), height = 6, width = 6)
+
+```
+```{r}
+ 
+((a+b)/c)|(plot_spacer()/d/guide_area()) + plot_layout(guides = 'collect')
+
+ggsave(here("figs", "testPlot.png"), height = 8, width = 14)
+
+
+```
 
