@@ -77,6 +77,120 @@ Create individual level staircase plots
 
 ```
 
+Group level staircase plots
+```{r}
+
+#Memory:
+memory <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('memory'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+memory$trial_bin <- cut(memory$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataM <- memory %>%
+  group_by(trial_bin) %>%
+  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SM<-ggplot(data = plot_dataM, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#Calories: 
+calories <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('Calories'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+calories$trial_bin <- cut(calories$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataC <- calories %>%
+  group_by(trial_bin) %>%
+  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SC<-ggplot(data = plot_dataC, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#GDP
+GDP <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('GDP'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+GDP$trial_bin <- cut(GDP$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataG <- GDP %>%
+  group_by(trial_bin) %>%
+  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SG<-ggplot(data = plot_dataG, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#Vision: 
+vision <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('vision'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+vision$trial_bin <- cut(vision$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataV <- vision %>%
+  group_by(trial_bin) %>%
+  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SV<-ggplot(data = plot_dataV, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+
+DatafilStair <- ggarrange(SM, SC, SG, SV)
+  annotate_figure(DatafilStair, top = text_grob("Group-level Staircasing", color = "black",face = "bold", size = 14))
+
+```
+Average confidence across domains, split by correct and incorrect trials:
+```{r}
+#Average confidence for Correct trials:
+AvgConfCorr <- metadata %>% filter(accuracy==1) %>%
+  group_by(subject, modality) %>% 
+  summarise(avgCF_Corr=mean(confidence, na_rm=TRUE))
+#Average confidence for incorrect trials            
+AvgConfInCo <- metadata %>% filter(accuracy==0) %>%
+  group_by(subject, modality) %>% 
+  summarise(avgCF_Incor=mean(confidence, na_rm=TRUE))
+
+
+ggSplit<-ggplot() + geom_boxjitter(data=AvgConfCorr, aes(x = modality, y = avgCF_Corr), color="blue") +
+  geom_boxjitter(data=AvgConfInCo, aes(x = modality, y = avgCF_Incor), color="red")+
+    theme_bw() +
+    ylab("Average Confidence")+
+    xlab("Modality")
+annotate_figure(ggSplit, top = text_grob("Confidence for Correct and Incorrect Trials across Modalities", color = "black",face = "bold", size = 14)) 
+
+
+```
+
 
 Let's loop over subjects now and fit the MLE model. 
 
@@ -160,7 +274,7 @@ head(metadata_exc)
 
 ```
 
-Let's plot the key filtered variables to check what was excluded.
+Plots of key metacognitive measures for both filtered and unfiltered data: 
 ```{r}
 
 #unfiltered
@@ -225,6 +339,9 @@ Datafi2 <- ggarrange(p7, p10, p8, ncol = 3)
   color = "black", face = "bold", size = 14))  
 
 ```
+
+
+
 
 Pivot the data frame to wide. 
 
