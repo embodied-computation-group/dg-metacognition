@@ -89,11 +89,11 @@ memory$trial_bin <- cut(memory$trial_number, breaks = 4, labels = c("1st", "2nd"
 
 plot_dataM <- memory %>%
   group_by(trial_bin) %>%
-  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  summarise(meanM = mean(accuracy), seM = sd(accuracy)/sqrt(length(accuracy))) %>%
   ungroup()
   
 SM<-ggplot(data = plot_dataM, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_errorbar(aes(ymin=mean-seM, ymax=mean+seM), width=.05) +
     geom_line() +
     geom_point() +
     theme_bw() +
@@ -110,11 +110,11 @@ calories$trial_bin <- cut(calories$trial_number, breaks = 4, labels = c("1st", "
 
 plot_dataC <- calories %>%
   group_by(trial_bin) %>%
-  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  summarise(meanC = mean(accuracy), seC = sd(accuracy)/sqrt(length(accuracy))) %>%
   ungroup()
   
 SC<-ggplot(data = plot_dataC, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_errorbar(aes(ymin=mean-seC, ymax=mean+seC), width=.05) +
     geom_line() +
     geom_point() +
     theme_bw() +
@@ -131,11 +131,11 @@ GDP$trial_bin <- cut(GDP$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd
 
 plot_dataG <- GDP %>%
   group_by(trial_bin) %>%
-  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  summarise(meanG = mean(accuracy), seG = sd(accuracy)/sqrt(length(accuracy))) %>%
   ungroup()
   
 SG<-ggplot(data = plot_dataG, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_errorbar(aes(ymin=mean-seG, ymax=mean+seG), width=.05) +
     geom_line() +
     geom_point() +
     theme_bw() +
@@ -152,11 +152,11 @@ vision$trial_bin <- cut(vision$trial_number, breaks = 4, labels = c("1st", "2nd"
 
 plot_dataV <- vision %>%
   group_by(trial_bin) %>%
-  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  summarise(meanV = mean(accuracy), seV = sd(accuracy)/sqrt(length(accuracy))) %>%
   ungroup()
   
 SV<-ggplot(data = plot_dataV, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+    geom_errorbar(aes(ymin=mean-seV, ymax=mean+seV), width=.05) +
     geom_line() +
     geom_point() +
     theme_bw() +
@@ -164,11 +164,49 @@ SV<-ggplot(data = plot_dataV, aes(x = trial_bin, y = mean, group = 1)) +
     xlab("Trial Quarter")+ 
     ylim(.5, 1)
 
-
+#The four tasks next to each other: 
 DatafilStair <- ggarrange(SM, SC, SG, SV)
   annotate_figure(DatafilStair, top = text_grob("Group-level Staircasing", color = "black",face = "bold", size = 14))
+  
+
 
 ```
+The same but all tasks are combined in one graph: 
+```{r}
+  
+#make the four bins: 
+
+  metadataPlot <- metadata %>%group_by(subject) %>% 
+  mutate(trial_number = row_number()) %>%
+  group_by(subject) #create a trial number column
+  
+  metadataPlot <- metadataPlot %>%group_by(modality) %>% mutate(trial_bin = ntile(trial_number, n = 4)) #split in the four bins according to task 
+  #(note different number of trials)
+  
+#Summarise means for each bin and modality
+  metadataPlotMean <- metadataPlot %>%
+  group_by(trial_bin, modality) %>%
+  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+#plot:   
+GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = modality, color= modality)) +
+  geom_line() +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.05) +
+  ylab("Average Accuracy")+
+  xlab("Trial Quarter") + 
+  ylim(.65, .8) +
+  geom_point() +
+  theme_bw() +
+  ggtitle("Group-level Staircases")
+
+GroupStair 
+
+```
+
+
+
 Average confidence across domains, split by correct and incorrect trials:
 ```{r}
 #Average confidence for Correct trials:
@@ -181,13 +219,14 @@ AvgConfInCo <- metadata %>% filter(accuracy==0) %>%
   summarise(avgCF_Incor=mean(confidence, na_rm=TRUE))
 
 
-ggSplit<-ggplot() + geom_boxjitter(data=AvgConfCorr, aes(x = modality, y = avgCF_Corr), color="blue") +
-  geom_boxjitter(data=AvgConfInCo, aes(x = modality, y = avgCF_Incor), color="red")+
+ggSplit<-ggplot() + geom_boxjitter(data=AvgConfCorr, aes(x = modality, y = avgCF_Corr, color="Correct")) +
+  geom_boxjitter(data=AvgConfInCo, aes(x = modality, y = avgCF_Incor, color="Incorrect"))+
     theme_bw() +
-    ylab("Average Confidence")+
-    xlab("Modality")
-annotate_figure(ggSplit, top = text_grob("Confidence for Correct and Incorrect Trials across Modalities", color = "black",face = "bold", size = 14)) 
-
+   labs(x = "Average Confidence",
+         y = "Modality", 
+        color = "Legend") + 
+    ggtitle("Confidence across Trial Types")
+ggSplit
 
 ```
 
@@ -278,43 +317,41 @@ Plots of key metacognitive measures for both filtered and unfiltered data:
 ```{r}
 
 #unfiltered
-p1<-ggplot(fitAvg_data, aes(x = modality, y =c)) +
-  geom_boxjitter() +
+p1<-ggplot(fitAvg_data, aes(x = modality, y =c, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Criterion Unfiltered")
-p2<-ggplot(fitAvg_data, aes(x = modality, y = avg_conf)) +
-  geom_boxjitter() +
+p2<-ggplot(fitAvg_data, aes(x = modality, y = avg_conf, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Bias Unfiltered")
-p3<-ggplot(fitAvg_data, aes(x = modality, y = mda)) +
-  geom_boxjitter() +
+p3<-ggplot(fitAvg_data, aes(x = modality, y = mda, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Sensitivity Unfiltered")
-p4<-ggplot(fitAvg_data, aes(x = modality, y = da)) +
-  geom_boxjitter() +
- # ylim(-2,2)+
+p4<-ggplot(fitAvg_data, aes(x = modality, y = da, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Cognitive Sensitivity Unfiltered")
-p5<-ggplot(fitAvg_data, aes(x = modality, y = mratio)) +
-  geom_boxjitter() +
- # ylim(-2,2)+
+p5<-ggplot(fitAvg_data, aes(x = modality, y = mratio, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive efficiency Unfiltered")
 
 #filtered Plots: 
-p6<-ggplot(metadata_exc, aes(x = modality, y =c)) +
-  geom_boxjitter() +
+p6<-ggplot(metadata_exc, aes(x = modality, y =c, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Cognitive Criterion") +
   ylab("c") + xlab("Modality")
-p7<-ggplot(metadata_exc, aes(x = modality, y = avg_conf)) +
-  geom_boxjitter() +
+p7<-ggplot(metadata_exc, aes(x = modality, y = avg_conf, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Bias")+
   ylab("Average Confidence") + xlab("Modality")
-p8<-ggplot(metadata_exc, aes(x = modality, y = mratio)) +
-  geom_boxjitter() +
+p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Efficiency")+
   ylab("Meta-d'/d'") + xlab("Modality")
-p9<-ggplot(metadata_exc, aes(x = modality, y = da)) +
-  geom_boxjitter() +
-  ggtitle("Cognitive Sensitivity")+ 
+p9<-ggplot(metadata_exc, aes(x = modality, y = da, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
+  ggtitle("Cognitive Sensitivity") +
   ylab("d'") + xlab("Modality")
-p10<-ggplot(metadata_exc, aes(x = modality, y = mda)) +
-  geom_boxjitter() +
+p10<-ggplot(metadata_exc, aes(x = modality, y = mda, color= modality)) +
+  geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Sensitivity")+ 
   ylab("meta-d'") + xlab("Modality")
 
@@ -339,7 +376,6 @@ Datafi2 <- ggarrange(p7, p10, p8, ncol = 3)
   color = "black", face = "bold", size = 14))  
 
 ```
-
 
 
 
@@ -502,7 +538,7 @@ s15 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_Calories) +
 s16 <- scatter(scat2, scat2$mratio_Calories, scat2$mratio_vision) + 
   scale_y_continuous("Vision")+scale_x_continuous("Calories")
 
-comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16)
+comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16) 
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
                                          face = "bold", size = 14))    
 
@@ -526,6 +562,30 @@ comPlot3 <- ggarrange(s21, s22, s23, s24, s25, s26)
 annotate_figure(comPlot3, top = text_grob("Metacognitive Bias", color = "black", 
                                          face = "bold", size = 14))     
 
+```
+
+Figure 2: d' and group staircase: 
+```{r}
+Figure2 <- ggarrange(p9, GroupStair)  
+  annotate_figure(Figure2, top = text_grob("Figure 2", color = "black",face = "bold", size = 14))
+ 
+
+```
+Figure 3: 
+```{r}
+f1 <- annotate_figure(comPlot2, top = text_grob("Correlation of Metacognitive Efficiency", color = "black", 
+                                         face = "bold", size = 14)) 
+annotate_figure(f1, top = text_grob("Figure 3", color = "black", 
+                                         face = "bold", size = 14)) 
+
+```
+
+
+Figure 4
+```{r}
+Figure4 <- ggarrange(p8, ggSplit)
+  annotate_figure(Figure4, top = text_grob("Figure 4", color = "black",face = "bold", size = 14))
+  
 ```
 
 
