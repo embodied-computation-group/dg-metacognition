@@ -90,19 +90,18 @@ Group-level staircase plots:
 ```{r}
   
 #make the four bins: 
-
-  metadataPlot <- metadata %>%group_by(subject) %>% 
-  mutate(trial_number = row_number()) %>%
-  group_by(subject) #create a trial number column
+metadataPlot <- metadata %>%group_by(subject) %>% 
+mutate(trial_number = row_number()) %>%
+group_by(subject) #create a trial number column
   
   metadataPlot <- metadataPlot %>%group_by(modality) %>% mutate(trial_bin = ntile(trial_number, n = 4)) #split in the four bins according to task 
   #(note different number of trials)
   
 #Summarise means for each bin and modality
-  metadataPlotMean <- metadataPlot %>%
-  group_by(trial_bin, modality) %>%
-  summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
-  ungroup()
+metadataPlotMean <- metadataPlot %>%
+group_by(trial_bin, modality) %>%
+summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+ungroup()
   
 #plot:   
 GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = modality, color= modality)) +
@@ -388,18 +387,21 @@ corrtable[1,] <- list("Meta-d",res1$estimate,res1$conf.int[1], res1$conf.int[2],
                        res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value,
                        res5$estimate,res5$conf.int[1], res5$conf.int[2],  res5$p.value,
                        res6$estimate,res6$conf.int[1],  res6$conf.int[2], res6$p.value)
-corrtable[2,] <- list("Mratio",res1.1$estimate,res1.1$conf.int[1], res1.1$conf.int[2], res1.1$p.value,
-                       res1.2$estimate,res1.2$conf.int[1], res1.2$conf.int[2], res1.2$p.value,
-                       res1.3$estimate,res1.3$conf.int[1], res1.3$conf.int[2],  res1.3$p.value,
-                       res1.4$estimate,res1.4$conf.int[1], res1.4$conf.int[2],  res1.4$p.value,
-                       res1.5$estimate,res1.5$conf.int[1], res1.5$conf.int[2],  res1.5$p.value,
-                       res1.6$estimate,res1.6$conf.int[1],  res1.6$conf.int[2], res1.6$p.value)
-corrtable[3,] <- list("Bias",res1$estimate,res2.1$conf.int[1], res2.1$conf.int[2], res2.1$p.value,
-                       res2.2$estimate,res2.2$conf.int[1], res2.2$conf.int[2], res2.2$p.value,
-                       res2.3$estimate,res2.3$conf.int[1], res2.3$conf.int[2],  res2.3$p.value,
-                       res2.4$estimate,res2.4$conf.int[1], res2.4$conf.int[2],  res2.4$p.value,
-                       res2.5$estimate,res2.5$conf.int[1], res2.5$conf.int[2],  res2.5$p.value,
-                       res2.6$estimate,res2.6$conf.int[1],  res2.6$conf.int[2], res2.6$p.value)
+corrtable[2,] <- list("Mratio",res1.1$estimate,res1.1$conf.int[1], res1.1$conf.int[2],
+                      res1.1$p.value,res1.2$estimate,res1.2$conf.int[1], res1.2$conf.int[2],
+                      res1.2$p.value, res1.3$estimate,res1.3$conf.int[1], res1.3$conf.int[2],
+                      res1.3$p.value, res1.4$estimate,res1.4$conf.int[1], res1.4$conf.int[2],
+                      res1.4$p.value, res1.5$estimate,res1.5$conf.int[1], res1.5$conf.int[2],
+                      res1.5$p.value, res1.6$estimate,res1.6$conf.int[1],  res1.6$conf.int[2],
+                      res1.6$p.value)
+
+corrtable[3,] <- list("Bias",res1$estimate,res2.1$conf.int[1], res2.1$conf.int[2],
+                      res2.1$p.value,res2.2$estimate,res2.2$conf.int[1], res2.2$conf.int[2],
+                      res2.2$p.value,res2.3$estimate,res2.3$conf.int[1], res2.3$conf.int[2], 
+                      res2.3$p.value,res2.4$estimate,res2.4$conf.int[1], res2.4$conf.int[2], 
+                      res2.4$p.value,res2.5$estimate,res2.5$conf.int[1], res2.5$conf.int[2],
+                      res2.5$p.value,res2.6$estimate,res2.6$conf.int[1], res2.6$conf.int[2],
+                      res2.6$p.value)
 corrtable[4,] <- list("d'",res31$estimate,res31$conf.int[1], res31$conf.int[2], res31$p.value,
                        res32$estimate,res32$conf.int[1], res32$conf.int[2], res32$p.value,
                        res33$estimate,res33$conf.int[1], res33$conf.int[2],  res33$p.value,
@@ -435,19 +437,28 @@ annotate_figure(comPlot1, top = text_grob("Metacognitive Sensitivity", color = "
                                          face = "bold", size = 14))  
 
 #Metacognitive Efficiency
+#Indicate the estimated correlations: 
+S1title <- paste("r =",round(res1.1$estimate, digits=3))
+S2title <- paste("r =",round(res1.2$estimate, digits=3))
+S3title <- paste("r =",round(res1.3$estimate, digits=3))
+S4title <- paste("r =",round(res1.4$estimate, digits=3))
+S5title <- paste("r =",round(res1.5$estimate, digits=3))
+S6title <- paste("r =",round(res1.6$estimate, digits=3))
+
+
 scat2 <- as_tibble(corr1)
 s11 <-scatter(scat2, scat2$mratio_memory, scat2$mratio_Calories) +
-  scale_y_continuous("Calories")+scale_x_continuous("Memory")
+  scale_y_continuous("Calories")+scale_x_continuous("Memory") + ggtitle(paste(S1title))
 s12 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_vision) +
-  scale_y_continuous("Vision")+scale_x_continuous("Memory")
+  scale_y_continuous("Vision")+scale_x_continuous("Memory") + ggtitle(paste(S2title))
 s13 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_GDP) +
-  scale_y_continuous("GDP")+scale_x_continuous("Memory")
+  scale_y_continuous("GDP")+scale_x_continuous("Memory") + ggtitle(paste(S3title))
 s14 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_vision) + 
-  scale_y_continuous("Vision")+scale_x_continuous("GDP")
+  scale_y_continuous("Vision")+scale_x_continuous("GDP") + ggtitle(paste(S4title))
 s15 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_Calories) + 
-  scale_y_continuous("Calories")+ scale_x_continuous("GDP")
+  scale_y_continuous("Calories")+ scale_x_continuous("GDP") + ggtitle(paste(S5title))
 s16 <- scatter(scat2, scat2$mratio_Calories, scat2$mratio_vision) + 
-  scale_y_continuous("Vision")+scale_x_continuous("Calories")
+  scale_y_continuous("Vision")+scale_x_continuous("Calories") + ggtitle(paste(S6title))
 
 comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16) 
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
@@ -523,6 +534,23 @@ mcmc.rho <- mcmc.sample %>%
   filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
 
 #individual rho plots: 
+
+#Plot titles: 
+meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(meanRho= mean(value, na.rm=TRUE)) 
+
+
+S1Rtitle <- mcmc.rho %>% filter(Parameter=="rho[1]") %>% summarise(meanRho= mean(value, na.rm=TRUE)) 
+  
+  
+  meanRho %>%  %>% paste("r =", round(meanRho, digits=3))
+
+
+S2title <- paste("r =",round(res1.2$estimate, digits=3))
+S3title <- paste("r =",round(res1.3$estimate, digits=3))
+S4title <- paste("r =",round(res1.4$estimate, digits=3))
+S5title <- paste("r =",round(res1.5$estimate, digits=3))
+S6title <- paste("r =",round(res1.6$estimate, digits=3))
+
 Rho1 <- mcmc.sample %>%
   filter(Parameter == "rho[1]") %>% 
   ggplot(aes(value)) +
@@ -602,11 +630,14 @@ Rho6 <- mcmc.sample %>%
   xlab(expression(paste(rho, " value")))
 
 #Bayesian Hierarhical fit: 
-RhoPlot <- ggarrange(Rho1, Rho2, Rho3, Rho4, Rho5, Rho6)
+RhoPlot <- ggarrange(Rho1, Rho3, Rho2, Rho6, Rho4, Rho5)
 CorHi <- annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
 
-#MLE fit
-CorMLE <- annotate_figure(comPlot3, top = text_grob("Maximum likelihood estimation  ", color = "black", face = "bold", size = 14)) 
+#MLE fit:
+
+
+
+CorMLE <- annotate_figure(comPlot2, top = text_grob("Maximum likelihood estimation  ", color = "black", face = "bold", size = 14)) 
 
 Figure3 <- ggarrange(CorMLE, CorHi, ncol= 1, nrow=2)  
   annotate_figure(Figure3, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
@@ -697,6 +728,102 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 
 ```
 
+MLE individual fit Correlations and figure 3 without Mratio outliers: 
+```{r}
+#exclude those where mratio could not be estimated  
+metadata_excMratio <- metadata_exc%>%filter(mratio!="NaN")
+
+#mratio
+metadata_excMratio <- metadata_excMratio%>%
+  group_by(modality) %>%
+  mutate(mratio = remove_outliers_robust(mratio)) 
+
+#Pivot: 
+fit_data_wideExc <- metadata_excMratio %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c, avg_conf)
+)
+  
+#estimate correlation: 
+corr1E <- fit_data_wideExc %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+res1.1E <- corci(corr1E$mratio_memory, corr1E$mratio_Calories, method="spearman")
+res1.2E <- corci(corr1E$mratio_memory, corr1E$mratio_vision, method="spearman")
+res1.3E <- corci(corr1E$mratio_memory, corr1E$mratio_GDP, method="spearman")
+res1.4E <- corci(corr1E$mratio_GDP, corr1E$mratio_vision, method="spearman")
+res1.5E <- corci(corr1E$mratio_GDP, corr1E$mratio_Calories, method="spearman")
+res1.6E <- corci(corr1E$mratio_Calories, corr1E$mratio_vision, method="spearman")
+
+#put in dataframe: 
+corrtableE <- data.frame(Metric=character(),
+                 MemCalCoef=double(),
+                 CI_lowerMC=double(),
+                 CI_upperMC=double(),
+                 P_valueMC=double(),
+                 MemVisCoef=double(),
+                 CI_lowerMV=double(),
+                 CI_upperMV=double(),
+                 P_valueMV=double(),
+                 MemGDPCoef=double(),
+                 CI_lowerMG=double(),
+                 CI_upperMG=double(),
+                 P_valueMG=double(),
+                 GDPVisCoef=double(),
+                 CI_lowerGS=double(),
+                 CI_upperGS=double(),
+                 P_valueGS=double(),
+                 GDPCalCoef=double(),
+                 CI_lowerGC=double(),
+                 CI_upperGC=double(),
+                 P_valueGC=double(),
+                 CalVisCoef=double(),
+                 CI_lowerCV=double(),
+                 CI_upperCV=double(),
+                 P_valueCV=double(),
+                stringsAsFactors=FALSE)
+
+corrtableE[1,] <- list("Mratio",res1.1E$estimate, res1.1E$conf.int[1], res1.1E$conf.int[2],
+                      res1.1E$p.value, res1.2E$estimate,res1.2E$conf.int[1],
+                      res1.2E$conf.int[2], res1.2E$p.value, res1.3E$estimate,
+                      res1.3E$conf.int[1], res1.3E$conf.int[2], res1.3E$p.value,
+                      res1.4E$estimate,res1.4E$conf.int[1], res1.4E$conf.int[2],
+                      res1.4E$p.value, res1.5E$estimate,res1.5E$conf.int[1], 
+                      res1.5E$conf.int[2], res1.5E$p.value, res1.6E$estimate,
+                      res1.6E$conf.int[1],  res1.6E$conf.int[2], res1.6E$p.value)
+
+S1Etitle <- paste("r =",round(res1.1E$estimate, digits=3))
+S2Etitle <- paste("r =",round(res1.2E$estimate, digits=3))
+S3Etitle <- paste("r =",round(res1.3E$estimate, digits=3))
+S4Etitle <- paste("r =",round(res1.4E$estimate, digits=3))
+S5Etitle <- paste("r =",round(res1.5E$estimate, digits=3))
+S6Etitle <- paste("r =",round(res1.6E$estimate, digits=3))
+
+#Plot the correlations: 
+scat2E <- as_tibble(corr1E)
+s11E <-scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_Calories) +
+  scale_y_continuous("Calories")+scale_x_continuous("Memory") + ggtitle(paste(S1Etitle))
+s12E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_vision) + 
+  scale_y_continuous("Vision")+scale_x_continuous("Memory") + ggtitle(paste(S2Etitle))
+s13E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_GDP) +
+  scale_y_continuous("GDP")+scale_x_continuous("Memory") + ggtitle(paste(S3Etitle))
+s14E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_vision) + 
+  scale_y_continuous("Vision")+scale_x_continuous("GDP") + ggtitle(paste(S4Etitle))
+s15E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_Calories) + 
+  scale_y_continuous("Calories")+ scale_x_continuous("GDP") + ggtitle(paste(S5Etitle))
+s16E <- scatter(scat2E, scat2E$mratio_Calories, scat2E$mratio_vision) + 
+  scale_y_continuous("Vision")+scale_x_continuous("Calories") + ggtitle(paste(S6Etitle))
+
+comPlotE <- ggarrange(s11E, s12E, s13E, s14E, s15E, s16E) 
+CorExcMLE<-annotate_figure(comPlotE, top = text_grob("Metacognitive Efficiency without outliers", color = "black", face = "bold", size = 14))   
+
+#figure 3 with this instead: 
+Figure3E <- ggarrange(CorExcMLE, CorHi, ncol= 1, nrow=2)  
+  annotate_figure(Figure3E, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
+
+ggsave(here("figs", "mrho+mlecorrExcOutliers.png"), height = 7, width = 12)
+
+```
 
 
 
