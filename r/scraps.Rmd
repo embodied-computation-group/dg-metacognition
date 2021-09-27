@@ -304,5 +304,99 @@ remove_outliers <- function(x, na.rm = TRUE, ...) {
 }
 ```
 
+Group level staircase plots
+```{r}
+
+#Memory:
+memory <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('memory'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+memory$trial_bin <- cut(memory$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataM <- memory %>%
+  group_by(trial_bin) %>%
+  summarise(meanM = mean(accuracy), seM = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SM<-ggplot(data = plot_dataM, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-seM, ymax=mean+seM), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#Calories: 
+calories <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('Calories'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+calories$trial_bin <- cut(calories$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataC <- calories %>%
+  group_by(trial_bin) %>%
+  summarise(meanC = mean(accuracy), seC = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SC<-ggplot(data = plot_dataC, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-seC, ymax=mean+seC), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#GDP
+GDP <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('GDP'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+GDP$trial_bin <- cut(GDP$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataG <- GDP %>%
+  group_by(trial_bin) %>%
+  summarise(meanG = mean(accuracy), seG = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SG<-ggplot(data = plot_dataG, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-seG, ymax=mean+seG), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#Vision: 
+vision <- metadata %>%group_by(subject) %>% 
+  filter(modality == c('vision'))  %>%  mutate(trial_number = row_number()) %>%
+  group_by(subject) 
+  
+vision$trial_bin <- cut(vision$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
+
+plot_dataV <- vision %>%
+  group_by(trial_bin) %>%
+  summarise(meanV = mean(accuracy), seV = sd(accuracy)/sqrt(length(accuracy))) %>%
+  ungroup()
+  
+SV<-ggplot(data = plot_dataV, aes(x = trial_bin, y = mean, group = 1)) +
+    geom_errorbar(aes(ymin=mean-seV, ymax=mean+seV), width=.05) +
+    geom_line() +
+    geom_point() +
+    theme_bw() +
+    ylab("Average Accuracy")+
+    xlab("Trial Quarter")+ 
+    ylim(.5, 1)
+
+#The four tasks next to each other: 
+DatafilStair <- ggarrange(SM, SC, SG, SV)
+  annotate_figure(DatafilStair, top = text_grob("Group-level Staircasing", color = "black",face = "bold", size = 14))
+  
+
+
+```
 
 

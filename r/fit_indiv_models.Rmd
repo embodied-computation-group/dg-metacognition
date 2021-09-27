@@ -23,6 +23,15 @@ source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
 source(here("r", "scatterplot.R"))
 
+# set apa theme for plots
+apatheme=theme_bw()+ #theme
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border=element_blank(),
+        axis.line=element_line(),
+        text = element_text(size = 15),
+        axis.title = element_text(size = 12))
+
 ```
 
 
@@ -77,101 +86,7 @@ Create individual level staircase plots
 
 ```
 
-Group level staircase plots
-```{r}
-
-#Memory:
-memory <- metadata %>%group_by(subject) %>% 
-  filter(modality == c('memory'))  %>%  mutate(trial_number = row_number()) %>%
-  group_by(subject) 
-  
-memory$trial_bin <- cut(memory$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
-
-plot_dataM <- memory %>%
-  group_by(trial_bin) %>%
-  summarise(meanM = mean(accuracy), seM = sd(accuracy)/sqrt(length(accuracy))) %>%
-  ungroup()
-  
-SM<-ggplot(data = plot_dataM, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-seM, ymax=mean+seM), width=.05) +
-    geom_line() +
-    geom_point() +
-    theme_bw() +
-    ylab("Average Accuracy")+
-    xlab("Trial Quarter")+ 
-    ylim(.5, 1)
-
-#Calories: 
-calories <- metadata %>%group_by(subject) %>% 
-  filter(modality == c('Calories'))  %>%  mutate(trial_number = row_number()) %>%
-  group_by(subject) 
-  
-calories$trial_bin <- cut(calories$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
-
-plot_dataC <- calories %>%
-  group_by(trial_bin) %>%
-  summarise(meanC = mean(accuracy), seC = sd(accuracy)/sqrt(length(accuracy))) %>%
-  ungroup()
-  
-SC<-ggplot(data = plot_dataC, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-seC, ymax=mean+seC), width=.05) +
-    geom_line() +
-    geom_point() +
-    theme_bw() +
-    ylab("Average Accuracy")+
-    xlab("Trial Quarter")+ 
-    ylim(.5, 1)
-
-#GDP
-GDP <- metadata %>%group_by(subject) %>% 
-  filter(modality == c('GDP'))  %>%  mutate(trial_number = row_number()) %>%
-  group_by(subject) 
-  
-GDP$trial_bin <- cut(GDP$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
-
-plot_dataG <- GDP %>%
-  group_by(trial_bin) %>%
-  summarise(meanG = mean(accuracy), seG = sd(accuracy)/sqrt(length(accuracy))) %>%
-  ungroup()
-  
-SG<-ggplot(data = plot_dataG, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-seG, ymax=mean+seG), width=.05) +
-    geom_line() +
-    geom_point() +
-    theme_bw() +
-    ylab("Average Accuracy")+
-    xlab("Trial Quarter")+ 
-    ylim(.5, 1)
-
-#Vision: 
-vision <- metadata %>%group_by(subject) %>% 
-  filter(modality == c('vision'))  %>%  mutate(trial_number = row_number()) %>%
-  group_by(subject) 
-  
-vision$trial_bin <- cut(vision$trial_number, breaks = 4, labels = c("1st", "2nd", "3rd","4th"))
-
-plot_dataV <- vision %>%
-  group_by(trial_bin) %>%
-  summarise(meanV = mean(accuracy), seV = sd(accuracy)/sqrt(length(accuracy))) %>%
-  ungroup()
-  
-SV<-ggplot(data = plot_dataV, aes(x = trial_bin, y = mean, group = 1)) +
-    geom_errorbar(aes(ymin=mean-seV, ymax=mean+seV), width=.05) +
-    geom_line() +
-    geom_point() +
-    theme_bw() +
-    ylab("Average Accuracy")+
-    xlab("Trial Quarter")+ 
-    ylim(.5, 1)
-
-#The four tasks next to each other: 
-DatafilStair <- ggarrange(SM, SC, SG, SV)
-  annotate_figure(DatafilStair, top = text_grob("Group-level Staircasing", color = "black",face = "bold", size = 14))
-  
-
-
-```
-The same but all tasks are combined in one graph: 
+Group-level staircase plots: 
 ```{r}
   
 #make the four bins: 
@@ -204,8 +119,6 @@ GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = moda
 GroupStair 
 
 ```
-
-
 
 Average confidence across domains, split by correct and incorrect trials:
 ```{r}
@@ -376,8 +289,6 @@ Datafi2 <- ggarrange(p7, p10, p8, ncol = 3)
   color = "black", face = "bold", size = 14))  
 
 ```
-
-
 
 Pivot the data frame to wide. 
 
@@ -571,12 +482,136 @@ Figure2 <- ggarrange(p9, GroupStair)
  
 
 ```
-Figure 3: 
+
+Figure 3:  
 ```{r}
-f1 <- annotate_figure(comPlot2, top = text_grob("Correlation of Metacognitive Efficiency", color = "black", 
-                                         face = "bold", size = 14)) 
-annotate_figure(f1, top = text_grob("Figure 3", color = "black", 
-                                         face = "bold", size = 14)) 
+
+fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
+
+if (file.exists(fit_filename) == 1 ) {
+
+output <- readRDS(fit_filename)
+  
+} else{
+  
+message("OBS: You need to fit the hierarhical model using the script called 'fit_hierarhicical_metamodel.rmd' - this will take a LONG time")
+
+}
+
+#Prepare the hierarhical fit for the figure: 
+# Convergence diagnostic
+Value <- gelman.diag(output, confidence = 0.95)
+Rhat <- data.frame(conv = Value$psrf)
+
+# Values (mean and CI)
+Value <- summary(output)
+stat <- data.frame(mean = Value$statistics[,"Mean"])
+stat %<>%
+  rownames_to_column(var = "name") %>% 
+  cbind(CILow = Value$quantiles[,"2.5%"]) %>% 
+  cbind(CIUp = Value$quantiles[,"97.5%"])
+
+# HDI function 
+HDI <- data.frame(HPDinterval(output, prob = 0.95))
+HDI %<>%
+  rownames_to_column(var = "name")
+
+# Posterior distributions 
+mcmc.sample <- ggs(output)
+
+mcmc.rho <- mcmc.sample %>% 
+  filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
+
+#individual rho plots: 
+Rho1 <- mcmc.sample %>%
+  filter(Parameter == "rho[1]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[1]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[1]"], y = 50, xend = HDI$upper[HDI$name == "rho[1]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  xlim(c(-1, 1)) +
+  ggtitle("Mem-Cal")+
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho2 <- mcmc.sample %>%
+  filter(Parameter == "rho[2]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[2]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[2]"], y = 50, xend = HDI$upper[HDI$name == "rho[2]"], yend = 50),colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("Mem-GDP")+
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho3 <- mcmc.sample %>%
+  filter(Parameter == "rho[3]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[3]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[3]"], y = 50, xend = HDI$upper[HDI$name == "rho[3]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  xlim(c(-1, 1)) +
+  ggtitle("Mem-Vision")+
+  #ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho4 <- mcmc.sample %>%
+  filter(Parameter == "rho[4]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[4]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[4]"], y = 50, xend = HDI$upper[HDI$name == "rho[4]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("Cal-GDP")+
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho5 <- mcmc.sample %>%
+  filter(Parameter == "rho[5]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[5]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[5]"], y = 50, xend = HDI$upper[HDI$name == "rho[5]"], yend = 50), colour = "white", size = 2.5) +
+  ggtitle("Cal-Vision")+
+  apatheme +
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+Rho6 <- mcmc.sample %>%
+  filter(Parameter == "rho[6]") %>% 
+  ggplot(aes(value)) +
+  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
+  geom_vline(xintercept = stat$mean[stat$name == "rho[6]"],linetype="dashed", size = 1.5) +
+  geom_segment(aes(x = HDI$lower[HDI$name == "rho[6]"], y = 50, xend = HDI$upper[HDI$name == "rho[6]"], yend = 50), colour = "white", size = 2.5) +
+  apatheme +
+  ggtitle("GDP-Vision")+
+  xlim(c(-1, 1)) +
+ # ylim(c(0, 2500)) +
+  ylab("Sample count") +
+  xlab(expression(paste(rho, " value")))
+
+#Bayesian Hierarhical fit: 
+RhoPlot <- ggarrange(Rho1, Rho2, Rho3, Rho4, Rho5, Rho6)
+CorHi <- annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
+
+#MLE fit
+CorMLE <- annotate_figure(comPlot3, top = text_grob("Maximum likelihood estimation  ", color = "black", face = "bold", size = 14)) 
+
+Figure3 <- ggarrange(CorMLE, CorHi, ncol= 1, nrow=2)  
+  annotate_figure(Figure3, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
+
+ggsave(here("figs", "mrho+mlecorr.png"), height = 7, width = 12)
 
 ```
 
