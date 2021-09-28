@@ -87,6 +87,7 @@ Create individual level staircase plots
 ```
 
 Group-level staircase plots: 
+CHANGE THE NAMES OF THE LEGEND SOMEHOW 
 ```{r}
   
 #make the four bins: 
@@ -113,9 +114,11 @@ GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = moda
   ylim(.65, .8) +
   geom_point() +
   theme_bw() +
-  ggtitle("Group-level Staircases")
+  ggtitle("Group-level Staircases") + 
+  scale_linetype_discrete(name = "Modality", breaks = c("Calories", "GDP","Memory", "Vision"))
 
-GroupStair 
+GroupStair
+  
 
 ```
 
@@ -130,14 +133,14 @@ AvgConfInCo <- metadata %>% filter(accuracy==0) %>%
   group_by(subject, modality) %>% 
   summarise(avgCF_Incor=mean(confidence, na_rm=TRUE))
 
-
 ggSplit<-ggplot() + geom_boxjitter(data=AvgConfCorr, aes(x = modality, y = avgCF_Corr, color="Correct")) +
   geom_boxjitter(data=AvgConfInCo, aes(x = modality, y = avgCF_Incor, color="Incorrect"))+
     theme_bw() +
-   labs(x = "Average Confidence",
-         y = "Modality", 
+   labs(y = "Average Confidence",
+        x = "Modality", 
         color = "Legend") + 
-    ggtitle("Confidence across Trial Types")
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))
+
 ggSplit
 
 ```
@@ -257,11 +260,13 @@ p7<-ggplot(metadata_exc, aes(x = modality, y = avg_conf, color= modality)) +
 p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, color= modality)) +
   geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Efficiency")+
-  ylab("Meta-d'/d'") + xlab("Modality")
+  labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))
 p9<-ggplot(metadata_exc, aes(x = modality, y = da, color= modality)) +
   geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Cognitive Sensitivity") +
-  ylab("d'") + xlab("Modality")
+  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality", 
+        color = "Legend") + 
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))
 p10<-ggplot(metadata_exc, aes(x = modality, y = mda, color= modality)) +
   geom_boxjitter() + theme_bw() + guides(color="none") +
   ggtitle("Metacognitive Sensitivity")+ 
@@ -447,18 +452,12 @@ S6title <- paste("r =",round(res1.6$estimate, digits=3))
 
 
 scat2 <- as_tibble(corr1)
-s11 <-scatter(scat2, scat2$mratio_memory, scat2$mratio_Calories) +
-  scale_y_continuous("Calories")+scale_x_continuous("Memory") + ggtitle(paste(S1title))
-s12 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_vision) +
-  scale_y_continuous("Vision")+scale_x_continuous("Memory") + ggtitle(paste(S2title))
-s13 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_GDP) +
-  scale_y_continuous("GDP")+scale_x_continuous("Memory") + ggtitle(paste(S3title))
-s14 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_vision) + 
-  scale_y_continuous("Vision")+scale_x_continuous("GDP") + ggtitle(paste(S4title))
-s15 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_Calories) + 
-  scale_y_continuous("Calories")+ scale_x_continuous("GDP") + ggtitle(paste(S5title))
-s16 <- scatter(scat2, scat2$mratio_Calories, scat2$mratio_vision) + 
-  scale_y_continuous("Vision")+scale_x_continuous("Calories") + ggtitle(paste(S6title))
+s11 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_Calories) + theme(plot.title = element_text( size = 10)) + scale_y_continuous("Calories")+scale_x_continuous("Memory") + ggtitle(paste(S1title))
+s12 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_vision) + theme(plot.title = element_text( size = 10)) + scale_y_continuous("Vision")+scale_x_continuous("Memory") + ggtitle(paste(S2title))
+s13 <- scatter(scat2, scat2$mratio_memory, scat2$mratio_GDP) + theme(plot.title = element_text( size = 10)) + scale_y_continuous("GDP")+scale_x_continuous("Memory") + ggtitle(paste(S3title))
+s14 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_vision) +  theme(plot.title = element_text( size = 10)) +scale_y_continuous("Vision")+scale_x_continuous("GDP") + ggtitle(paste(S4title))
+s15 <- scatter(scat2, scat2$mratio_GDP, scat2$mratio_Calories) + theme(plot.title = element_text( size = 10)) + scale_y_continuous("Calories")+ scale_x_continuous("GDP") + ggtitle(paste(S5title))
+s16 <- scatter(scat2, scat2$mratio_Calories, scat2$mratio_vision) + theme(plot.title = element_text( size = 10)) + scale_y_continuous("Vision")+scale_x_continuous("Calories") + ggtitle(paste(S6title))
 
 comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16) 
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
@@ -491,11 +490,15 @@ Figure 2: d' and group staircase:
 Figure2 <- ggarrange(p9, GroupStair)  
   annotate_figure(Figure2, top = text_grob("Figure 2", color = "black",face = "bold", size = 14))
  
-
+ggsave(here("figs", "Figure 2.png"), height = 7, width = 12) 
 ```
 
 Figure 3:  
 ```{r}
+
+#For Astrid: 
+output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
+
 
 fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
 
@@ -510,9 +513,6 @@ message("OBS: You need to fit the hierarhical model using the script called 'fit
 }
 
 #Prepare the hierarhical fit for the figure: 
-# Convergence diagnostic
-Value <- gelman.diag(output, confidence = 0.95)
-Rhat <- data.frame(conv = Value$psrf)
 
 # Values (mean and CI)
 Value <- summary(output)
@@ -536,20 +536,14 @@ mcmc.rho <- mcmc.sample %>%
 #individual rho plots: 
 
 #Plot titles: 
-meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(meanRho= mean(value, na.rm=TRUE)) 
+meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
 
-
-S1Rtitle <- mcmc.rho %>% filter(Parameter=="rho[1]") %>% summarise(meanRho= mean(value, na.rm=TRUE)) 
-  
-  
-  meanRho %>%  %>% paste("r =", round(meanRho, digits=3))
-
-
-S2title <- paste("r =",round(res1.2$estimate, digits=3))
-S3title <- paste("r =",round(res1.3$estimate, digits=3))
-S4title <- paste("r =",round(res1.4$estimate, digits=3))
-S5title <- paste("r =",round(res1.5$estimate, digits=3))
-S6title <- paste("r =",round(res1.6$estimate, digits=3))
+H1title <- paste("Rho =",round(meanRho$value[1], digits=3))
+H2title <- paste("Rho =",round(meanRho$value[2], digits=3))
+H3title <- paste("Rho =",round(meanRho$value[3], digits=3))
+H4title <- paste("Rho =",round(meanRho$value[4], digits=3))
+H5title <- paste("Rho =",round(meanRho$value[5], digits=3))
+H6title <- paste("Rho =",round(meanRho$value[6], digits=3))
 
 Rho1 <- mcmc.sample %>%
   filter(Parameter == "rho[1]") %>% 
@@ -558,8 +552,11 @@ Rho1 <- mcmc.sample %>%
   geom_vline(xintercept = stat$mean[stat$name == "rho[1]"],linetype="dashed", size = 1.5) +
   geom_segment(aes(x = HDI$lower[HDI$name == "rho[1]"], y = 50, xend = HDI$upper[HDI$name == "rho[1]"], yend = 50), colour = "white", size = 2.5) +
   apatheme +
-  xlim(c(-1, 1)) +
-  ggtitle("Mem-Cal")+
+  xlim(c(-0.25, 1)) +
+  labs(title = "Memory and Calories",
+       subtitle= paste(H1title))+
+  theme(plot.title = element_text( size = 12),
+  plot.subtitle = element_text(size = 8)) +
  # ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
@@ -571,8 +568,11 @@ Rho2 <- mcmc.sample %>%
   geom_vline(xintercept = stat$mean[stat$name == "rho[2]"],linetype="dashed", size = 1.5) +
   geom_segment(aes(x = HDI$lower[HDI$name == "rho[2]"], y = 50, xend = HDI$upper[HDI$name == "rho[2]"], yend = 50),colour = "white", size = 2.5) +
   apatheme +
-  ggtitle("Mem-GDP")+
-  xlim(c(-1, 1)) +
+    labs(title = "Memory and GDP",
+       subtitle= paste(H2title))+
+  theme(plot.title = element_text( size = 12),
+  plot.subtitle = element_text(size = 8)) +
+  xlim(c(-0.25, 1)) +
  # ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
@@ -584,8 +584,11 @@ Rho3 <- mcmc.sample %>%
   geom_vline(xintercept = stat$mean[stat$name == "rho[3]"],linetype="dashed", size = 1.5) +
   geom_segment(aes(x = HDI$lower[HDI$name == "rho[3]"], y = 50, xend = HDI$upper[HDI$name == "rho[3]"], yend = 50), colour = "white", size = 2.5) +
   apatheme +
-  xlim(c(-1, 1)) +
-  ggtitle("Mem-Vision")+
+  xlim(c(-0.25, 1)) +
+      labs(title = "Memory and Vision",
+       subtitle= paste(H3title))+
+  theme(plot.title = element_text( size = 12),
+  plot.subtitle = element_text(size = 8)) +
   #ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
@@ -597,8 +600,11 @@ Rho4 <- mcmc.sample %>%
   geom_vline(xintercept = stat$mean[stat$name == "rho[4]"],linetype="dashed", size = 1.5) +
   geom_segment(aes(x = HDI$lower[HDI$name == "rho[4]"], y = 50, xend = HDI$upper[HDI$name == "rho[4]"], yend = 50), colour = "white", size = 2.5) +
   apatheme +
-  ggtitle("Cal-GDP")+
-  xlim(c(-1, 1)) +
+        labs(title = "GDP and Calories",
+       subtitle= paste(H4title))+
+  theme(plot.title = element_text( size = 12),
+  plot.subtitle = element_text(size = 8)) +
+  xlim(c(-0.25, 1)) +
  # ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
@@ -609,9 +615,12 @@ Rho5 <- mcmc.sample %>%
   geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
   geom_vline(xintercept = stat$mean[stat$name == "rho[5]"],linetype="dashed", size = 1.5) +
   geom_segment(aes(x = HDI$lower[HDI$name == "rho[5]"], y = 50, xend = HDI$upper[HDI$name == "rho[5]"], yend = 50), colour = "white", size = 2.5) +
-  ggtitle("Cal-Vision")+
   apatheme +
-  xlim(c(-1, 1)) +
+     labs(title = "Calories and Vision",
+       subtitle= paste(H5title))+
+  theme(plot.title = element_text( size = 12),
+  plot.subtitle = element_text(size = 8)) +
+  xlim(c(-0.25, 1)) +
  # ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
@@ -623,8 +632,11 @@ Rho6 <- mcmc.sample %>%
   geom_vline(xintercept = stat$mean[stat$name == "rho[6]"],linetype="dashed", size = 1.5) +
   geom_segment(aes(x = HDI$lower[HDI$name == "rho[6]"], y = 50, xend = HDI$upper[HDI$name == "rho[6]"], yend = 50), colour = "white", size = 2.5) +
   apatheme +
-  ggtitle("GDP-Vision")+
-  xlim(c(-1, 1)) +
+     labs(title = "GDP and Vision",
+       subtitle= paste(H6title))+
+  theme(plot.title = element_text( size = 12),
+  plot.subtitle = element_text(size = 8)) +
+  xlim(c(-0.25, 1)) +
  # ylim(c(0, 2500)) +
   ylab("Sample count") +
   xlab(expression(paste(rho, " value")))
@@ -635,14 +647,13 @@ CorHi <- annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimati
 
 #MLE fit:
 
-
-
 CorMLE <- annotate_figure(comPlot2, top = text_grob("Maximum likelihood estimation  ", color = "black", face = "bold", size = 14)) 
 
 Figure3 <- ggarrange(CorMLE, CorHi, ncol= 1, nrow=2)  
   annotate_figure(Figure3, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
 
-ggsave(here("figs", "mrho+mlecorr.png"), height = 7, width = 12)
+  
+ggsave(here("figs", "Figure 3.png"), height = 7, width = 12)  
 
 ```
 
@@ -651,6 +662,8 @@ Figure 4
 ```{r}
 Figure4 <- ggarrange(p8, ggSplit)
   annotate_figure(Figure4, top = text_grob("Figure 4", color = "black",face = "bold", size = 14))
+  
+ggsave(here("figs", "Figure 4.png"), height = 7, width = 12)  
   
 ```
 
@@ -801,27 +814,27 @@ S6Etitle <- paste("r =",round(res1.6E$estimate, digits=3))
 
 #Plot the correlations: 
 scat2E <- as_tibble(corr1E)
-s11E <-scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_Calories) +
+s11E <-scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_Calories) + theme(plot.title = element_text( size = 10)) +
   scale_y_continuous("Calories")+scale_x_continuous("Memory") + ggtitle(paste(S1Etitle))
-s12E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_vision) + 
+s12E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_vision) + theme(plot.title = element_text( size = 10)) +
   scale_y_continuous("Vision")+scale_x_continuous("Memory") + ggtitle(paste(S2Etitle))
-s13E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_GDP) +
+s13E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_GDP) + theme(plot.title = element_text( size = 10)) +
   scale_y_continuous("GDP")+scale_x_continuous("Memory") + ggtitle(paste(S3Etitle))
-s14E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_vision) + 
+s14E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_vision) + theme(plot.title = element_text( size = 10)) +
   scale_y_continuous("Vision")+scale_x_continuous("GDP") + ggtitle(paste(S4Etitle))
-s15E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_Calories) + 
+s15E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_Calories) + theme(plot.title = element_text( size = 10)) +
   scale_y_continuous("Calories")+ scale_x_continuous("GDP") + ggtitle(paste(S5Etitle))
-s16E <- scatter(scat2E, scat2E$mratio_Calories, scat2E$mratio_vision) + 
+s16E <- scatter(scat2E, scat2E$mratio_Calories, scat2E$mratio_vision) + theme(plot.title = element_text( size = 10)) +
   scale_y_continuous("Vision")+scale_x_continuous("Calories") + ggtitle(paste(S6Etitle))
 
 comPlotE <- ggarrange(s11E, s12E, s13E, s14E, s15E, s16E) 
-CorExcMLE<-annotate_figure(comPlotE, top = text_grob("Metacognitive Efficiency without outliers", color = "black", face = "bold", size = 14))   
+CorExcMLE<-annotate_figure(comPlotE, top = text_grob("Maximum likelihood estimation", color = "black", face = "bold", size = 14))   
 
 #figure 3 with this instead: 
 Figure3E <- ggarrange(CorExcMLE, CorHi, ncol= 1, nrow=2)  
   annotate_figure(Figure3E, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
 
-ggsave(here("figs", "mrho+mlecorrExcOutliers.png"), height = 7, width = 12)
+ggsave(here("figs", "Figure 3 without Outliers.png"), height = 7, width = 12)
 
 ```
 
