@@ -7,7 +7,7 @@ Set up
 
 ```{r}
 # clean slate to be sure
-#rm(list = ls())
+rm(list = ls())
 library(CCA)
 library(CCP)
 library(readr)
@@ -66,27 +66,39 @@ names(metacog_group_data)[names(metacog_group_data) == "pp"] <- "Sid"
 all_data <- full_join(survey_data_pre, survey_data_post, by = "Sid")
 all_data <- full_join(all_data, metacog_data, by = "Sid")
 all_data <- full_join(all_data, metacog_group_data, by = "Sid")
+all_data <- na.omit(all_data)
 
 
-
-all_data <- all_data %>%
+out_data <- all_data %>%
   mutate(self_vis_diff = self_visual_post - self_visual_pre) %>%
   mutate(self_mem_diff = self_memory_post - self_memory_pre) %>%
   mutate(self_calorie_diff = self_calories_post - self_calories_pre) %>%
-  mutate(self_gdp_diff = self_gdp_post - self_gdp_pre) %>%
-  na.omit()
+  mutate(self_gdp_diff = self_gdp_post - self_gdp_pre)  %>%
+  rowwise() %>% 
+  mutate(self_vis_avg=mean(c(self_visual_post,self_visual_pre))) %>% 
+  mutate(self_mem_avg=mean(c(self_memory_post,self_memory_pre))) %>% 
+  mutate(self_calorie_avg=mean(c(self_calories_post,self_calories_pre))) %>% 
+  mutate(self_gdp_avg=mean(c(self_gdp_post,self_gdp_pre)))
+
+
+
+library(psych)
 
 # export data
-write_csv(all_data, here("data_summary", "all_group_data.csv"))
+#write_csv(all_data, here("data_summary_v1", "all_group_data.csv"))
 
 ```
 
 Lets do some PCA on the thought probes.
 ```{r}
-probe_data <- all_data %>%
+probe_data <- out_data %>%
   dplyr::select(starts_with("mw_")) 
 
-mw_model = principal(probe_data, rotate = "Oblique", nfactors = 5)
+
+set.seed(123)
+parallel = fa.parallel(probe_data)
+
+mw_model = principal(probe_data, nfactors = 5)
 
 scores<-factor.scores(probe_data, mw_model, method = "Bartlett")
 scores<-as.data.frame(scores$scores)
@@ -96,6 +108,11 @@ mw_model
 png('fa_diag.png')
 fa.diagram(mw_model)
 dev.off()
+
+
+save_factor_data <- full_join(out_data, scores, by = "Sid")
+save_factor_data <- filter(save_factor_data, gender != "non-binary")
+write_csv(save_factor_data, here("data_summary", "all_group_datav1.csv"))
 
 
 ```
