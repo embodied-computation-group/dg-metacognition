@@ -38,7 +38,6 @@ colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
 
 ```
 
-
 Load the data. 
 ```{r}
 # read in the data
@@ -70,7 +69,6 @@ metadata <- na.omit(metadata)
 #Exclude those with rt <50ms 
 metadata <- metadata%>%filter(rt>=0.05) 
 
-
 #Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
 metadata<-metadata%>%mutate(modality=as.factor(modality))
 metadatac<-metadata #create new dataframe
@@ -83,97 +81,7 @@ metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs
 
 ```
 
-Create individual level staircase plots 
-```{r}
-# note that this procedure can take a long time - uncomment to make individual plots for QC procedure
-#source(here("r", "make_indivi_plots.R"))
-
-```
-
-Group-level staircase plots: 
-CHANGE THE NAMES OF THE LEGEND SOMEHOW 
-```{r}
-  
-#make the four bins: 
-metadataPlot <- metadata %>%group_by(subject) %>% 
-mutate(trial_number = row_number()) %>%
-group_by(subject) #create a trial number column
-  
-  metadataPlot <- metadataPlot %>%group_by(modality) %>% mutate(trial_bin = ntile(trial_number, n = 4)) #split in the four bins according to task 
-  #(note different number of trials)
-  
-#Summarise means for each bin and modality
-metadataPlotMean <- metadataPlot %>%
-group_by(trial_bin, modality) %>%
-summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
-ungroup()
-  
-#plot:   
-GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = modality, color= modality)) +
-  geom_line() +
-  geom_point() + 
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size = 1, width=0) +
-  ylab("Average Accuracy")+
-  xlab("Trial Quarter") + 
-  geom_point(shape = 21, alpha = 0.7) +
-  theme_cowplot() +
-  ggtitle("Group-level Staircases") + 
-  scale_linetype_discrete(name = "Modality", breaks = c("Calories", "GDP","Memory", "Vision")) +
-  scale_y_continuous(breaks = seq(.6, .9, .1),
-                     labels = scales::percent,
-                     limits = c(.6, .9)) +
-  theme(legend.title = element_blank(), 
-        legend.position = c(1, 1), 
-        legend.justification = c(1,1), 
-        legend.direction = "horizontal") +
-  guides(colour = guide_legend(nrow = 2))+
-
-  scale_colour_manual(values = colors)
-
-GroupStair
-  
-
-```
-
-Average confidence across domains, split by correct and incorrect trials:
-```{r}
-tmp_data <- metadata  %>%
-   mutate(accuracy = factor(accuracy)) %>%
-  mutate(accuracy = recode_factor(accuracy, '1' = "hit", '0' = "miss"))
-
-#Average confidence for Correct trials:
-ConfByError <- tmp_data  %>%
-  group_by(subject, modality, accuracy) %>% 
-  summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
-  
-  
-ggSplit <- ggplot(data=ConfByError, 
-       aes(x = modality, y = avgCF_Corr, fill=accuracy), alpha = 0.7) + 
-#  geom_boxjitter(jitter.shape = 21, notch = TRUE, width = .5, errorbar.draw = TRUE, errorbar.length = .2,
-#                 alpha = 0.7, outlier.shape = NA) +
-  geom_half_violin(alpha = 0.7)+
-  geom_half_point(shape = 21, alpha = 0.7)+
-  geom_half_boxplot(outlier.shape = NA, 
-                    side = "l", notch = TRUE, width = 0.25,
-                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-  theme_cowplot() +
-  labs(y = "Average Confidence",
-        x = "Modality", 
-        fill = "Legend") + 
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))+ 
-  scale_fill_manual(values = colors[c(4,1)])+
-  scale_y_continuous(breaks = seq(1, 7, 1),
-                     limits = c(1, 7)) +
-  theme(legend.position = "top", legend.title = element_blank(), legend.justification = "right") +
-  ggtitle("Confidence by Accuracy")
-
-ggSplit
-
-```
-
-
 Let's loop over subjects now and fit the MLE model. 
-
 ```{r}
 
 subjects = unique(metadata$subject) # subjects vector, for looping
@@ -254,101 +162,7 @@ head(metadata_exc)
 
 ```
 
-Plots of key metacognitive measures for both filtered and unfiltered data: 
-```{r}
-
-#unfiltered
-p1<-ggplot(fitAvg_data, aes(x = modality, y =c, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Criterion Unfiltered")
-p2<-ggplot(fitAvg_data, aes(x = modality, y = avg_conf, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Metacognitive Bias Unfiltered")
-p3<-ggplot(fitAvg_data, aes(x = modality, y = mda, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Metacognitive Sensitivity Unfiltered")
-p4<-ggplot(fitAvg_data, aes(x = modality, y = da, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Cognitive Sensitivity Unfiltered")
-p5<-ggplot(fitAvg_data, aes(x = modality, y = mratio, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Metacognitive efficiency Unfiltered")
-
-#filtered Plots: 
-p6<-ggplot(metadata_exc, aes(x = modality, y =c, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Cognitive Criterion") +
-  ylab("c") + xlab("Modality")
-p7<-ggplot(metadata_exc, aes(x = modality, y = avg_conf, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Metacognitive Bias")+
-  ylab("Average Confidence") + xlab("Modality")
-
-p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
-  geom_boxjitter(outlier.shape = NA,
-                 jitter.shape = 21, notch = TRUE, width = .25,
-                errorbar.draw = TRUE, errorbar.length = .2, alpha = .7) +
- #geom_half_violin(alpha = 0.7)+
-#  geom_half_point(shape = 21, alpha = 0.7, transformation = position_jitter(.01), range_scale = .5, side = "r")+
- # geom_half_boxplot(outlier.shape = NA, 
-  #                  side = "l", notch = TRUE, width = 0.25,
-  #                  position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-   guides(color="none") +
-  ggtitle("Metacognitive Efficiency")+
-  labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
-  scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
-   theme_cowplot() +
-   theme(legend.position = "none") 
-
-
-p9<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
- geom_boxjitter(outlier.shape = NA,
-                 jitter.shape = 21, notch = TRUE, errorbar.draw = TRUE,
-                errorbar.length = .2, alpha = .7) +
-#   geom_half_violin(alpha = 0.7)+
-#  geom_half_point(shape = 21, alpha = 0.7)+
-#  geom_half_boxplot(outlier.shape = NA, 
- #                   side = "l", notch = TRUE, width = 0.25,
-#                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-  
-  guides(fill="none") +
-  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality") + 
-  theme_cowplot() + 
-  scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
-  theme(legend.position = "none")
-p9
-
-p10<-ggplot(metadata_exc, aes(x = modality, y = mda, color= modality)) +
-  geom_boxjitter() + theme_bw() + guides(color="none") +
-  ggtitle("Metacognitive Sensitivity")+ 
-  ylab("meta-d'") + xlab("Modality")
-
-# Filtered versus unfiltered 
-filunfil1 <- ggarrange(p1, p6)
-  annotate_figure(filunfil1, top = text_grob("Cognitive Criterion filtered/unfiltered", color = "black", face = "bold", size = 14))
-filunfil5 <- ggarrange(p4, p9)
-  annotate_figure(filunfil5, top = text_grob("Cognitive Sensitivity filtered/unfiltered", color = "black",face = "bold", size = 14))
-filunfil2 <- ggarrange(p2, p7)
-  annotate_figure(filunfil2, top = text_grob("Metaognitive Bias filtered/unfiltered", color = "black", face = "bold", size = 14))
-filunfil3 <- ggarrange(p3, p10)
-  annotate_figure(filunfil3, top = text_grob("Metacognitive Sensitivity filtered/unfiltered",   color = "black", face = "bold", size = 14))
-filunfil4 <- ggarrange(p5, p8)
-  annotate_figure(filunfil4, top = text_grob("Metacognitive Efficiency filtered/unfiltered", color = "black",  face = "bold", size = 14))
-
-
-#Filtered data´: 
-Datafil1 <- ggarrange(p9, p6)
-  annotate_figure(Datafil1, top = text_grob("MLE Estimation of Cognitive performance", color = "black",face = "bold", size = 14))  
-Datafi2 <- ggarrange(p7, p10, p8, ncol = 3)
-  annotate_figure(Datafi2, top = text_grob("MLE Estimation of Metacognitive performance", 
-  color = "black", face = "bold", size = 14))  
-
-```
-
 Pivot the data frame to wide. 
-
 ```{r}
 
 fit_data_wide <- metadata_exc %>% pivot_wider(
@@ -471,29 +285,155 @@ head(corrtable)
 
 
 ```
-
-Scatter plots and linear regressions: 
+Plot the bootstrap samples of correlations: 
 ```{r}
 
-#Metacognitive Sensitivity
-scat1 <- as_tibble(corr)
-s1 <-scatter(scat1, scat1$mda_memory, scat1$mda_Calories) + 
-  scale_y_continuous("Calories")+ scale_x_continuous("Memory")
-s2 <- scatter(scat1, scat1$mda_memory, scat1$mda_vision) + 
-  scale_y_continuous("Vision")+ scale_x_continuous("Memory")
-s3 <- scatter(scat1, scat1$mda_memory, scat1$mda_GDP) + 
-  scale_y_continuous("GDP")+ scale_x_continuous("Memory")
-s4 <- scatter(scat1, scat1$mda_GDP, scat1$mda_vision) + 
-  scale_y_continuous("Vision")+ scale_x_continuous("GDP")
-s5 <- scatter(scat1, scat1$mda_GDP, scat1$mda_Calories) + 
-  scale_y_continuous("Calories")+ scale_x_continuous("GDP")
-s6 <- scatter(scat1, scat1$mda_Calories, scat1$mda_vision) +
-  scale_y_continuous("Vision") + scale_x_continuous("Calories")
-
-comPlot1 <- ggarrange(s1, s2, s3, s4, s5, s6)
-annotate_figure(comPlot1, top = text_grob("Metacognitive Sensitivity", color = "black", 
+b1 <- plotBoot(res1) + ggtitle("Memory and Calories")
+b2 <- plotBoot(res2) + ggtitle("Memory and Vision")
+b3 <- plotBoot(res3) + ggtitle("Memory and GDP")
+b4 <- plotBoot(res4) + ggtitle("GDP and Vision")
+b5 <- plotBoot(res5) + ggtitle("GDP and Calories")
+b6 <- plotBoot(res6) + ggtitle("Vision and Calories")
+BootPlot1 <- ggarrange(b1, b2, b3, b4, b5, b6)
+annotate_figure(BootPlot1, top = text_grob("Bootstrap samples of Meta-d' correlations", color = "black", 
                                          face = "bold", size = 14))  
 
+b11 <- plotBoot(res1.1) + ggtitle("Memory and Calories")
+b12 <- plotBoot(res1.2) + ggtitle("Memory and Vision")
+b13 <- plotBoot(res1.3) + ggtitle("Memory and GDP")
+b14 <- plotBoot(res1.4) + ggtitle("GDP and Vision")
+b15 <- plotBoot(res1.5) + ggtitle("GDP and Calories")
+b16 <- plotBoot(res1.6) + ggtitle("Vision and Calories")
+BootPlot2 <- ggarrange(b11, b12, b13, b14, b15, b16)
+annotate_figure(BootPlot2, top = text_grob("Bootstrap samples of Mratio correlations Efficiency", color = "black", 
+                                         face = "bold", size = 14))  
+b21 <- plotBoot(res2.1) + ggtitle("Memory and Calories")
+b22 <- plotBoot(res2.2) + ggtitle("Memory and Vision")
+b23 <- plotBoot(res2.3) + ggtitle("Memory and GDP")
+b24 <- plotBoot(res2.4) + ggtitle("GDP and Vision")
+b25 <- plotBoot(res2.5) + ggtitle("GDP and Calories")
+b26 <- plotBoot(res2.6) + ggtitle("Vision and Calories")
+BootPlot3 <- ggarrange(b21, b22, b23, b24, b25, b26)
+annotate_figure(BootPlot3, top = text_grob("Bootstrap samples of Meta-bias correlations", color = "black", 
+                                         face = "bold", size = 14))  
+
+```
+
+Now we calculate and plot the Bayes factors for the correlations: 
+!!! COMBINE PLOTS + SUMMARY OF Stats. 
+```{r}
+# Metacognitive sensitivity 
+ source(here("r", "Bayesfactor.R"))
+  
+bf1 <- bayes(corr$mda_memory, corr$mda_Calories)
+bf2 <- bayes(corr$mda_memory, corr$mda_vision)
+bf3 <- bayes(corr$mda_memory, corr$mda_GDP)
+bf4 <- bayes(corr$mda_GDP, corr$mda_vision)
+bf5 <- bayes(corr$mda_GDP, corr$mda_Calories)
+bf6 <- bayes(corr$mda_Calories, corr$mda_vision)
+BayesPlot1 <- ggarrange(plot, bf2, bf3, bf4, bf5, bf6)
+annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' correlations", color = "black", 
+                                         face = "bold", size = 14))  
+#Metacognitive Efficiency
+bf11 <- bayes(corr1$mratio_memory, corr1$mratio_Calories)
+bf12 <- bayes(corr1$mratio_memory, corr1$mratio_vision)
+bf13 <- bayes(corr1$mratio_memory, corr1$mratio_GDP)
+bf14 <- bayes(corr1$mratio_GDP, corr1$mratio_vision)
+bf15 <- bayes(corr1$mratio_GDP, corr1$mratio_Calories)
+bf16 <- bayes(corr1$mratio_Calories, corr1$mratio_vision)
+BayesPlot2 <- ggarrange(bf11, bf12, bf13, bf14, bf15, bf16)
+annotate_figure(BayesPlot2, top = text_grob("Bayesfactor samples of Mratio' correlations", color = "black", 
+                                         face = "bold", size = 14))  
+#Metacognitive bias 
+bf1 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_Calories)
+bf2 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_vision)
+bf3 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_GDP)
+bf4 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_vision)
+bf5 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_Calories)
+bf6 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
+BayesPlot1 <- ggarrange(bf21, bf22, bf23, bf24, bf25, bf26)
+annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' correlations", color = "black", 
+                                         face = "bold", size = 14))  
+
+
+```
+
+Here we plot the Figures from the Paper: 
+Figure 2: d' and group staircase: 
+```{r}
+#Figure2 <- ggarrange(p9, GroupStair)  
+#  annotate_figure(Figure2, top = text_grob("Figure 2", color = "black",face = "bold", size = 14))
+
+#Plot of d' without outliers: 
+p9<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
+ geom_boxjitter(outlier.shape = NA,
+                 jitter.shape = 21, notch = TRUE, errorbar.draw = TRUE,
+                errorbar.length = .2, alpha = .7) +
+#   geom_half_violin(alpha = 0.7)+
+#  geom_half_point(shape = 21, alpha = 0.7)+
+#  geom_half_boxplot(outlier.shape = NA, 
+ #                   side = "l", notch = TRUE, width = 0.25,
+#                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
+  
+  guides(fill="none") +
+  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality") + 
+  theme_cowplot() + 
+  scale_fill_manual(values = colors)+
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
+  theme(legend.position = "none")
+
+#Plot of group-level Staircases: 
+ 
+#make the four bins: 
+metadataPlot <- metadata %>%group_by(subject) %>% 
+mutate(trial_number = row_number()) %>%
+group_by(subject) #create a trial number column
+  
+  metadataPlot <- metadataPlot %>%group_by(modality) %>% mutate(trial_bin = ntile(trial_number, n = 4)) #split in the four bins according to task 
+  #(note different number of trials)
+  
+#Summarise means for each bin and modality
+metadataPlotMean <- metadataPlot %>%
+group_by(trial_bin, modality) %>%
+summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+ungroup()
+  
+#plot:   
+GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = modality, color= modality)) +
+  geom_line() +
+  geom_point() + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size = 1, width=0) +
+  ylab("Average Accuracy")+
+  xlab("Trial Quarter") + 
+  geom_point(shape = 21, alpha = 0.7) +
+  theme_cowplot() +
+  ggtitle("Group-level Staircases") + 
+  scale_linetype_discrete(name = "Modality", breaks = c("Calories", "GDP","Memory", "Vision")) +
+  scale_y_continuous(breaks = seq(.6, .9, .1),
+                     labels = scales::percent,
+                     limits = c(.6, .9)) +
+  theme(legend.title = element_blank(), 
+        legend.position = c(1, 1), 
+        legend.justification = c(1,1), 
+        legend.direction = "horizontal") +
+  guides(colour = guide_legend(nrow = 2))+
+
+  scale_colour_manual(values = colors)
+
+p9 / GroupStair + plot_annotation(
+  #title = 'Figure 2',
+  tag_levels = 'A',
+  theme = theme(plot.title = element_text(size = 14)) & 
+  theme(text = element_text('arial')))
+ 
+
+ggsave(here("figs", "Figure 2.png"), height = 7, width = 4) 
+```
+
+Figure 3:  
+```{r}
+
+#The scatter plot for the MLE estimation of Mratio: 
 #Metacognitive Efficiency
 #Indicate the estimated correlations: 
 S1title <- paste("r =",round(res1.1$estimate, digits=3))
@@ -516,45 +456,7 @@ comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16)
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
                                          face = "bold", size = 14))    
 
-
-#Metacognitive Bias
-scat3 <- as_tibble(corr2)
-s21 <-scatter(scat3, scat3$avg_conf_memory, scat3$avg_conf_Calories) +
-  scale_y_continuous("Calories") + scale_x_continuous("Memory")
-s22 <- scatter(scat3, scat3$avg_conf_memory, scat3$avg_conf_vision) + 
-  scale_y_continuous("Vision") + scale_x_continuous("Memory")
-s23 <- scatter(scat3, scat3$avg_conf_memory, scat3$avg_conf_GDP) + 
-  scale_y_continuous("GDP") + scale_x_continuous("Memory")
-s24 <- scatter(scat3, scat3$avg_conf_GDP, scat3$avg_conf_vision) + 
-  scale_y_continuous("Vision") + scale_x_continuous("GDP")
-s25 <- scatter(scat3, scat3$avg_conf_GDP, scat3$avg_conf_Calories) + 
-  scale_y_continuous("Calories") + scale_x_continuous("GDP")
-s26 <- scatter(scat3, scat3$avg_conf_Calories, scat3$avg_conf_vision) + 
-  scale_y_continuous("Vision") + scale_x_continuous("Calories")
-
-comPlot3 <- ggarrange(s21, s22, s23, s24, s25, s26)
-annotate_figure(comPlot3, top = text_grob("Metacognitive Bias", color = "black", 
-                                         face = "bold", size = 14))     
-
-```
-
-Figure 2: d' and group staircase: 
-```{r}
-#Figure2 <- ggarrange(p9, GroupStair)  
-#  annotate_figure(Figure2, top = text_grob("Figure 2", color = "black",face = "bold", size = 14))
-  
-p9 / GroupStair + plot_annotation(
-  #title = 'Figure 2',
-  tag_levels = 'A',
-  theme = theme(plot.title = element_text(size = 14)) & 
-  theme(text = element_text('arial')))
- 
-
-ggsave(here("figs", "Figure 2.png"), height = 7, width = 4) 
-```
-
-Figure 3:  
-```{r}
+#The plots for the hierarhical model: 
 
 #For Astrid: 
 output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
@@ -717,98 +619,7 @@ ggsave(here("figs", "Figure 3.png"), height = 7, width = 12)
 
 ```
 
-
-Figure 4
-```{r}
-Figure4 <- ggarrange(p8, ggSplit)
-  annotate_figure(Figure4, top = text_grob("Figure 4", color = "black",face = "bold", size = 14))
-  
-ggSplit / p8   + plot_annotation(
-  tag_levels = 'A',
-  theme = theme(plot.title = element_text(size = 12)) & 
-  theme(text = element_text('arial')))
-  
-  
-
-ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)  
-  
-```
-
-
-Bootstrap samples 
-```{r}
-
-b1 <- plotBoot(res1) + ggtitle("Memory and Calories")
-b2 <- plotBoot(res2) + ggtitle("Memory and Vision")
-b3 <- plotBoot(res3) + ggtitle("Memory and GDP")
-b4 <- plotBoot(res4) + ggtitle("GDP and Vision")
-b5 <- plotBoot(res5) + ggtitle("GDP and Calories")
-b6 <- plotBoot(res6) + ggtitle("Vision and Calories")
-BootPlot1 <- ggarrange(b1, b2, b3, b4, b5, b6)
-annotate_figure(BootPlot1, top = text_grob("Bootstrap samples of Meta-d' correlations", color = "black", 
-                                         face = "bold", size = 14))  
-
-b11 <- plotBoot(res1.1) + ggtitle("Memory and Calories")
-b12 <- plotBoot(res1.2) + ggtitle("Memory and Vision")
-b13 <- plotBoot(res1.3) + ggtitle("Memory and GDP")
-b14 <- plotBoot(res1.4) + ggtitle("GDP and Vision")
-b15 <- plotBoot(res1.5) + ggtitle("GDP and Calories")
-b16 <- plotBoot(res1.6) + ggtitle("Vision and Calories")
-BootPlot2 <- ggarrange(b11, b12, b13, b14, b15, b16)
-annotate_figure(BootPlot2, top = text_grob("Bootstrap samples of Mratio correlations Efficiency", color = "black", 
-                                         face = "bold", size = 14))  
-b21 <- plotBoot(res2.1) + ggtitle("Memory and Calories")
-b22 <- plotBoot(res2.2) + ggtitle("Memory and Vision")
-b23 <- plotBoot(res2.3) + ggtitle("Memory and GDP")
-b24 <- plotBoot(res2.4) + ggtitle("GDP and Vision")
-b25 <- plotBoot(res2.5) + ggtitle("GDP and Calories")
-b26 <- plotBoot(res2.6) + ggtitle("Vision and Calories")
-BootPlot3 <- ggarrange(b21, b22, b23, b24, b25, b26)
-annotate_figure(BootPlot3, top = text_grob("Bootstrap samples of Meta-bias correlations", color = "black", 
-                                         face = "bold", size = 14))  
-
-```
-
-Bayes Factor: 
-!!! COMBINE PLOTS + SUMMARY OF Stats. 
-```{r}
-# Metacognitive sensitivity 
- source(here("r", "Bayesfactor.R"))
-  
-bf1 <- bayes(corr$mda_memory, corr$mda_Calories)
-bf2 <- bayes(corr$mda_memory, corr$mda_vision)
-bf3 <- bayes(corr$mda_memory, corr$mda_GDP)
-bf4 <- bayes(corr$mda_GDP, corr$mda_vision)
-bf5 <- bayes(corr$mda_GDP, corr$mda_Calories)
-bf6 <- bayes(corr$mda_Calories, corr$mda_vision)
-BayesPlot1 <- ggarrange(plot, bf2, bf3, bf4, bf5, bf6)
-annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' correlations", color = "black", 
-                                         face = "bold", size = 14))  
-#Metacognitive Efficiency
-bf11 <- bayes(corr1$mratio_memory, corr1$mratio_Calories)
-bf12 <- bayes(corr1$mratio_memory, corr1$mratio_vision)
-bf13 <- bayes(corr1$mratio_memory, corr1$mratio_GDP)
-bf14 <- bayes(corr1$mratio_GDP, corr1$mratio_vision)
-bf15 <- bayes(corr1$mratio_GDP, corr1$mratio_Calories)
-bf16 <- bayes(corr1$mratio_Calories, corr1$mratio_vision)
-BayesPlot2 <- ggarrange(bf11, bf12, bf13, bf14, bf15, bf16)
-annotate_figure(BayesPlot2, top = text_grob("Bayesfactor samples of Mratio' correlations", color = "black", 
-                                         face = "bold", size = 14))  
-#Metacognitive bias 
-bf1 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_Calories)
-bf2 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_vision)
-bf3 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_GDP)
-bf4 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_vision)
-bf5 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_Calories)
-bf6 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
-BayesPlot1 <- ggarrange(bf21, bf22, bf23, bf24, bf25, bf26)
-annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' correlations", color = "black", 
-                                         face = "bold", size = 14))  
-
-
-```
-
-MLE individual fit Correlations and figure 3 without Mratio outliers: 
+Figure 3 without Mratio outliers: 
 ```{r}
 #exclude those where mratio could not be estimated  
 metadata_excMratio <- metadata_exc%>%filter(mratio!="NaN")
@@ -905,7 +716,122 @@ ggsave(here("figs", "Figure 3 without Outliers.png"), height = 7, width = 12)
 
 ```
 
+Figure 4
+```{r}
+
+#Mratio across modalities:
+p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
+  geom_boxjitter(outlier.shape = NA,
+                 jitter.shape = 21, notch = TRUE, width = .25,
+                errorbar.draw = TRUE, errorbar.length = .2, alpha = .7) +
+ #geom_half_violin(alpha = 0.7)+
+#  geom_half_point(shape = 21, alpha = 0.7, transformation = position_jitter(.01), range_scale = .5, side = "r")+
+ # geom_half_boxplot(outlier.shape = NA, 
+  #                  side = "l", notch = TRUE, width = 0.25,
+  #                  position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
+   guides(color="none") +
+  ggtitle("Metacognitive Efficiency")+
+  labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
+  scale_fill_manual(values = colors)+
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
+   theme_cowplot() +
+   theme(legend.position = "none") 
+
+#Average confidence across domains, split by correct and incorrect trials
+#split by correct and incorrect:
+tmp_data <- metadata  %>%
+   mutate(accuracy = factor(accuracy)) %>%
+  mutate(accuracy = recode_factor(accuracy, '1' = "hit", '0' = "miss"))
+
+#Average confidence for Correct trials:
+ConfByError <- tmp_data  %>%
+  group_by(subject, modality, accuracy) %>% 
+  summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
+  
+  
+ggSplit <- ggplot(data=ConfByError, 
+       aes(x = modality, y = avgCF_Corr, fill=accuracy), alpha = 0.7) + 
+#  geom_boxjitter(jitter.shape = 21, notch = TRUE, width = .5, errorbar.draw = TRUE, errorbar.length = .2,
+#                 alpha = 0.7, outlier.shape = NA) +
+  geom_half_violin(alpha = 0.7)+
+  geom_half_point(shape = 21, alpha = 0.7)+
+  geom_half_boxplot(outlier.shape = NA, 
+                    side = "l", notch = TRUE, width = 0.25,
+                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
+  theme_cowplot() +
+  labs(y = "Average Confidence",
+        x = "Modality", 
+        fill = "Legend") + 
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))+ 
+  scale_fill_manual(values = colors[c(4,1)])+
+  scale_y_continuous(breaks = seq(1, 7, 1),
+                     limits = c(1, 7)) +
+  theme(legend.position = "top", legend.title = element_blank(), legend.justification = "right") +
+  ggtitle("Confidence by Accuracy")
+
+#Now combine the plots: 
+Figure4 <- ggarrange(p8, ggSplit)
+  annotate_figure(Figure4, top = text_grob("Figure 4", color = "black",face = "bold", size = 14))
+  
+ggSplit / p8   + plot_annotation(
+  tag_levels = 'A',
+  theme = theme(plot.title = element_text(size = 12)) & 
+  theme(text = element_text('arial')))
+  
+  
+
+ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)  
+  
+```
+
+Here are some additional plots - you can un-comment these sections to see.
+Note that the individual staircase plots may take a LONG time to produce. 
+
+Plots of key metacognitive measures for both filtered and unfiltered data: 
+```{r}
+#Source here to get the additional plots of the distribution of d', criterion,
+#meta-d', bias and m-ratio across condition, both before and after group-level
+#exclusion: 
+
+#source(here("r", "MLE_plots.R"))
+
+#Plots showing the comparison of filtered and unfiltered plots: 
+#annotate_figure(filunfil1, top = text_grob("Cognitive Criterion filtered/unfiltered", color = "black", face = "bold", size = 14))
+#annotate_figure(filunfil5, top = text_grob("Cognitive Sensitivity filtered/unfiltered", color = "black",face = "bold", size = 14))
+#annotate_figure(filunfil2, top = text_grob("Metaognitive Bias filtered/unfiltered", color = "black", face = "bold", size = 14))
+#annotate_figure(filunfil3, top = text_grob("Metacognitive Sensitivity filtered/unfiltered",   color = "black", face = "bold", size = 14))
+#annotate_figure(filunfil4, top = text_grob("Metacognitive Efficiency filtered/unfiltered", color = "black",  face = "bold", size = 14))
+
+#Plot the unfiltered data´: 
+#annotate_figure(Dataunfil1, top = text_grob("MLE Estimation of Cognitive performance (unfiltered)", color = "black",face = "bold", size = 14))  
+#annotate_figure(Dataunfil2, top = text_grob("MLE Estimation of Metacognitive performance (unfiltered)", color = "black", face = "bold", size = 14))  
+
+#Plot the filtered data´: 
+#annotate_figure(Datafil1, top = text_grob("MLE Estimation of Cognitive performance (filtered)", color = "black",face = "bold", size = 14))  
+#annotate_figure(Datafi2, top = text_grob("MLE Estimation of Metacognitive performance (unfiltered)", color = "black", face = "bold", size = 14)) 
+
+```
+
+Additional scatter plots and linear regressions: 
+```{r}
+#For scatters plots of MLE estimation of metacognitive bias and sensitvity, 
+#source here: 
+
+#source(here("r", "Scatterplots.R"))
+
+#Plot them: 
+#annotate_figure(comPlot1, top = text_grob("Metacognitive Sensitivity", color = "black", face = "bold", size = 14))  
+#annotate_figure(comPlot3, top = text_grob("Metacognitive Bias", color = "black", face = "bold", size = 14))   
+
+```
 
 
+Individual-level staircase plots: (Takes a long time)
+```{r}
+# note that this procedure can take a LONG time 
+#uncomment to make individual plots for staircase procedure:
 
+#source(here("r", "make_indivi_plots.R"))
+
+```
 
