@@ -6,7 +6,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -115,14 +115,20 @@ GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = moda
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size = 1, width=0) +
   ylab("Average Accuracy")+
   xlab("Trial Quarter") + 
-  geom_point() +
+  geom_point(shape = 21, alpha = 0.7) +
   theme_cowplot() +
   ggtitle("Group-level Staircases") + 
   scale_linetype_discrete(name = "Modality", breaks = c("Calories", "GDP","Memory", "Vision")) +
-scale_y_continuous(breaks = seq(.6, .9, .1),
+  scale_y_continuous(breaks = seq(.6, .9, .1),
                      labels = scales::percent,
                      limits = c(.6, .9)) +
-scale_colour_manual(values = colors)
+  theme(legend.title = element_blank(), 
+        legend.position = c(1, 1), 
+        legend.justification = c(1,1), 
+        legend.direction = "horizontal") +
+  guides(colour = guide_legend(nrow = 2))+
+
+  scale_colour_manual(values = colors)
 
 GroupStair
   
@@ -139,19 +145,18 @@ tmp_data <- metadata  %>%
 ConfByError <- tmp_data  %>%
   group_by(subject, modality, accuracy) %>% 
   summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
-
-#Average confidence for incorrect trials            
-#AvgConfInCo <- metadata %>% filter(accuracy==0) %>%
-#  group_by(subject, modality) %>% 
-#  summarise(avgCF_Incor=mean(confidence, na_rm=TRUE))
-
-#ggSplit<-
   
   
 ggSplit <- ggplot(data=ConfByError, 
-       aes(x = modality, y = avgCF_Corr, fill=accuracy)) + 
-  geom_boxjitter(jitter.shape = 21, notch = TRUE, width = .25, errorbar.draw = TRUE, errorbar.length = .2) +
-    theme_cowplot() +
+       aes(x = modality, y = avgCF_Corr, fill=accuracy), alpha = 0.7) + 
+#  geom_boxjitter(jitter.shape = 21, notch = TRUE, width = .5, errorbar.draw = TRUE, errorbar.length = .2,
+#                 alpha = 0.7, outlier.shape = NA) +
+  geom_half_violin(alpha = 0.7)+
+  geom_half_point(shape = 21, alpha = 0.7)+
+  geom_half_boxplot(outlier.shape = NA, 
+                    side = "l", notch = TRUE, width = 0.25,
+                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
+  theme_cowplot() +
   labs(y = "Average Confidence",
         x = "Modality", 
         fill = "Legend") + 
@@ -280,9 +285,14 @@ p7<-ggplot(metadata_exc, aes(x = modality, y = avg_conf, color= modality)) +
   ylab("Average Confidence") + xlab("Modality")
 
 p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
-  geom_boxjitter(outlier.shape = NA,
-                 jitter.shape = 21, notch = TRUE, width = .25, errorbar.draw = TRUE, errorbar.length = .2) +
-  guides(color="none") +
+#  geom_boxjitter(outlier.shape = NA,
+#                 jitter.shape = 21, notch = TRUE, width = .25, errorbar.draw = TRUE, errorbar.length = .2, alpha = #.7) +
+ geom_half_violin(alpha = 0.7)+
+  geom_half_point(shape = 21, alpha = 0.7)+
+  geom_half_boxplot(outlier.shape = NA, 
+                    side = "l", notch = TRUE, width = 0.25,
+                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
+   guides(color="none") +
   ggtitle("Metacognitive Efficiency")+
   labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
   scale_fill_manual(values = colors)+
@@ -292,14 +302,20 @@ p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
 
 
 p9<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
-  geom_boxjitter(outlier.shape = NA,
-                 jitter.shape = 21, notch = TRUE, width = .25, errorbar.draw = TRUE, errorbar.length = .2) +
+ # geom_boxjitter(outlier.shape = NA,
+#                 jitter.shape = 21, notch = TRUE, errorbar.draw = TRUE, errorbar.length = .2, alpha = .7) +
+   geom_half_violin(alpha = 0.7)+
+  geom_half_point(shape = 21, alpha = 0.7)+
+  geom_half_boxplot(outlier.shape = NA, 
+                    side = "l", notch = TRUE, width = 0.25,
+                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
+  
   guides(fill="none") +
-  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality", 
-        fill = "Legend") + 
+  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality") + 
   theme_cowplot() + 
   scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
+  theme(legend.position = "none")
 p9
 
 p10<-ggplot(metadata_exc, aes(x = modality, y = mda, color= modality)) +
@@ -525,14 +541,14 @@ Figure 2: d' and group staircase:
 #Figure2 <- ggarrange(p9, GroupStair)  
 #  annotate_figure(Figure2, top = text_grob("Figure 2", color = "black",face = "bold", size = 14))
   
-p9 + GroupStair + plot_annotation(
-  title = 'Figure 2',
+p9 / GroupStair + plot_annotation(
+  #title = 'Figure 2',
   tag_levels = 'A',
-  theme = theme(plot.title = element_text(size = 18)) & 
+  theme = theme(plot.title = element_text(size = 14)) & 
   theme(text = element_text('arial')))
  
 
-ggsave(here("figs", "Figure 2.png"))#, height = 7, width = 12) 
+ggsave(here("figs", "Figure 2.png"), height = 7, width = 4) 
 ```
 
 Figure 3:  
@@ -706,14 +722,13 @@ Figure4 <- ggarrange(p8, ggSplit)
   annotate_figure(Figure4, top = text_grob("Figure 4", color = "black",face = "bold", size = 14))
   
 ggSplit / p8   + plot_annotation(
-  title = 'Figure 4',
   tag_levels = 'A',
-  theme = theme(plot.title = element_text(size = 18)) & 
+  theme = theme(plot.title = element_text(size = 12)) & 
   theme(text = element_text('arial')))
   
   
 
-ggsave(here("figs", "Figure 4.png"), height = 8, width = 8)  
+ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)  
   
 ```
 
