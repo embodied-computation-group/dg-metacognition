@@ -21,6 +21,8 @@ source(here("r", "trials2counts.R"))
 source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
+source(here("r", "function_rhoPlot.R"))
+
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
@@ -241,86 +243,33 @@ Here we plot the same, but for the correlation (rho) estimate for each condition
 mcmc.rho <- mcmc.sample %>% 
   filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
 
-Rho1 <- mcmc.sample %>%
-  filter(Parameter == "rho[1]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[1]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[1]"], y = 50, xend = HDI$upper[HDI$name == "rho[1]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-  xlim(c(-1, 1)) +
-  ggtitle("Mem-Cal")+
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
 
-Rho2 <- mcmc.sample %>%
-  filter(Parameter == "rho[2]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[2]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[2]"], y = 50, xend = HDI$upper[HDI$name == "rho[2]"], yend = 50),colour = "white", size = 2.5) +
-  apatheme +
-  ggtitle("Mem-GDP")+
-  xlim(c(-1, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+H1title <- paste("Rho =",round(meanRho$value[1], digits=3))
+H2title <- paste("Rho =",round(meanRho$value[2], digits=3))
+H3title <- paste("Rho =",round(meanRho$value[3], digits=3))
+H4title <- paste("Rho =",round(meanRho$value[4], digits=3))
+H5title <- paste("Rho =",round(meanRho$value[5], digits=3))
+H6title <- paste("Rho =",round(meanRho$value[6], digits=3))
 
-Rho3 <- mcmc.sample %>%
-  filter(Parameter == "rho[3]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[3]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[3]"], y = 50, xend = HDI$upper[HDI$name == "rho[3]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-  xlim(c(-1, 1)) +
-  ggtitle("Mem-Vision")+
-  #ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+Rho1 <- mcmc.sample %>% filter(Parameter == "rho[1]") 
+Rho2 <- mcmc.sample %>% filter(Parameter == "rho[2]") 
+Rho3 <- mcmc.sample %>% filter(Parameter == "rho[3]") 
+Rho4 <- mcmc.sample %>% filter(Parameter == "rho[4]") 
+Rho5 <- mcmc.sample %>% filter(Parameter == "rho[5]") 
+Rho6 <- mcmc.sample %>% filter(Parameter == "rho[6]") 
 
-Rho4 <- mcmc.sample %>%
-  filter(Parameter == "rho[4]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[4]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[4]"], y = 50, xend = HDI$upper[HDI$name == "rho[4]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-  ggtitle("Cal-GDP")+
-  xlim(c(-1, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+#### NEED TO CHANGE RHO[1] in the FUNCTION!! 
+R1 <- RhoPlot(Rho1, "rho[1]") + labs(title = "Memory and Calories", subtitle= paste(H1title))
+R2 <- RhoPlot(Rho2, "rho[2]") + labs(title = "Memory and GDP", subtitle= paste(H2title))
+R3 <- RhoPlot(Rho3, "rho[3]") + labs(title = "Memory and Vision", subtitle= paste(H3title))
+R4 <- RhoPlot(Rho4, "rho[4]") + labs(title = "GDP and Calories", subtitle= paste(H4title))
+R5 <- RhoPlot(Rho5, "rho[5]") + labs(title = "Calories and Vision", subtitle= paste(H5title))
+R6 <- RhoPlot(Rho6, "rho[6]") + labs(title = "GDP and Vision", subtitle= paste(H6title))
 
-Rho5 <- mcmc.sample %>%
-  filter(Parameter == "rho[5]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[5]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[5]"], y = 50, xend = HDI$upper[HDI$name == "rho[5]"], yend = 50), colour = "white", size = 2.5) +
-  ggtitle("Cal-Vision")+
-  apatheme +
-  xlim(c(-1, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
-
-Rho6 <- mcmc.sample %>%
-  filter(Parameter == "rho[6]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[6]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[6]"], y = 50, xend = HDI$upper[HDI$name == "rho[6]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-  ggtitle("GDP-Vision")+
-  xlim(c(-1, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
-
-
-plot_grid(Rho1, Rho2, Rho3, NULL, Rho4, Rho5, NULL, NULL, Rho6, labels = c("A", "B", "C", "", "D", "E", "", "", "F"), nrow = 3, ncol = 3)
+#Bayesian Hierarhical fit: 
+RhoPlot <- ggarrange(R1, R3, R2, R6, R4, R5)
+annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
 
 ggsave(here("figs", "mrho_grid.png"), height = 7, width = 12)
 ```

@@ -22,6 +22,7 @@ source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
 source(here("r", "scatterplot.R"))
+source(here("r", "function_rhoPlot.R"))
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
@@ -50,7 +51,6 @@ metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialDa
 metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
 
 # remove any rows containing NaNs (i.e., missing data)
-
 metacognition_trial_data <- na.omit(metacognition_trial_data)
 
 head(metacognition_trial_data)
@@ -285,7 +285,7 @@ head(corrtable)
 
 
 ```
-Plot the bootstrap samples of correlations: 
+Plot the bootstrap samples of correlations: GRusselete 
 ```{r}
 
 b1 <- plotBoot(res1) + ggtitle("Memory and Calories")
@@ -374,7 +374,6 @@ p9<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
 #  geom_half_boxplot(outlier.shape = NA, 
  #                   side = "l", notch = TRUE, width = 0.25,
 #                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-  
   guides(fill="none") +
   ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality") + 
   theme_cowplot() + 
@@ -456,11 +455,10 @@ comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16)
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
                                          face = "bold", size = 14))    
 
-#The plots for the hierarhical model: 
+#The plots for the hierarhical model - sample estimations of rho: 
 
 #For Astrid: 
 output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
-
 
 fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
 
@@ -470,12 +468,11 @@ output <- readRDS(fit_filename)
   
 } else{
   
-message("OBS: You need to fit the hierarhical model using the script called 'fit_hierarhicical_metamodel.rmd' - this will take a LONG time")
+message("OBS: You need to fit the hierarhical model using 'fit_hierarhicical_metamodel.rmd' - this will take a LONG time")
 
 }
 
 #Prepare the hierarhical fit for the figure: 
-
 # Values (mean and CI)
 Value <- summary(output)
 stat <- data.frame(mean = Value$statistics[,"Mean"])
@@ -483,6 +480,7 @@ stat %<>%
   rownames_to_column(var = "name") %>% 
   cbind(CILow = Value$quantiles[,"2.5%"]) %>% 
   cbind(CIUp = Value$quantiles[,"97.5%"])
+
 
 # HDI function 
 HDI <- data.frame(HPDinterval(output, prob = 0.95))
@@ -492,10 +490,9 @@ HDI %<>%
 # Posterior distributions 
 mcmc.sample <- ggs(output)
 
+
 mcmc.rho <- mcmc.sample %>% 
   filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
-
-#individual rho plots: 
 
 #Plot titles: 
 meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
@@ -507,110 +504,30 @@ H4title <- paste("Rho =",round(meanRho$value[4], digits=3))
 H5title <- paste("Rho =",round(meanRho$value[5], digits=3))
 H6title <- paste("Rho =",round(meanRho$value[6], digits=3))
 
-Rho1 <- mcmc.sample %>%
-  filter(Parameter == "rho[1]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[1]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[1]"], y = 50, xend = HDI$upper[HDI$name == "rho[1]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-  xlim(c(-0.25, 1)) +
-  labs(title = "Memory and Calories",
-       subtitle= paste(H1title))+
-  theme(plot.title = element_text( size = 12),
-  plot.subtitle = element_text(size = 8)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+# split per correlation pair: 
+Rho1 <- mcmc.sample %>% filter(Parameter == "rho[1]") 
+Rho2 <- mcmc.sample %>% filter(Parameter == "rho[2]") 
+Rho3 <- mcmc.sample %>% filter(Parameter == "rho[3]") 
+Rho4 <- mcmc.sample %>% filter(Parameter == "rho[4]") 
+Rho5 <- mcmc.sample %>% filter(Parameter == "rho[5]") 
+Rho6 <- mcmc.sample %>% filter(Parameter == "rho[6]") 
 
-Rho2 <- mcmc.sample %>%
-  filter(Parameter == "rho[2]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[2]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[2]"], y = 50, xend = HDI$upper[HDI$name == "rho[2]"], yend = 50),colour = "white", size = 2.5) +
-  apatheme +
-    labs(title = "Memory and GDP",
-       subtitle= paste(H2title))+
-  theme(plot.title = element_text( size = 12),
-  plot.subtitle = element_text(size = 8)) +
-  xlim(c(-0.25, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+#plot Rho samples + indication of mean rho estimation 
+R1 <- RhoPlot(Rho1, "rho[1]") + labs(title = "Memory and Calories", subtitle= paste(H1title))
+R2 <- RhoPlot(Rho2, "rho[2]") + labs(title = "Memory and GDP", subtitle= paste(H2title))
+R3 <- RhoPlot(Rho3, "rho[3]") + labs(title = "Memory and Vision", subtitle= paste(H3title))
+R4 <- RhoPlot(Rho4, "rho[4]") + labs(title = "GDP and Calories", subtitle= paste(H4title))
+R5 <- RhoPlot(Rho5, "rho[5]") + labs(title = "Calories and Vision", subtitle= paste(H5title))
+R6 <- RhoPlot(Rho6, "rho[6]") + labs(title = "GDP and Vision", subtitle= paste(H6title))
 
-Rho3 <- mcmc.sample %>%
-  filter(Parameter == "rho[3]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[3]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[3]"], y = 50, xend = HDI$upper[HDI$name == "rho[3]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-  xlim(c(-0.25, 1)) +
-      labs(title = "Memory and Vision",
-       subtitle= paste(H3title))+
-  theme(plot.title = element_text( size = 12),
-  plot.subtitle = element_text(size = 8)) +
-  #ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
-
-Rho4 <- mcmc.sample %>%
-  filter(Parameter == "rho[4]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[4]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[4]"], y = 50, xend = HDI$upper[HDI$name == "rho[4]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-        labs(title = "GDP and Calories",
-       subtitle= paste(H4title))+
-  theme(plot.title = element_text( size = 12),
-  plot.subtitle = element_text(size = 8)) +
-  xlim(c(-0.25, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
-
-Rho5 <- mcmc.sample %>%
-  filter(Parameter == "rho[5]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[5]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[5]"], y = 50, xend = HDI$upper[HDI$name == "rho[5]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-     labs(title = "Calories and Vision",
-       subtitle= paste(H5title))+
-  theme(plot.title = element_text( size = 12),
-  plot.subtitle = element_text(size = 8)) +
-  xlim(c(-0.25, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
-
-Rho6 <- mcmc.sample %>%
-  filter(Parameter == "rho[6]") %>% 
-  ggplot(aes(value)) +
-  geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
-  geom_vline(xintercept = stat$mean[stat$name == "rho[6]"],linetype="dashed", size = 1.5) +
-  geom_segment(aes(x = HDI$lower[HDI$name == "rho[6]"], y = 50, xend = HDI$upper[HDI$name == "rho[6]"], yend = 50), colour = "white", size = 2.5) +
-  apatheme +
-     labs(title = "GDP and Vision",
-       subtitle= paste(H6title))+
-  theme(plot.title = element_text( size = 12),
-  plot.subtitle = element_text(size = 8)) +
-  xlim(c(-0.25, 1)) +
- # ylim(c(0, 2500)) +
-  ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
-
-#Bayesian Hierarhical fit: 
-RhoPlot <- ggarrange(Rho1, Rho3, Rho2, Rho6, Rho4, Rho5)
+#Combine plots for the hierarhical fit: 
+RhoPlot <- ggarrange(R1, R3, R2, R6, R4, R5)
 CorHi <- annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
 
 #MLE fit:
-
 CorMLE <- annotate_figure(comPlot2, top = text_grob("Maximum likelihood estimation  ", color = "black", face = "bold", size = 14)) 
 
+#Combine MLe and hierarhical estimation of correlations: 
 Figure3 <- ggarrange(CorMLE, CorHi, ncol= 1, nrow=2)  
   annotate_figure(Figure3, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
 
@@ -621,7 +538,8 @@ ggsave(here("figs", "Figure 3.png"), height = 7, width = 12)
 
 Figure 3 without Mratio outliers: 
 ```{r}
-#exclude those where mratio could not be estimated  
+
+#exclude those where mratio could not be estimated (MLE):  
 metadata_excMratio <- metadata_exc%>%filter(mratio!="NaN")
 
 #mratio
@@ -708,7 +626,7 @@ s16E <- scatter(scat2E, scat2E$mratio_Calories, scat2E$mratio_vision) + theme(pl
 comPlotE <- ggarrange(s11E, s12E, s13E, s14E, s15E, s16E) 
 CorExcMLE<-annotate_figure(comPlotE, top = text_grob("Maximum likelihood estimation", color = "black", face = "bold", size = 14))   
 
-#figure 3 with this instead: 
+#figure 3 now without MLE mratio outliers: 
 Figure3E <- ggarrange(CorExcMLE, CorHi, ncol= 1, nrow=2)  
   annotate_figure(Figure3E, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
 
@@ -784,7 +702,10 @@ ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)
   
 ```
 
-Here are some additional plots - you can un-comment these sections to see.
+
+
+
+Here are some additional plots - you can un-comment these sections to see them.
 Note that the individual staircase plots may take a LONG time to produce. 
 
 Plots of key metacognitive measures for both filtered and unfiltered data: 
