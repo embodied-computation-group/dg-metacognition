@@ -13,6 +13,10 @@ RhoPlot <- function(data, rho) {
         plot.subtitle = element_text(size = 8)) +
   # ylim(c(0, 2500)) +
   ylab("Sample count") +
-  xlab(expression(paste(rho, " value")))
+  xlab(expression(paste(rho, " value"))) +
+  guides(fill="none") + 
+    theme_cowplot() + theme(legend.position = "none")
+
+  
   
   }

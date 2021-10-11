@@ -21,7 +21,7 @@ source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
-source(here("r", "scatterplot.R"))
+source(here("r", "Function_scatterplot.R"))
 source(here("r", "function_rhoPlot.R"))
 
 # set apa theme for plots
@@ -435,6 +435,7 @@ Figure 3:
 #The scatter plot for the MLE estimation of Mratio: 
 #Metacognitive Efficiency
 #Indicate the estimated correlations: 
+
 S1title <- paste("r =",round(res1.1$estimate, digits=3))
 S2title <- paste("r =",round(res1.2$estimate, digits=3))
 S3title <- paste("r =",round(res1.3$estimate, digits=3))
