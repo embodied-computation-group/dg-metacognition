@@ -6,7 +6,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -23,6 +23,7 @@ source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
 source(here("r", "Function_scatterplot.R"))
 source(here("r", "function_rhoPlot.R"))
+source(here("r", "function_apa.R"))
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
@@ -32,6 +33,8 @@ apatheme=theme_bw()+ #theme
         axis.line=element_line(),
         text = element_text(size = 15),
         axis.title = element_text(size = 12))
+
+
 
 # spider-man color palette
 
@@ -489,7 +492,7 @@ HDI %<>%
   rownames_to_column(var = "name")
 
 # Posterior distributions 
-mcmc.sample <- ggs(output)
+mcmc.sample <- ggs(output) 
 
 
 mcmc.rho <- mcmc.sample %>% 
@@ -702,6 +705,108 @@ ggSplit / p8   + plot_annotation(
 ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)  
   
 ```
+
+Now the tables from the paper: 
+
+Table 2: MLE correlatio between domains 
+```{r}
+
+#combine upper and lower limit of CI into one. 
+table2 <- corrtable %>% mutate(MC_CI = paste(round(corrtable$CI_lowerMC,3), round(corrtable$CI_upperMC,3), sep=";")) %>%
+  mutate(MV_CI= paste(round(corrtable$CI_lowerMV,3), round(corrtable$CI_upperMV,3), sep=";")) %>%
+  mutate(MG_CI= paste(round(corrtable$CI_lowerMG,3), round(corrtable$CI_upperMG,3), sep=";")) %>%
+  mutate(GS_CI= paste(round(corrtable$CI_lowerGS,3), round(corrtable$CI_upperGS,3), sep=";")) %>%
+  mutate(GC_CI= paste(round(corrtable$CI_lowerGC,3), round(corrtable$CI_upperGC,3), sep=";")) %>%
+  mutate(CV_CI= paste(round(corrtable$CI_lowerCV,3), round(corrtable$CI_upperCV,3), sep=";")) 
+
+#Select relevant columns 
+table2 <- table2 %>% select(Metric, 
+                            MemCalCoef, P_valueMC, MC_CI, 
+                            MemVisCoef, P_valueMV, MV_CI, 
+                            MemGDPCoef, P_valueMG, MG_CI, 
+                            GDPVisCoef, P_valueGS, GS_CI,
+                            GDPCalCoef, P_valueGC, GC_CI, 
+                            CalVisCoef, P_valueCV, CV_CI
+                            )
+
+#Change the layout of the table: 
+
+##Sensitivity 
+#Table with correlation coefficents for all pairwise correlations: 
+table22 <- data.frame(Pair=character(),
+                 r=double(),
+                 Pvalue=double(),
+                 CI=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table22[1,] <- list("Memory & Calories",table2$MemCalCoef[1],table2$P_valueMC[1], table2$MC_CI[1])
+table22[2,] <- list("Memory & Vision",table2$MemVisCoef[1],table2$P_valueMV[1], table2$MV_CI[1])
+table22[3,] <- list("Memory & GDP",table2$MemGDPCoef[1],table2$P_valueMG[1], table2$MG_CI[1])
+table22[4,] <- list("GDP & Vision",table2$GDPVisCoef[1],table2$P_valueGS[1], table2$GS_CI[1])
+table22[5,] <- list("GDP & Calories",table2$GDPCalCoef[1],table2$P_valueGC[1], table2$GC_CI[1])
+table22[6,] <- list("Calories & Vision",table2$CalVisCoef[1],table2$P_valueCV[1], table2$CV_CI[1])
+
+##Mratio
+#Table with correlation coefficents for all pairwise correlations: 
+table23 <- data.frame(Pair=character(),
+                 r=double(),
+                 Pvalue=double(),
+                 CI=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table23[1,] <- list("Memory & Calories",table2$MemCalCoef[2],table2$P_valueMC[2], table2$MC_CI[2])
+table23[2,] <- list("Memory & Vision",table2$MemVisCoef[2],table2$P_valueMV[2], table2$MV_CI[2])
+table23[3,] <- list("Memory & GDP",table2$MemGDPCoef[2],table2$P_valueMG[2], table2$MG_CI[2])
+table23[4,] <- list("GDP & Vision",table2$GDPVisCoef[2],table2$P_valueGS[2], table2$GS_CI[2])
+table23[5,] <- list("GDP & Calories",table2$GDPCalCoef[2],table2$P_valueGC[2], table2$GC_CI[2])
+table23[6,] <- list("Calories & Vision",table2$CalVisCoef[2],table2$P_valueCV[2], table2$CV_CI[2])
+
+##Mratio
+#Table with correlation coefficents for all pairwise correlations: 
+table24 <- data.frame(Pair=character(),
+                 r=double(),
+                 Pvalue=double(),
+                 CI=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table24[1,] <- list("Memory & Calories",table2$MemCalCoef[3],table2$P_valueMC[3], table2$MC_CI[3])
+table24[2,] <- list("Memory & Vision",table2$MemVisCoef[3],table2$P_valueMV[3], table2$MV_CI[3])
+table24[3,] <- list("Memory & GDP",table2$MemGDPCoef[3],table2$P_valueMG[3], table2$MG_CI[3])
+table24[4,] <- list("GDP & Vision",table2$GDPVisCoef[3],table2$P_valueGS[3], table2$GS_CI[3])
+table24[5,] <- list("GDP & Calories",table2$GDPCalCoef[3],table2$P_valueGC[3], table2$GC_CI[3])
+table24[6,] <- list("Calories & Vision",table2$CalVisCoef[3],table2$P_valueCV[3], table2$CV_CI[3])
+
+#Sort decimals: 
+table22 <- table22 %>% mutate(r = round(r,3))
+table23 <- table23 %>% mutate(r = round(r,3))
+table24 <- table24 %>% mutate(r = round(r,3))
+
+#NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
+table24 <- table24 %>% mutate(Pvalue = as.character("<.001"))
+
+head(table24)
+
+#Makes tables in APA format: 
+CorEff<-apa(table23, "Table 2.a: MLE correlation of Metacognitive Efficiency")
+CorSen<-apa(table22, "Table 2.b: MLE correlation of Metacognitive Sensitivity")
+CorBias<-apa(table24, "Table 2.c: MLE correlation of Metacognitive Bias")
+
+######Save tables. 
+#######################
+###
+```
+Table 2: Hierarchical correlation of Metacognitive efficiency
+NOTE you need the hierarhical fit to do this. 
+```{r}
+
+
+
+```
+
+
 
 
 
