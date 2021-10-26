@@ -477,6 +477,10 @@ message("OBS: You need to fit the hierarhical model using 'fit_hierarhicical_met
 }
 
 #Prepare the hierarhical fit for the figure: 
+Value <- gelman.diag(output, confidence = 0.95)
+Rhat <- data.frame(conv = Value$psrf)
+
+
 # Values (mean and CI)
 Value <- summary(output)
 stat <- data.frame(mean = Value$statistics[,"Mean"])
@@ -500,6 +504,12 @@ mcmc.rho <- mcmc.sample %>%
 
 #Plot titles: 
 meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
+
+#Fit stats summary. 
+Fit <- stat %>%
+  cbind(lower = HDI$lower,
+        upper = HDI$upper,
+        Rhat = Rhat[,1])
 
 H1title <- paste("Rho =",round(meanRho$value[1], digits=3))
 H2title <- paste("Rho =",round(meanRho$value[2], digits=3))
@@ -708,6 +718,47 @@ ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)
 
 Now the tables from the paper: 
 
+Table 1: Demographics 
+```{r}
+#load the demographics information: 
+survey_data_pre <- read_delim(here("data_summary", "/self_belief_pre_labels.csv"), 
+                              ";", escape_double = FALSE, trim_ws = TRUE)
+
+#Clean Data: 
+survey_data_pre <- survey_data_pre %>% select(Sid, age, gender)
+
+#Vector with IDs that should be included
+ID_incl <- unique(metadata_exc$subject)
+
+#demo only with included participants:
+demo <- subset(survey_data_pre, is.element(survey_data_pre$Sid, ID_incl))
+
+#summarise and format Gender:
+demoG <- demo %>% group_by(gender) %>%
+  summarise(mean1=length(gender)) %>% mutate(per = 100*mean1/321) %>%
+  mutate(mean=paste0(round(mean1), paste0(" (", round(per,2), " %)"))) %>%
+  select(gender, mean) %>% 
+  pivot_wider(names_from = gender, values_from = mean)
+
+#summarise and format age:
+demoA <- demo %>% summarise(age1 =mean(age, na_rm=TRUE),
+                         age_sd=sd(age, na.rm=TRUE)) %>% 
+  mutate(age= paste0(round(age1), paste0(" (", round(age_sd,3), " SD)")))
+
+  
+#Combine in table
+table1 <- data.frame(Descriptive=character(),
+                     Count=double())
+
+table1[1,] <- list("Feminine", demoG$Feminin)
+table1[2,] <- list("Masculine", demoG$Masculin)
+table1[3,] <- list("Non-binary", demoG$`non-binary`)
+table1[4,] <- list("Age", demoA$age)
+
+table1apa<-apa(table1, "Table 1: Demographics")
+table1apa
+
+```
 Table 2: MLE correlatio between domains 
 ```{r}
 
@@ -735,8 +786,8 @@ table2 <- table2 %>% select(Metric,
 #Table with correlation coefficents for all pairwise correlations: 
 table22 <- data.frame(Pair=character(),
                  r=double(),
-                 Pvalue=double(),
-                 CI=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
                 stringsAsFactors=FALSE)
 
 #Insert vaules in dataframe: 
@@ -751,8 +802,8 @@ table22[6,] <- list("Calories & Vision",table2$CalVisCoef[1],table2$P_valueCV[1]
 #Table with correlation coefficents for all pairwise correlations: 
 table23 <- data.frame(Pair=character(),
                  r=double(),
-                 Pvalue=double(),
-                 CI=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
                 stringsAsFactors=FALSE)
 
 #Insert vaules in dataframe: 
@@ -767,8 +818,8 @@ table23[6,] <- list("Calories & Vision",table2$CalVisCoef[2],table2$P_valueCV[2]
 #Table with correlation coefficents for all pairwise correlations: 
 table24 <- data.frame(Pair=character(),
                  r=double(),
-                 Pvalue=double(),
-                 CI=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
                 stringsAsFactors=FALSE)
 
 #Insert vaules in dataframe: 
@@ -785,7 +836,7 @@ table23 <- table23 %>% mutate(r = round(r,3))
 table24 <- table24 %>% mutate(r = round(r,3))
 
 #NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
-table24 <- table24 %>% mutate(Pvalue = as.character("<.001"))
+table24 <- table24 %>% mutate(p = as.character("<.001"))
 
 head(table24)
 
@@ -797,19 +848,100 @@ CorBias<-apa(table24, "Table 2.c: MLE correlation of Metacognitive Bias")
 ######Save tables. 
 #######################
 ###
+
+CorBias
+CorSen
+CorEff
+
 ```
+
 Table 2: Hierarchical correlation of Metacognitive efficiency
 NOTE you need the hierarhical fit to do this. 
 ```{r}
 
+# select the HDIs for each rho  
+rHDI <- HDI %>% filter(str_detect(name,"rho")) %>% select(name, lower, upper)
+#join these HDIs with mean rho
+RhoHDI <- full_join(meanRho, rHDI, 
+                    by= c("Parameter"="name"))
 
+#Change names and layout: 
+Table2H <- RhoHDI %>% mutate(Pair= c("Memory & Calories", "Memory & Vision", "Memory & GDP", 
+                                     "GDP & Vision", "GDP & Calories", "Calories & Vision"),
+                             Rho=round(value,3),
+                             HDI = paste(round(lower,3), round(upper,3), sep=";")
+                             )
+Table2H <- Table2H %>% select(Pair, Rho, HDI)
+
+#Put into APA format. 
+
+Table2Hapa<-apa(Table2H, "Table 2.d: Hierarhical Bayesian estimation of correlation of Metacognitive Efficiency")
+
+######Save tables. 
+#######################
+###
+
+Table2Hapa
+  
+```
+Table 3: Average cognitive and Metacognitive performance across tasks 
+```{r}
+
+#Average everything and calculate standard deviations: 
+metadata_avg <- metadata_exc %>% 
+  group_by(modality) %>% 
+  summarise(dprime=mean(da, na_rm=TRUE), 
+            criterion=mean(c, na_rm=TRUE),
+            metad=mean(mda, na_rm=TRUE),
+            mratio1=mean(mratio, na_rm=TRUE),
+            avg_conf1=mean(avg_conf, na_rm=TRUE),
+            dprime_sd=sd(da),
+            criterion_sd=sd(c),
+            metad_sd=sd(mda),
+            mratio_sd=sd(mratio),
+            avg_conf_sd=sd(avg_conf)
+            )
+    
+#Change format: 
+tableMLE <- metadata_avg %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"),
+                                  'd-prime (SD)'=paste0((round(dprime,3)), paste0(" (", round(dprime_sd,3), ")")),
+                                  'Criterion (SD)'=paste0((round(criterion,3)), paste0(" (", round(criterion_sd,3), ")")),
+                                  'Meta-d (SD)'=paste0((round(metad,3)), paste0(" (", round(metad_sd,3), ")")),
+                                  'Mratio (SD)'=paste0((round(mratio1,3)), paste0(" (", round(mratio_sd,3), ")")),
+                                  'Avg Conf (SD)'=paste0((round(avg_conf1,3)), paste0(" (", round(avg_conf_sd,3), ")"))
+                                  ) 
+tableMLE <- tableMLE %>% select(Modality, 'd-prime (SD)', 'Criterion (SD)', 'Avg Conf (SD)', 'Meta-d (SD)'=, 'Mratio (SD)')   
+
+# Mratio estimations from Hierarhical Model.  
+
+#Select Mratio and take the expontial of the value:
+meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
+  mutate(mean=exp(mean), 
+         lower=exp(lower),
+         upper=exp(upper))
+  
+#format and select: 
+meanMratio <- meanMratio %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"),
+         'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
+         
+meanMratio <- meanMratio %>% select(Modality, 'HMratio (HDI)')
+  
+#Join the two tables MLE and Hierarhical dataframes. 
+
+table3 <- left_join(tableMLE, meanMratio, 
+                     by=c("Modality"="Modality"))
+
+
+#Put into APA format.                                     
+table3apa<-apa(table3, "Table 3: Cognitive and Metacognitive performance")
+
+######Save tables. 
+#######################
+###
+
+table3apa
 
 ```
-
-
-
-
-
 
 Here are some additional plots - you can un-comment these sections to see them.
 Note that the individual staircase plots may take a LONG time to produce. 
