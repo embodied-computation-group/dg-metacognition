@@ -6,7 +6,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt, rstatix)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -178,6 +178,77 @@ write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.cs
 
 head(fit_data_wide)
 ```
+
+Anova: difference in d' and criterion between modalities.
+
+```{r}
+
+###Repated ANOVA for d': 
+#Select relevant coulmns: 
+dpC <- metadata_exc %>% select(modality, subject, starts_with("da")) %>%
+  mutate("d-prime"=da, 
+         modality=as.factor(modality)) %>% select(-da) %>% ungroup()
+
+dpC <- metadata_exc %>% select(modality, subject, starts_with("da")) %>%
+  mutate(modality=as.factor(modality)) %>% ungroup()
+
+#Summary table: 
+sum <- dpC %>% group_by(modality) %>% 
+  get_summary_stats("d-prime", type="mean_sd")
+
+#Get Anova: 
+dpC_aov <- anova_test(data=dpC, dv="d-prime", wid=subject, within=modality)
+get_anova_table(dpC_aov)
+
+#Post-hoc: pairwise repeated t-tests
+dpT <- dpC %>% pairwise_t_test(`d-prime` ~ modality, p.adjust.method = "bonferroni")
+
+###Repated ANOVA for c: 
+#Select relevant coulmns: 
+CC <- metadata_exc %>% select(modality, subject, starts_with("c")) %>%
+  mutate(Criterion=c, 
+         modality=as.factor(modality)) %>% select(-c) %>% ungroup()
+
+#Summary table: 
+sum <- CC %>% group_by(modality) %>% 
+  get_summary_stats(Criterion, type="mean_sd")
+
+#Get Anova: 
+CC_aov <- anova_test(data=CC, dv=Criterion, wid=subject, within=modality)
+get_anova_table(CC_aov)
+
+#Post-hoc: repeated t-tests
+CT <- CC %>% pairwise_t_test(Criterion ~ modality, p.adjust.method = "bonferroni")
+
+
+###APA format of Post hoc tests
+
+#change layout and labels: 
+dpT <- dpT %>% mutate(IV = .y.,
+                      'Group 1' = group1,
+                      'Group 1' = group2,
+                      'p (Bonf)' = p.adj) %>% select(IV,'Group 1', 'Group 1', n1,n2, p, 'p (Bonf)')
+CT <- CT  %>% mutate(IV = .y.,
+                      'Group 1' = group1,
+                      'Group 1' = group2,
+                      'p (Bonf)' = p.adj) %>% select(IV,'Group 1', 'Group 1', n1,n2, p, 'p (Bonf)')
+
+#NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
+dpT <- dpT %>%mutate(p = as.character("<.001"),
+                         'p (Bonf)'= as.character("<.001"))
+CT <- CT %>%mutate(p = as.character("<.001"),
+                         'p (Bonf)'= as.character("<.001"))
+
+Dprimeapa<-apa(dpT, "Table 1: Post Hoc: Paired t-tests of cognitive sensitivity (d')")
+Capa <-apa(CT, "Table 2: Post Hoc: Paired t-tests of cognitive decision criterion (c)")
+
+Dprimeapa
+Capa
+
+```
+
+
+
 
 Correlation  between domains: Using GRousselet bootcorci
 ```{r}
@@ -759,7 +830,7 @@ table1apa<-apa(table1, "Table 1: Demographics")
 table1apa
 
 ```
-Table 2: MLE correlatio between domains 
+Table 2: MLE correlation between domains 
 ```{r}
 
 #combine upper and lower limit of CI into one. 
@@ -798,7 +869,7 @@ table22[4,] <- list("GDP & Vision",table2$GDPVisCoef[1],table2$P_valueGS[1], tab
 table22[5,] <- list("GDP & Calories",table2$GDPCalCoef[1],table2$P_valueGC[1], table2$GC_CI[1])
 table22[6,] <- list("Calories & Vision",table2$CalVisCoef[1],table2$P_valueCV[1], table2$CV_CI[1])
 
-##Mratio
+##Sensitivity
 #Table with correlation coefficents for all pairwise correlations: 
 table23 <- data.frame(Pair=character(),
                  r=double(),
@@ -814,7 +885,7 @@ table23[4,] <- list("GDP & Vision",table2$GDPVisCoef[2],table2$P_valueGS[2], tab
 table23[5,] <- list("GDP & Calories",table2$GDPCalCoef[2],table2$P_valueGC[2], table2$GC_CI[2])
 table23[6,] <- list("Calories & Vision",table2$CalVisCoef[2],table2$P_valueCV[2], table2$CV_CI[2])
 
-##Mratio
+##Bias
 #Table with correlation coefficents for all pairwise correlations: 
 table24 <- data.frame(Pair=character(),
                  r=double(),
@@ -830,20 +901,36 @@ table24[4,] <- list("GDP & Vision",table2$GDPVisCoef[3],table2$P_valueGS[3], tab
 table24[5,] <- list("GDP & Calories",table2$GDPCalCoef[3],table2$P_valueGC[3], table2$GC_CI[3])
 table24[6,] <- list("Calories & Vision",table2$CalVisCoef[3],table2$P_valueCV[3], table2$CV_CI[3])
 
+#NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
+table24 <- table24 %>% mutate(p = as.character("<.001"))
+
+#d' correlation: 
+table25 <- data.frame(Pair=character(),
+                 r=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table25[1,] <- list("Memory & Calories",table2$MemCalCoef[4],table2$P_valueMC[4], table2$MC_CI[4])
+table25[2,] <- list("Memory & Vision",table2$MemVisCoef[4],table2$P_valueMV[4], table2$MV_CI[4])
+table25[3,] <- list("Memory & GDP",table2$MemGDPCoef[4],table2$P_valueMG[4], table2$MG_CI[4])
+table25[4,] <- list("GDP & Vision",table2$GDPVisCoef[4],table2$P_valueGS[4], table2$GS_CI[4])
+table25[5,] <- list("GDP & Calories",table2$GDPCalCoef[4],table2$P_valueGC[4], table2$GC_CI[4])
+table25[6,] <- list("Calories & Vision",table2$CalVisCoef[4],table2$P_valueCV[4], table2$CV_CI[4])
+
 #Sort decimals: 
 table22 <- table22 %>% mutate(r = round(r,3))
 table23 <- table23 %>% mutate(r = round(r,3))
 table24 <- table24 %>% mutate(r = round(r,3))
+table25 <- table25 %>% mutate(r = round(r,3))
 
-#NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
-table24 <- table24 %>% mutate(p = as.character("<.001"))
-
-head(table24)
 
 #Makes tables in APA format: 
 CorEff<-apa(table23, "Table 2.a: MLE correlation of Metacognitive Efficiency")
 CorSen<-apa(table22, "Table 2.b: MLE correlation of Metacognitive Sensitivity")
 CorBias<-apa(table24, "Table 2.c: MLE correlation of Metacognitive Bias")
+CorD <-apa(table25, "Table 2.d: MLE correlation of Cognitive Sensitivity")
 
 ######Save tables. 
 #######################
@@ -852,6 +939,7 @@ CorBias<-apa(table24, "Table 2.c: MLE correlation of Metacognitive Bias")
 CorBias
 CorSen
 CorEff
+CorD
 
 ```
 
@@ -875,7 +963,7 @@ Table2H <- Table2H %>% select(Pair, Rho, HDI)
 
 #Put into APA format. 
 
-Table2Hapa<-apa(Table2H, "Table 2.d: Hierarhical Bayesian estimation of correlation of Metacognitive Efficiency")
+Table2Hapa<-apa(Table2H, "Table 3: Hierarhical Bayesian estimation of correlation of Metacognitive Efficiency")
 
 ######Save tables. 
 #######################
@@ -933,7 +1021,7 @@ table3 <- left_join(tableMLE, meanMratio,
 
 
 #Put into APA format.                                     
-table3apa<-apa(table3, "Table 3: Cognitive and Metacognitive performance")
+table3apa<-apa(table3, "Table 4: Cognitive and Metacognitive performance")
 
 ######Save tables. 
 #######################
