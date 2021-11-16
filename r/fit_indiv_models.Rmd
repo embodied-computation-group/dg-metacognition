@@ -147,18 +147,20 @@ metadata_exc <- fitAvg_data%>%
   group_by(modality) %>%
   mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove RT outliers using MAD Rule 
 
-#d' 
+# d' 
 metadata_exc <- metadata_exc%>%
   group_by(modality) %>%
   mutate(da = remove_outliers_robust(da)) # remove RT outliers using MAD Rule 
 
 
-#criterion 
+# criterion 
 metadata_exc <- metadata_exc%>%
   group_by(modality) %>%
   mutate(c = remove_outliers_robust(c)) # remove RT outliers using MAD Rule 
 
 metadata_exc <- na.omit(metadata_exc)
+
+
 
 head(metadata_exc)
 
@@ -189,8 +191,8 @@ dpC <- metadata_exc %>% select(modality, subject, starts_with("da")) %>%
   mutate("d-prime"=da, 
          modality=as.factor(modality)) %>% select(-da) %>% ungroup()
 
-dpC <- metadata_exc %>% select(modality, subject, starts_with("da")) %>%
-  mutate(modality=as.factor(modality)) %>% ungroup()
+#dpC <- metadata_exc %>% select(modality, subject, starts_with("da")) %>%
+#  mutate(modality=as.factor(modality)) %>% ungroup()
 
 #Summary table: 
 sum <- dpC %>% group_by(modality) %>% 
@@ -391,6 +393,9 @@ BootPlot3 <- ggarrange(b21, b22, b23, b24, b25, b26)
 annotate_figure(BootPlot3, top = text_grob("Bootstrap samples of Meta-bias correlations", color = "black", 
                                          face = "bold", size = 14))  
 
+BootPlot3
+
+ggsave(here("figs", "bootplot3.png"), height = 8, width = 8, dpi = 300)
 ```
 
 Now we calculate and plot the Bayes factors for the correlations: 
@@ -432,30 +437,9 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 
 ```
 
-Here we plot the Figures from the Paper: 
-Figure 2: d' and group staircase: 
+Rearrange accuracy data for plotting summary variables
+
 ```{r}
-#Figure2 <- ggarrange(p9, GroupStair)  
-#  annotate_figure(Figure2, top = text_grob("Figure 2", color = "black",face = "bold", size = 14))
-
-#Plot of d' without outliers: 
-p9<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
- geom_boxjitter(outlier.shape = NA,
-                 jitter.shape = 21, notch = TRUE, errorbar.draw = TRUE,
-                errorbar.length = .2, alpha = .7) +
-#   geom_half_violin(alpha = 0.7)+
-#  geom_half_point(shape = 21, alpha = 0.7)+
-#  geom_half_boxplot(outlier.shape = NA, 
- #                   side = "l", notch = TRUE, width = 0.25,
-#                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-  guides(fill="none") +
-  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality") + 
-  theme_cowplot() + 
-  scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
-  theme(legend.position = "none")
-
-#Plot of group-level Staircases: 
  
 #make the four bins: 
 metadataPlot <- metadata %>%group_by(subject) %>% 
@@ -468,17 +452,60 @@ group_by(subject) #create a trial number column
 #Summarise means for each bin and modality
 metadataPlotMean <- metadataPlot %>%
 group_by(trial_bin, modality) %>%
-summarise(mean = mean(accuracy), se = sd(accuracy)/sqrt(length(accuracy))) %>%
+summarise(mean.acc = mean(accuracy), sd.acc = sd(accuracy), n.acc = 316) %>% # hardcoded, fix soon
+  mutate(se.acc = sd.acc / sqrt(n.acc),
+         lower.ci.acc = mean.acc - qt(1 - (0.05 / 2), n.acc - 1) * se.acc,
+         upper.ci.acc = mean.acc + qt(1 - (0.05 / 2), n.acc - 1) * se.acc) %>%
 ungroup()
-  
-#plot:   
-GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = modality, color= modality)) +
-  geom_line() +
-  geom_point() + 
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size = 1, width=0) +
+
+
+#Average confidence across domains, split by correct and incorrect trials
+#split by correct and incorrect:
+tmp_data <- metadata  %>%
+   mutate(accuracy = factor(accuracy)) %>%
+  mutate(accuracy = recode_factor(accuracy, '1' = "hit", '0' = "miss"))
+
+#Average confidence for Correct trials:
+ConfByError <- tmp_data  %>%
+  group_by(subject, modality, accuracy) %>% 
+  summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
+
+```
+
+
+Here we plot the Figures from the Paper: 
+Figure 2: d' and group staircase: 
+```{r}
+# Figure2 
+
+#Plot of d' without outliers: 
+
+p1<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
+ #  geom_half_violin(alpha = 0.7, side = "r")+
+   geom_half_point(range_scale = 8/10, shape = 21, alpha = 1/10, side = "l")+
+   geom_half_boxplot(outlier.shape = NA, notch = TRUE, width = 1/4,
+                     alpha = 3/4, color = "black", side = "r")+
+  guides(fill="none") +
+  ggtitle("Cognitive Sensitivity") +  labs(y = "D-prime", x = "Modality") + 
+  theme_cowplot() + 
+  scale_fill_manual(values = colors)+
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
+  theme(legend.position = "none", 
+        # aspect.ratio = 1,
+        plot.title = element_text(size = 12), 
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10,face="bold"))
+
+#Plot of group-level Staircases: 
+
+pd <- position_dodge(0.1)
+p2 <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean.acc, group = modality, color= modality)) +
+  geom_line(position = pd) +
+  geom_point(position = pd) + 
+  geom_errorbar(aes(ymin=lower.ci.acc,  ymax = upper.ci.acc),
+                size = 1, width=0, position = pd, alpha = 1/4) +
   ylab("Average Accuracy")+
   xlab("Trial Quarter") + 
-  geom_point(shape = 21, alpha = 0.7) +
   theme_cowplot() +
   ggtitle("Group-level Staircases") + 
   scale_linetype_discrete(name = "Modality", breaks = c("Calories", "GDP","Memory", "Vision")) +
@@ -486,22 +513,115 @@ GroupStair <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean, group = moda
                      labels = scales::percent,
                      limits = c(.6, .9)) +
   theme(legend.title = element_blank(), 
+       # aspect.ratio = 1,
         legend.position = c(1, 1), 
-        legend.justification = c(1,1), 
-        legend.direction = "horizontal") +
+        legend.justification = c(1,1),
+        legend.text = element_text(size = 10), 
+        legend.direction = "horizontal", 
+        plot.title = element_text(size = 12), 
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10,face="bold")) +
   guides(colour = guide_legend(nrow = 2))+
-
   scale_colour_manual(values = colors)
 
-p9 / GroupStair + plot_annotation(
-  #title = 'Figure 2',
-  tag_levels = 'A',
-  theme = theme(plot.title = element_text(size = 14)) & 
-  theme(text = element_text('arial')))
- 
+f2 <- p1 / p2 
 
-ggsave(here("figs", "Figure 2.png"), height = 7, width = 4) 
+f2 <- f2 +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 12))
+
+f2
+ggsave(here("figs", "Figure 2.png"), height = 16.8, width = 16.8, units = "cm") 
 ```
+
+
+Figure 4
+```{r}
+
+
+p3 <- ggplot(data=ConfByError, 
+       aes(x = modality, y = avgCF_Corr, fill=modality, shape = accuracy)) + 
+  geom_half_violin(side = "l", fill = NA)+
+  geom_half_point(aes(color = modality), range_scale = 1/2, alpha = 1/4,
+                  side = "l", position = position_dodge(c(3/4,3/4)))+
+  geom_half_boxplot(outlier.shape = NA, 
+                    side = "r", notch = TRUE, width = 1/2,
+                    alpha = 3/4, color = "black", show.legend = FALSE, 
+                    position = position_dodge(c(3/4,3/4)))+
+  theme_cowplot() +
+  labs(y = "Average Confidence",
+        x = "Modality", 
+        fill = "Legend") + 
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))+ 
+  scale_shape_manual(values=c(1, 4), guide = "legend")+
+  guides(shape = guide_legend(override.aes = list(color = "black", alpha = 1))) +
+  scale_fill_manual(values = colors, guide = "none")+
+  scale_color_manual(values = colors, guide = "none")+
+  scale_y_continuous(breaks = seq(1, 7, 1),
+                     limits = c(.5, 7)) +
+  ggtitle("Confidence by Accuracy") +
+    theme(legend.position = c(.01,.05),
+          legend.spacing.y = unit(1, "mm"),
+          legend.spacing.x = unit(2, "mm"),
+          legend.text.align = 0,
+          legend.box.just = "center",
+          #aspect.ratio = 1,
+          legend.direction="horizontal",
+          legend.background = element_blank(),
+          legend.text = element_text(size = 10 ), 
+          legend.title = element_blank(), 
+          plot.title = element_text(size = 12), 
+          axis.text=element_text(size=10),
+          axis.title=element_text(size=10,face="bold")) 
+
+p3
+# M-ratio across modalities:
+
+
+p4<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
+    geom_hline(yintercept = 1, linetype="dashed", color = "black", size=.5)+
+   #geom_half_violin(alpha = 0.7, side = "r")+
+   geom_half_point(range_scale = 8/10, shape = 21, alpha = 1/10, side = "l")+
+   geom_half_boxplot(outlier.shape = NA, notch = TRUE, width = 1/4, alpha = 3/4,
+                     color = "black", side = "r")+
+   guides(color="none") +
+  ggtitle("Metacognitive Efficiency")+
+  labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
+  scale_fill_manual(values = colors)+
+  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
+    scale_y_continuous(breaks = seq(-2, 4, 1),
+                     limits = c(-2, 4)) +
+   theme_cowplot() +
+   theme(legend.position = "none", 
+         #aspect.ratio = 1, 
+         plot.title = element_text(size = 12), 
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10,face="bold")) 
+  
+  
+ 
+  
+f3 <- p3 / p4  +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 10))
+
+  f3
+  
+
+ggsave(here("figs", "Figure 3.png"), height = 7, width = 7)  
+
+
+
+f3a <- (p1 + p2) / (p3 + p4) +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
+  theme(plot.tag = element_text(size = 10))
+
+f3a
+
+ggsave(here("figs", "Figure 3A.png"), height = 16.8, width = 16.8, units = "cm", dpi = 300)  
+
+  
+```
+
+
+
 
 Figure 3:  
 ```{r}
@@ -719,73 +839,7 @@ ggsave(here("figs", "Figure 3 without Outliers.png"), height = 7, width = 12)
 
 ```
 
-Figure 4
-```{r}
 
-#Mratio across modalities:
-p8<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
-  geom_boxjitter(outlier.shape = NA,
-                 jitter.shape = 21, notch = TRUE, width = .25,
-                errorbar.draw = TRUE, errorbar.length = .2, alpha = .7) +
- #geom_half_violin(alpha = 0.7)+
-#  geom_half_point(shape = 21, alpha = 0.7, transformation = position_jitter(.01), range_scale = .5, side = "r")+
- # geom_half_boxplot(outlier.shape = NA, 
-  #                  side = "l", notch = TRUE, width = 0.25,
-  #                  position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-   guides(color="none") +
-  ggtitle("Metacognitive Efficiency")+
-  labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
-  scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
-   theme_cowplot() +
-   theme(legend.position = "none") 
-
-#Average confidence across domains, split by correct and incorrect trials
-#split by correct and incorrect:
-tmp_data <- metadata  %>%
-   mutate(accuracy = factor(accuracy)) %>%
-  mutate(accuracy = recode_factor(accuracy, '1' = "hit", '0' = "miss"))
-
-#Average confidence for Correct trials:
-ConfByError <- tmp_data  %>%
-  group_by(subject, modality, accuracy) %>% 
-  summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
-  
-  
-ggSplit <- ggplot(data=ConfByError, 
-       aes(x = modality, y = avgCF_Corr, fill=accuracy), alpha = 0.7) + 
-#  geom_boxjitter(jitter.shape = 21, notch = TRUE, width = .5, errorbar.draw = TRUE, errorbar.length = .2,
-#                 alpha = 0.7, outlier.shape = NA) +
-  geom_half_violin(alpha = 0.7)+
-  geom_half_point(shape = 21, alpha = 0.7)+
-  geom_half_boxplot(outlier.shape = NA, 
-                    side = "l", notch = TRUE, width = 0.25,
-                    position = position_dodge(c(.75,.75)), alpha = 0.7, color = "black")+
-  theme_cowplot() +
-  labs(y = "Average Confidence",
-        x = "Modality", 
-        fill = "Legend") + 
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))+ 
-  scale_fill_manual(values = colors[c(4,1)])+
-  scale_y_continuous(breaks = seq(1, 7, 1),
-                     limits = c(1, 7)) +
-  theme(legend.position = "top", legend.title = element_blank(), legend.justification = "right") +
-  ggtitle("Confidence by Accuracy")
-
-#Now combine the plots: 
-Figure4 <- ggarrange(p8, ggSplit)
-  annotate_figure(Figure4, top = text_grob("Figure 4", color = "black",face = "bold", size = 14))
-  
-ggSplit / p8   + plot_annotation(
-  tag_levels = 'A',
-  theme = theme(plot.title = element_text(size = 12)) & 
-  theme(text = element_text('arial')))
-  
-  
-
-ggsave(here("figs", "Figure 4.png"), height = 7, width = 7)  
-  
-```
 
 Now the tables from the paper: 
 
