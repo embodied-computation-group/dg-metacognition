@@ -1,186 +1,7 @@
-
-Setup - install packages and source functions. 
-```{r}
-# clean slate to be sure
-rm(list = ls())
-
-# check for pacman package and install if not found
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt, rstatix, scales)
-
-# load the metaSDT package from github
-if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
-# load Rousselet correlation package 
-if (!require("bootcorci")) devtools::install_github("GRousselet/bootcorci")
-
-source(here("r", "remove_outliers_robust.R"))
-source(here("r", "outliers.R"))
-source(here("r", "trials2counts.R"))
-source(here("r", "metad_indiv.R"))
-source(here("r", "fit_mle.R"))
-source(here("r", "sdt_functions.R"))
-source(here("r", "Function_metad_groupcorr.R"))
-source(here("r", "BootCorci.R"))
-source(here("r", "Function_scatterplot.R"))
-source(here("r", "function_rhoPlot.R"))
-source(here("r", "function_apa.R"))
-
-# set apa theme for plots
-apatheme=theme_bw()+ #theme
-  theme(panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.border=element_blank(),
-        axis.line=element_line(),
-        text = element_text(size = 15),
-        axis.title = element_text(size = 12))
-
-
-
-# spider-man color palette
-
-colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
-
-```
-
-Load the data. 
-```{r}
-# read in the data
-
-metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialData_master.csv"), 
-    col_types = cols(confidence = col_double(), 
-        rt_conf = col_double()))
-
-# set modality as factor
-metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
-
-# remove any rows containing NaNs (i.e., missing data)
-metacognition_trial_data <- na.omit(metacognition_trial_data)
-
-head(metacognition_trial_data)
-
-```
-
-Trial-level exclusion (following prereg)
-```{r}
-
-metadata <- metacognition_trial_data %>%
-  group_by(subject, modality) %>%
-  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
-
-metadata <- na.omit(metadata)
-
-#Exclude those with rt <50ms 
-metadata <- metadata%>%filter(rt>=0.05) 
-
-#Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
-metadata<-metadata%>%mutate(modality=as.factor(modality))
-metadatac<-metadata #create new dataframe
-metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks in new dataframe
-metadatac <- metadatac %>%
-  group_by(subject, modality)%>% count(subject) #count number of trials
-excD <- subset(metadatac, metadatac$n<100) 
-excID <-unique(excD$subject) #Identify participants for exclusion
-metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs from that vector in original dataframe
-
-```
-
-Let's loop over subjects now and fit the MLE model. 
-```{r}
-
-subjects = unique(metadata$subject) # subjects vector, for looping
-modalities = as.character(unique(metadata$modality)) # modalities vector, for looping
-
-
-# setup cluster
-n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
-
-# since R can only work with around 120 cores maximum, set an upper limit if needed
-if (n.cores > 120) {
-n.cores <- 120
-}
-
-
-#create the cluster
-my.cluster <- parallel::makeCluster(
-  n.cores, 
-  type = "PSOCK"
-)
-
-#register it to be used by %dopar%
-doParallel::registerDoParallel(cl = my.cluster)
-
-
-# fit all subjects in parallel
-source(here("r", "parMLEfit.R"))
-
-# stop the cluster
-stopCluster(cl = my.cluster)
-
-# write out the data file
-write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
-
-head(fit_data)
-
-```
-
-Group-level exclusion based on MAD rule (confidence, d', criterion)
-```{r}
-
-#exclude those where mratio could not be estimated  
-metadata_exc <- fit_data%>%filter(mratio!="NaN")
-
-
-#Exclude outliers based on MAD rule (confidence, d' and criterion)
-#Confidence:
-Avgmeta <- metadata %>% 
-  group_by(subject, modality) %>% 
-  summarise(avg_conf=mean(confidence, na_rm=TRUE)) #Mean confidence for each modality
-
-#join Avgmeta with fit_data 
-fitAvg_data<- fit_data %>% full_join(Avgmeta, 
-                                   by= c('subject'='subject', 
-                                         'modality' = 'modality'))
-
-fitAvg_data <- fitAvg_data%>%filter(mratio!="NaN")
-
-metadata_exc <- fitAvg_data%>%
-  group_by(modality) %>%
-  mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove RT outliers using MAD Rule 
-
-# d' 
-metadata_exc <- metadata_exc%>%
-  group_by(modality) %>%
-  mutate(da = remove_outliers_robust(da)) # remove RT outliers using MAD Rule 
-
-
-# criterion 
-metadata_exc <- metadata_exc%>%
-  group_by(modality) %>%
-  mutate(c = remove_outliers_robust(c)) # remove RT outliers using MAD Rule 
-
-metadata_exc <- na.omit(metadata_exc)
-
-
-
-head(metadata_exc)
-
-
-```
-
-Pivot the data frame to wide. 
-```{r}
-
-fit_data_wide <- metadata_exc %>% pivot_wider(
-  names_from = modality,
-  values_from = c(da, mda, mratio, c, avg_conf)
-)
-  
-
-write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.csv"))
-
-head(fit_data_wide)
-```
-
+---
+title: "R Notebook"
+output: html_notebook
+---
 Anova: difference in d' and criterion between modalities.
 
 ```{r}
@@ -248,7 +69,6 @@ Dprimeapa
 Capa
 
 ```
-
 
 
 
@@ -361,6 +181,9 @@ head(corrtable)
 
 
 ```
+
+
+
 Plot the bootstrap samples of correlations: GRusselete 
 ```{r}
 
@@ -395,7 +218,7 @@ annotate_figure(BootPlot3, top = text_grob("Bootstrap samples of Meta-bias corre
 
 BootPlot3
 
-ggsave(here("figs", "bootplot3.png"), height = 8, width = 8, dpi = 300)
+ggsave(here("figs", "bootplot3.png"), height = 16.8/3, width = 16.8, dpi = 300)
 ```
 
 Now we calculate and plot the Bayes factors for the correlations: 
@@ -436,192 +259,6 @@ annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' corr
 
 
 ```
-
-Rearrange accuracy data for plotting summary variables
-
-```{r}
- 
-#make the four bins: 
-metadataPlot <- metadata %>%group_by(subject) %>% 
-mutate(trial_number = row_number()) %>%
-group_by(subject) #create a trial number column
-  
-#split in the four bins according to task 
-metadataPlot <- metadataPlot %>%
-    group_by(modality) %>%
-    mutate(trial_bin = ntile(trial_number, n = 4)) 
-  
-#Summarise means for each bin and modality
-metadataPlotMean <- metadataPlot %>%
-group_by(trial_bin, modality) %>%
-summarise(mean.acc = mean(accuracy),
-          sd.acc = sd(accuracy), n.acc = n_distinct(subject)) %>%
-mutate(se.acc = sd.acc / sqrt(n.acc),
-         lower.ci.acc = mean.acc - qt(1 - (0.05 / 2), n.acc - 1) * se.acc,
-         upper.ci.acc = mean.acc + qt(1 - (0.05 / 2), n.acc - 1) * se.acc) %>%
-ungroup()
-
-
-#Average confidence across domains, split by correct and incorrect trials
-#split by correct and incorrect:
-tmp_data <- metadata  %>%
-   mutate(accuracy = factor(accuracy)) %>%
-  mutate(accuracy = recode_factor(accuracy, '1' = "Hits", '0' = "Misses"))
-
-#Average confidence for Correct trials:
-ConfByError <- tmp_data  %>%
-  group_by(subject, modality, accuracy) %>% 
-  summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
-
-```
-
-
-Here we plot the Figures from the Paper: 
-Figure 2: d' and group staircase: 
-```{r}
-# Figure2 
-
-#Plot of d' without outliers: 
-
-p1<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
-   geom_half_point(range_scale = 8/10, shape = 21, alpha = 1/10, side = "l")+
-   geom_half_boxplot(outlier.shape = NA, notch = TRUE, width = 1/4,
-                     alpha = 1, color = "black", side = "r")+
-  guides(fill="none") +
-  ggtitle("Cognitive Sensitivity") +  labs(y = "D-prime", x = "Modality") + 
-  theme_cowplot() + 
-  scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
-  theme(legend.position = "none", 
-        # aspect.ratio = 1,
-        plot.title = element_text(size = 12), 
-        axis.text=element_text(size=10),
-        axis.title=element_text(size=10,face="bold"))
-
-#Plot of group-level Staircases: 
-
-
-pd <- position_dodge(0.1)
-p2 <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean.acc, group = modality, color= modality)) +
-  geom_line(position = pd) +
-  geom_point(position = pd) + 
-  geom_errorbar(aes(ymin=lower.ci.acc,  ymax = upper.ci.acc),
-                size = 1, width=0, position = pd, alpha = 1/4) +
-  ylab("Average Accuracy")+
-  xlab("Task Quarter") + 
-  theme_cowplot() +
-  ggtitle("Group-level Staircases") + 
-  scale_linetype_discrete(name = "Modality", breaks = c("Calories", "GDP","Memory", "Vision")) +
-  scale_x_continuous(labels = label_ordinal())+
-  scale_y_continuous(breaks = seq(.6, .9, .1),
-                     labels = scales::percent,
-                     limits = c(.6, .9)) +
-  theme(legend.title = element_blank(), 
-       # aspect.ratio = 1,
-        legend.position = c(1, 1), 
-        legend.justification = c(1,1),
-        legend.text = element_text(size = 10), 
-        legend.direction = "horizontal", 
-        plot.title = element_text(size = 12), 
-        axis.text=element_text(size=10),
-        axis.title=element_text(size=10,face="bold")) +
-  guides(colour = guide_legend(nrow = 2))+
-  scale_colour_manual(values = colors)
-
-f2 <- p1 + p2 
-
-f2 <- f2 +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
-  theme(plot.tag = element_text(size = 12))
-
-f2
-```
-
-
-Figure 4
-```{r}
-
-
-p3 <- ggplot(data=ConfByError, 
-       aes(x = modality, y = avgCF_Corr, fill=modality, shape = accuracy)) + 
-
-  geom_half_point(aes(color = modality), range_scale = 1/2, alpha = 1/10,
-                  side = "l", position = position_dodge(c(3/4,3/4)))+
-  geom_half_boxplot(outlier.shape = NA, 
-                    side = "r", notch = TRUE, width = 1/2,
-                    alpha = 1, color = "black", show.legend = FALSE, 
-                    position = position_dodge(c(3/4,3/4)))+
-  theme_cowplot() +
-  labs(y = "Average Confidence",
-        x = "Modality", 
-        fill = "Legend") + 
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision"))+ 
-  scale_shape_manual(values=c(1, 4), guide = "legend")+
-  guides(shape = guide_legend(override.aes = list(color = "black", alpha = 1))) +
-  scale_fill_manual(values = colors, guide = "none")+
-  scale_color_manual(values = colors, guide = "none")+
-  scale_y_continuous(breaks = seq(1, 7, 1),
-                     limits = c(.5, 7)) +
-  ggtitle("Confidence by Accuracy") +
-    theme(legend.position = c(.01,.05),
-          legend.spacing.y = unit(1, "mm"),
-          legend.spacing.x = unit(2, "mm"),
-          legend.text.align = 0,
-          legend.box.just = "center",
-          #aspect.ratio = 1,
-          legend.direction="horizontal",
-          legend.background = element_blank(),
-          legend.text = element_text(size = 10 ), 
-          legend.title = element_blank(), 
-          plot.title = element_text(size = 12), 
-          axis.text=element_text(size=10),
-          axis.title=element_text(size=10,face="bold")) 
-
-p3
-# M-ratio across modalities:
-
-
-p4<-ggplot(metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
-    geom_hline(yintercept = 1, linetype="dashed", color = "black", size=.5)+
-    aes(ymin = 0) +
-    geom_blank() +
-   geom_half_point(range_scale = 8/10, shape = 21, alpha = 1/10, side = "l")+
-   geom_half_boxplot(outlier.shape = NA, notch = TRUE, width = 1/4, alpha = 1,
-                     color = "black", side = "r")+
-   guides(color="none") +
-  ggtitle("Metacognitive Efficiency")+
-  labs(y = "Meta-d'/d'", x = "Modality", color = "Legend") + 
-  scale_fill_manual(values = colors)+
-  scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
-    scale_y_continuous(breaks = seq(-2, 4, 1),
-                     limits = c(-2, 4)) +
-   theme_cowplot() +
-   theme(legend.position = "none", 
-         #aspect.ratio = 1, 
-         plot.title = element_text(size = 12), 
-        axis.text=element_text(size=10),
-        axis.title=element_text(size=10,face="bold")) 
-  
-  
- 
-  
-f3 <- p3 + p4  +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
-  theme(plot.tag = element_text(size = 10))
-
-  f3
-  
-
-
-f3a <- (p1 + p2) / (p3 + p4) +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
-  theme(plot.tag = element_text(size = 10))
-
-f3a
-
-ggsave(here("figs", "Figure 2.png"), height = 16.8, width = 16.8, units = "cm", dpi = 300)  
-
-  
-```
-
-
 
 
 Figure 3:  
@@ -741,6 +378,9 @@ Figure3 <- ggarrange(CorMLE, CorHi, ncol= 1, nrow=2)
 ggsave(here("figs", "Figure 3.png"), height = 7, width = 12)  
 
 ```
+
+
+
 
 Figure 3 without Mratio outliers: 
 ```{r}
@@ -1136,4 +776,3 @@ Individual-level staircase plots: (Takes a long time)
 #source(here("r", "make_indivi_plots.R"))
 
 ```
-
