@@ -9,11 +9,13 @@ First setup:
 
 ```{r}
 
+# clean slate to be sure
 rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, broom, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt, rstatix)
+
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -28,9 +30,26 @@ source(here("r", "fit_mle.R"))
 source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
-source(here("r", "scatterplot.R"))
+source(here("r", "Function_scatterplot.R"))
+source(here("r", "function_rhoPlot.R"))
+source(here("r", "function_apa.R"))
 source(here("r", "fitMLEEven.R"))
 source(here("r", "fitMLEOdd.R"))
+
+# set apa theme for plots
+apatheme=theme_bw()+ #theme
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border=element_blank(),
+        axis.line=element_line(),
+        text = element_text(size = 15),
+        axis.title = element_text(size = 12))
+
+
+# spider-man color palette
+
+colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
+
 
 
 ```
@@ -330,7 +349,7 @@ s4 <- scatter(scat1, scat1$VisEven, scat1$VisOdd) +
 
 comPlot1 <- ggarrange(s1, s2, s3, s4)
 annotate_figure(comPlot1, top = text_grob("Split-half Analysis of Metacognitive Efficiency", color = "black", face = "bold", size = 14))  
-
+ggsave(here("figs", "SplitHalf_Unfiltered.png")) 
 
 ##Filetered 
 corrCom <- data.frame(MemEven=fit_data_wideEvenF$Even_mratio_memory,
@@ -355,4 +374,56 @@ s4 <- scatter(scat1, scat1$VisEven, scat1$VisOdd) +
 comPlot1 <- ggarrange(s1, s2, s3, s4)
 annotate_figure(comPlot1, top = text_grob("Split-half Analysis of Metacognitive Efficiency", color = "black", face = "bold", size = 14))  
 
+
+ggsave(here("figs", "SplitHald_Filtered.png")) 
+```
+
+
+Table with the correlation coefficients and significance level: 
+
+```{r}
+#Choose only filtered: 
+corrtableF <- corrtable[2,]
+
+
+
+
+#combine upper and lower limit of CI into one. 
+tableSH <- corrtableF %>% mutate(Mem_CI = paste(round(corrtableF$CI_lowerM,3), round(corrtableF$CI_upperM,3), sep=";")) %>%
+  mutate(Cal_CI= paste(round(corrtableF$CI_lowerC,3), round(corrtableF$CI_upperC,3), sep=";")) %>%
+  mutate(GDP_CI= paste(round(corrtableF$CI_lowerG,3), round(corrtableF$CI_upperG,3), sep=";")) %>%
+  mutate(Vis_CI= paste(round(corrtableF$CI_lowerV,3), round(corrtableF$CI_upperV,3), sep=";")) 
+
+#Sort number of decimals: 
+tableSH <- tableSH %>% mutate(Memory = round(Memory,3),
+                              Calories = round(Calories,3),
+                              GDP = round(GDP,3),
+                              Vision = round(Vision,3)
+                              )
+
+#NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
+tableSH <- tableSH %>% mutate(P_valueM = as.character("<.001"),
+                              P_valueC = as.character("<.001"),
+                              P_valueG = as.character("<.001"),
+                              P_valueV = as.character("<.001"))
+#Make a dataframe with right format
+tableSHT <- data.frame(Domain=character(),
+                 r=double(),
+                 p=double(),
+                stringsAsFactors=FALSE)
+
+tableSHT <- tableSHT %>% rename('p (CI)'= p)
+
+#Put values into dataframe
+tableSHT[1,] <- list("Memory", tableSH$Memory, paste0(tableSH$P_valueM, "(", (tableSH$Mem_CI), ")"))
+tableSHT[2,] <- list("Calories", tableSH$Calories, paste0(tableSH$P_valueC, "(", (tableSH$Cal_CI), ")"))
+tableSHT[3,] <- list("GDP", tableSH$GDP, paste0(tableSH$P_valueG, "(", (tableSH$GDP_CI), ")"))
+tableSHT[4,] <- list("Vision",tableSH$Vision, paste0(tableSH$P_valueV, "(", (tableSH$Vis_CI), ")"))
+
+
+#Add APA Format:
+SpliHalf<-apa(tableSHT, "Table ??: Split Half Trials analyses of Metacognitive Efficiency")
+
+
+SpliHalf
 ```
