@@ -90,7 +90,7 @@ metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs
 Load the fitted data: 
 ```{r}
 
-fit_data <- read_csv("data_summary/mle_mratio_fit_data.csv")
+fit_data <- read_csv(here("data_summary/mle_mratio_fit_data.csv"))
 ```
 
 
@@ -138,6 +138,22 @@ head(metadata_exc)
 
 ```
 
+
+Exclude participants who does not have all data points. 
+```{r}
+# identify whether participants have data points in all domains, by measuring length:
+rownum <- metadata_exc %>% group_by (subject) %>% summarise(length(modality))
+
+#Identify those with less than four 
+rowExc <- subset(rownum, rownum$`length(modality)`<4)
+rowexcID <-unique(rowExc$subject)
+#Exclude IDs from that vector in original dataframe:
+metadata_exc <- subset(metadata_exc, !is.element(metadata_exc$subject, rowexcID))
+
+
+```
+
+
 Pivot the data frame to wide. 
 ```{r}
 
@@ -151,6 +167,8 @@ write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.cs
 
 head(fit_data_wide)
 ```
+
+
 
 Anova: difference in d', criterion metacognitive bias, sensitivity and efficiency between modalities.
 + Post hoc t-tests. 
@@ -171,7 +189,7 @@ dpC_aov <- anova_test(data=dpC, dv=`d-prime`, wid=subject, within=modality)
 get_anova_table(dpC_aov)
 
 #Post-hoc: pairwise repeated t-tests
-dpT <- dpC %>% pairwise_t_test(`d-prime` ~ modality, p.adjust.method = "bonferroni")
+dpT <- dpC %>% pairwise_t_test(`d-prime` ~ modality, paired =TRUE, p.adjust.method = "bonferroni")
 
 ###Repated ANOVA for c: 
 #Select relevant coulmns: 
@@ -188,7 +206,7 @@ CC_aov <- anova_test(data=CC, dv=Criterion, wid=subject, within=modality)
 get_anova_table(CC_aov)
 
 #Post-hoc: repeated t-tests
-CT <- CC %>% pairwise_t_test(Criterion ~ modality, p.adjust.method = "bonferroni")
+CT <- CC %>% pairwise_t_test(Criterion ~ modality, paired =TRUE, p.adjust.method = "bonferroni")
 
 ## Repeated measures ANOVA of metacognitive bias: 
 #Select relevant coulmns: 
@@ -205,7 +223,7 @@ MB_aov <- anova_test(data=MB, dv=Bias, wid=subject, within=modality)
 get_anova_table(MB_aov)
 
 #Post-hoc: repeated t-tests
-MBT <- MB %>% pairwise_t_test(Bias ~ modality, p.adjust.method = "bonferroni")
+MBT <- MB %>% pairwise_t_test(Bias ~ modality, paired =TRUE, p.adjust.method = "bonferroni")
 
 
 ## Repeated measures ANOVA of meta-d':
@@ -223,7 +241,7 @@ MS_aov <- anova_test(data=MS, dv=Sensitivity, wid=subject, within=modality)
 get_anova_table(MS_aov)
 
 #Post-hoc: repeated t-tests
-MST <- MS %>% pairwise_t_test(Sensitivity ~ modality, p.adjust.method = "bonferroni")
+MST <- MS %>% pairwise_t_test(Sensitivity ~ modality, paired =TRUE, p.adjust.method = "bonferroni")
 
 ## Repeated measures ANOVA of mratio: 
 #Select relevant coulmns: 
@@ -240,24 +258,26 @@ ME_aov <- anova_test(data=ME, dv=Efficiency, wid=subject, within=modality)
 get_anova_table(ME_aov)
 
 #Post-hoc: repeated t-tests
-MET <- ME %>% pairwise_t_test(Efficiency ~ modality, p.adjust.method = "bonferroni")
+MET <- ME %>% pairwise_t_test(Efficiency ~ modality, paired =TRUE,p.adjust.method = "bonferroni")
+
 
 ```
 
-Calculate degrees of freedoms:
+Calculate degrees of freedoms for t-test:
 ```{r}
 
-dpT <- dpT %>% mutate(df= )
-
+dpT <- dpT %>% mutate(df= n1 +n2 -2)
+CT <- CT %>% mutate(df= n1 +n2 -2)
+MBT <- MBT %>% mutate(df= n1 +n2 -2)
+MST <- MST%>% mutate(df= n1 +n2 -2)
+MET <- MET %>% mutate(df= n1 +n2 -2)
 
 ```
 
 
-Tables for ANOVAS and Post-hoc tests: 
+Tables Post-hoc tests: 
 ```{r}
 ## Table of all ANOVAS: 
-
-
 
 ##Tables of all Post-hoc t-tests: 
 DTT <- data.frame(Pair=character(),
@@ -283,31 +303,31 @@ METT <-data.frame(Pair=character(),
 
 #change layout and labels: 
 ## the reported p is bonferroni  
-DTT[1,] <- list(paste0(dpT$group1, "&", dpT$group2), , )
+DTT[1:6,] <- list(paste0(dpT$group1, " & ", dpT$group2), paste0('t', '(', dpT$df, ') = ', round(dpT$statistic, 3)),   paste0('p = ', round(dpT$p.adj,3)))
+CTT[1:6,] <- list(paste0(CT$group1, " & ", CT$group2), paste0('t', '(', CT$df, ') = ', round(CT$statistic, 3)),   paste0('p = ', round(CT$p.adj,3)))
+MBTT[1:6,] <- list(paste0(MBT$group1, " & ", MBT$group2), paste0('t', '(', MBT$df, ') = ', round(MBT$statistic, 3)),   paste0('p = ', round(MBT$p.adj,3)))
+MSTT[1:6,] <- list(paste0(MST$group1, " & ", MST$group2), paste0('t', '(', MST$df, ') = ', round(MST$statistic, 3)),   paste0('p = ', round(MST$p.adj,3)))
+METT[1:6,] <- list(paste0(MET$group1, " & ", MET$group2), paste0('t', '(', MET$df, ') = ', round(MET$statistic, 3)),   paste0('p = ', round(MET$p.adj,3)))
 
-dpT <- dpT %>% mutate(IV = .y.,
-                      'Group 1' = group1,
-                      'Group 2' = group2,
-                      'p (Bonf)' = p.adj) %>% select(IV,'Group 1', 'Group 2', n1,n2, p, 'p (Bonf)')
+#Change the p-value to <.001 when appropriate: 
+DTT <- DTT %>% mutate(p = ifelse(p == 'p = 0', "p <.001", paste0(p)))
+CTT <- CTT %>% mutate(p = ifelse(p == 'p = 0', "p <.001", paste0(p)))
+MBTT <- MBTT %>% mutate(p = ifelse(p == 'p = 0', "p <.001", paste0(p)))
+MSTT <- MSTT %>% mutate(p = ifelse(p == 'p = 0', "p <.001", paste0(p)))
+METT <- METT %>% mutate(p = ifelse(p == 'p = 0', "p <.001", paste0(p)))
 
-CT <- CT  %>% mutate(IV = .y.,
-                      'Group 1' = group1,
-                      'Group 2' = group2,
-                      'p (Bonf)' = p.adj) %>% select(IV,'Group 1', 'Group 2', n1,n2, p, 'p (Bonf)')
+#Put into APA format: 
+Dprimeapa<-apa(DTT, "Table 1: Post Hoc: Paired t-tests of cognitive sensitivity (d')")
+Capa <-apa(CTT, "Table 2: Post Hoc: Paired t-tests of cognitive decision criterion (c)")
+MBapa <-apa(MBTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive bias (Avg conf)")
+MSapa <-apa(MBTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive Sensitivity (Meta-d')")
+MEapa <-apa(MBTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive Efficiency (M-ratio)")
 
-tableSHT[1,] <- list("Memory", tableSH$Memory, paste0(tableSH$P_valueM, "(", (tableSH$Mem_CI), ")"))
-
-
-#NOTE I MANUALLY CHANGED THE P-values to <.001 here! Thus with different data this may not be appropriate. 
-dpT <- dpT %>%mutate(p = as.character("<.001"),
-                         'p (Bonf)'= as.character("<.001"))
-CT <- CT %>%mutate(p = as.character("<.001"),
-                         'p (Bonf)'= as.character("<.001"))
-
-Dprimeapa<-apa(dpT, "Table 1: Post Hoc: Paired t-tests of cognitive sensitivity (d')")
-Capa <-apa(CT, "Table 2: Post Hoc: Paired t-tests of cognitive decision criterion (c)")
 
 Dprimeapa
 Capa
+MBapa
+MSapa
+MEapa
 
 ```
