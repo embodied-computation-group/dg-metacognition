@@ -24,6 +24,7 @@ source(here("r", "BootCorci.R"))
 source(here("r", "Function_scatterplot.R"))
 source(here("r", "function_rhoPlot.R"))
 source(here("r", "function_apa.R"))
+source(here("r", "Bayesfactor.R"))
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
@@ -328,41 +329,88 @@ ggsave(here("figs", "bootplot3.png"), height = 8, width = 8, dpi = 300)
 ```
 
 Now we calculate and plot the Bayes factors for the correlations: 
-!!! COMBINE PLOTS + SUMMARY OF Stats. 
 ```{r}
+
+# Bayes factor is estimated  and plots are saved: 
 # Metacognitive sensitivity 
- source(here("r", "Bayesfactor.R"))
-  
-bf1 <- bayes(corr$mda_memory, corr$mda_Calories)
+bf1<- bayes(corr$mda_memory, corr$mda_Calories)
+ggsave(here("figs","bayes", "mda_Mem_cal.png"))
 bf2 <- bayes(corr$mda_memory, corr$mda_vision)
+ggsave(here("figs","bayes", "mda_Mem_vis.png"))
 bf3 <- bayes(corr$mda_memory, corr$mda_GDP)
+ggsave(here("figs","bayes", "mda_Mem_gdp.png"))
 bf4 <- bayes(corr$mda_GDP, corr$mda_vision)
+ggsave(here("figs","bayes", "mda_gdp_vis.png"))
 bf5 <- bayes(corr$mda_GDP, corr$mda_Calories)
+ggsave(here("figs","bayes", "mda_gdp_cal.png"))
 bf6 <- bayes(corr$mda_Calories, corr$mda_vision)
-BayesPlot1 <- ggarrange(plot, bf2, bf3, bf4, bf5, bf6)
-annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' correlations", color = "black", 
-                                         face = "bold", size = 14))  
+ggsave(here("figs","bayes", "mda_cal_vis.png"))
+ 
 #Metacognitive Efficiency
 bf11 <- bayes(corr1$mratio_memory, corr1$mratio_Calories)
+ggsave(here("figs","bayes", "mratio_Mem_cal.png"))
 bf12 <- bayes(corr1$mratio_memory, corr1$mratio_vision)
+ggsave(here("figs","bayes", "mratio_Mem_vis.png"))
 bf13 <- bayes(corr1$mratio_memory, corr1$mratio_GDP)
+ggsave(here("figs","bayes", "mratio_Mem_gdp.png"))
 bf14 <- bayes(corr1$mratio_GDP, corr1$mratio_vision)
+ggsave(here("figs","bayes", "mratio_gdp_vis.png"))
 bf15 <- bayes(corr1$mratio_GDP, corr1$mratio_Calories)
+ggsave(here("figs","bayes", "mratio_gdp_cal.png"))
 bf16 <- bayes(corr1$mratio_Calories, corr1$mratio_vision)
-BayesPlot2 <- ggarrange(bf11, bf12, bf13, bf14, bf15, bf16)
-annotate_figure(BayesPlot2, top = text_grob("Bayesfactor samples of Mratio' correlations", color = "black", 
-                                         face = "bold", size = 14))  
-#Metacognitive bias 
-bf1 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_Calories)
-bf2 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_vision)
-bf3 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_GDP)
-bf4 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_vision)
-bf5 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_Calories)
-bf6 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
-BayesPlot1 <- ggarrange(bf21, bf22, bf23, bf24, bf25, bf26)
-annotate_figure(BayesPlot1, top = text_grob("Bayesfactor samples of Meta-d' correlations", color = "black", 
-                                         face = "bold", size = 14))  
+ggsave(here("figs","bayes", "mratio_cal_vis.png"))
 
+#Metacognitive bias 
+bf21 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_Calories)
+ggsave(here("figs","bayes", "avgconf_Mem_cal.png"))
+bf22 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_vision)
+ggsave(here("figs","bayes", "avgconf_Mem_vis.png"))
+bf23 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_GDP)
+ggsave(here("figs","bayes", "avgconf_Mem_gdp.png"))
+bf24 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_vision)
+ggsave(here("figs","bayes", "avgconf_gdp_vis.png"))
+bf25 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_Calories)
+ggsave(here("figs","bayes", "avgconf_gdp_cal.png"))
+bf26 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
+ggsave(here("figs","bayes", "avgconf_cal_vis.png"))
+
+#Make the APA tables: 
+BayesSen <- data.frame(Pair=character(),
+  `Bayes Factor`=double())
+BayesEff <- data.frame( Pair=character(),
+  `Bayes Factor`=double())
+BayesBia <- data.frame( Pair=character(),
+  `Bayes Factor`=double())
+
+BayesSen <- BayesSen %>% rename( "Bayes Factor"= Bayes.Factor)
+BayesEff <- BayesEff %>% rename( "Bayes Factor"= Bayes.Factor)
+BayesBia <- BayesBia %>% rename( "Bayes Factor"= Bayes.Factor)
+
+BayesSen[1,] <-list(paste0('Memory & Calories'), paste0(round(bf1@bayesFactor$bf,3))) 
+BayesSen[2,] <-list(paste0('Memory & Vision'), paste0(round(bf2@bayesFactor$bf,3))) 
+BayesSen[3,] <-list(paste0('Memory & GDP'), paste0(round(bf3@bayesFactor$bf,3))) 
+BayesSen[4,] <-list(paste0('GDP & Calories'), paste0(round(bf4@bayesFactor$bf,3))) 
+BayesSen[5,] <-list(paste0('Vision & Calories'), paste0(round(bf5@bayesFactor$bf,3))) 
+
+BayesEff[1,] <-list(paste0('Memory & Calories'), paste0(round(bf11@bayesFactor$bf,3))) 
+BayesEff[2,] <-list(paste0('Memory & Vision'), paste0(round(bf12@bayesFactor$bf,3))) 
+BayesEff[3,] <-list(paste0('Memory & GDP'), paste0(round(bf13@bayesFactor$bf,3))) 
+BayesEff[4,] <-list(paste0('GDP & Calories'), paste0(round(bf14@bayesFactor$bf,3))) 
+BayesEff[5,] <-list(paste0('Vision & Calories'), paste0(round(bf15@bayesFactor$bf,3))) 
+
+BayesBia[1,] <-list(paste0('Memory & Calories'), paste0(round(bf21@bayesFactor$bf,3))) 
+BayesBia[2,] <-list(paste0('Memory & Vision'), paste0(round(bf22@bayesFactor$bf,3))) 
+BayesBia[3,] <-list(paste0('Memory & GDP'), paste0(round(bf23@bayesFactor$bf,3))) 
+BayesBia[4,] <-list(paste0('GDP & Calories'), paste0(round(bf24@bayesFactor$bf,3))) 
+BayesBia[5,] <-list(paste0('Vision & Calories'), paste0(round(bf25@bayesFactor$bf,3))) 
+
+BayesSenapa<-apa(BayesSen, "Table ???: Bayes factor: Metacognitive Sensitivity")
+BayesEffapa<-apa(BayesEff, "Table ???: Bayes factor: Metacognitive Efficiency") 
+BayesBiaapa<-apa(BayesBia, "Table ???: Bayes factor: Metacognitive Bias") 
+
+BayesSenapa
+BayesEffapa
+BayesBiaapa
 
 ```
 
