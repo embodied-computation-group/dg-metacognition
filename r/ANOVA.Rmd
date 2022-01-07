@@ -273,20 +273,13 @@ MET <- ME %>% pairwise_t_test(Efficiency ~ modality, paired =TRUE,p.adjust.metho
 Table of ANOVAs: 
 ```{r}
 
-dpC_aov1 <- 
-CC_aov1 <- 
-MB_aov1 <- 
-MS_aov1<- 
-ME_aov1<- 
-
 ANOT <- data.frame(
   Measure = character(), 
   `F`= character(), 
   p = character()
 )  
   
-ANOT[1,] <- list(paste0("d'"), paste0('F(', dpC_aov1$DFn, ',',dpC_aov1$DFd, ') = ', round(dpC_aov1$F, 3)), 
-             paste0('p = ', dpC_aov1$p))
+ANOT[1,] <- list(paste0("d'"), paste0('F(', dpC_aov1$DFn, ',',dpC_aov1$DFd, ') = ', round(dpC_aov1$F, 3)), paste0('p = ', dpC_aov1$p))
 ANOT[2,] <- list(paste0("c"), paste0('F(', CC_aov1$DFn, ',',CC_aov1$DFd, ') = ', round(CC_aov1$F, 3)), 
              paste0('p = ', CC_aov1$p))
 ANOT[3,] <- list(paste0("Avg. Conf"), paste0('F(', MB_aov1$DFn, ',',MB_aov1$DFd, ') = ', round(MB_aov1$F, 3)), 
@@ -365,8 +358,8 @@ METT <- METT %>% mutate(p = ifelse(p == 'p = 0', "p <.001", paste0(p)))
 Dprimeapa<-apa(DTT, "Table 1: Post Hoc: Paired t-tests of cognitive sensitivity (d')")
 Capa <-apa(CTT, "Table 2: Post Hoc: Paired t-tests of cognitive decision criterion (c)")
 MBapa <-apa(MBTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive bias (Avg conf)")
-MSapa <-apa(MBTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive Sensitivity (Meta-d')")
-MEapa <-apa(MBTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive Efficiency (M-ratio)")
+MSapa <-apa(MSTT, "Table 3: Post Hoc: Paired t-tests of Metacognitive Sensitivity (Meta-d')")
+MEapa <-apa(METT, "Table 3: Post Hoc: Paired t-tests of Metacognitive Efficiency (M-ratio)")
 
 
 Dprimeapa

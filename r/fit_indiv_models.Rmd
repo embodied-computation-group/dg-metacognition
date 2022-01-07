@@ -837,27 +837,26 @@ ID_incl <- unique(metadata_exc$subject)
 demo <- subset(survey_data_pre, is.element(survey_data_pre$Sid, ID_incl))
 
 #summarise and format Gender:
-demoG <- demo %>% group_by(gender) %>%
+demoG <- demo %>% group_by(gender) %>% 
   summarise(mean1=length(gender)) %>% mutate(per = 100*mean1/321) %>%
-  mutate(mean=paste0(round(mean1), paste0(" (", round(per,2), " %)"))) %>%
-  select(gender, mean) %>% 
-  pivot_wider(names_from = gender, values_from = mean)
+  mutate(Count=paste0(round(mean1), paste0(" (", round(per,2), " %)"))) %>% mutate(Gender=gender)%>%
+  select(Gender, Count) 
+
 
 #summarise and format age:
-demoA <- demo %>% summarise(age1 =mean(age, na_rm=TRUE),
+demoA <- demo %>% group_by(gender) %>% summarise(age1 =mean(age, na_rm=TRUE),
                          age_sd=sd(age, na.rm=TRUE)) %>% 
-  mutate(age= paste0(round(age1), paste0(" (", round(age_sd,3), " SD)")))
+  mutate(Age= paste0(round(age1), paste0(" (", round(age_sd,3), " SD)"))) %>% select(Age, gender)
 
-  
-#Combine in table
-table1 <- data.frame(Descriptive=character(),
-                     Count=double())
 
-table1[1,] <- list("Feminine", demoG$Feminin)
-table1[2,] <- list("Masculine", demoG$Masculin)
-table1[3,] <- list("Non-binary", demoG$`non-binary`)
-table1[4,] <- list("Age", demoA$age)
+#MANUALLY CHANGE NON_BINARY AGE
+demoA[3,1] <-'21 (0 SD)' 
 
+#Join the two tables: 
+table1 <- full_join(demoG, demoA, by = c("Gender"="gender"))
+table1[3,1] <-'Non-binary'
+
+#Apa format:
 table1apa<-apa(table1, "Table 1: Demographics")
 table1apa
 
@@ -901,6 +900,12 @@ table22[4,] <- list("GDP & Vision",table2$GDPVisCoef[1],table2$P_valueGS[1], tab
 table22[5,] <- list("GDP & Calories",table2$GDPCalCoef[1],table2$P_valueGC[1], table2$GC_CI[1])
 table22[6,] <- list("Calories & Vision",table2$CalVisCoef[1],table2$P_valueCV[1], table2$CV_CI[1])
 
+#Combine p and C-value: 
+table22 <- table22 %>% mutate(`p-value (CI)`= paste0('p = ', table22$p, ' (', table22$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
+
+
+
+
 ##Sensitivity
 #Table with correlation coefficents for all pairwise correlations: 
 table23 <- data.frame(Pair=character(),
@@ -916,6 +921,9 @@ table23[3,] <- list("Memory & GDP",table2$MemGDPCoef[2],table2$P_valueMG[2], tab
 table23[4,] <- list("GDP & Vision",table2$GDPVisCoef[2],table2$P_valueGS[2], table2$GS_CI[2])
 table23[5,] <- list("GDP & Calories",table2$GDPCalCoef[2],table2$P_valueGC[2], table2$GC_CI[2])
 table23[6,] <- list("Calories & Vision",table2$CalVisCoef[2],table2$P_valueCV[2], table2$CV_CI[2])
+
+#Combine p and C-value: 
+table23 <- table23 %>% mutate(`p-value (CI)`= paste0('p = ', table23$p, ' (', table23$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
 
 ##Bias
 #Table with correlation coefficents for all pairwise correlations: 
@@ -935,6 +943,9 @@ table24[6,] <- list("Calories & Vision",table2$CalVisCoef[3],table2$P_valueCV[3]
 
 #NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
 table24 <- table24 %>% mutate(p = as.character("<.001"))
+#Combine p and C-value: 
+table24 <- table24 %>% mutate(`p-value (CI)`= paste0('p = ', table24$p, ' (', table24$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
+
 
 #d' correlation: 
 table25 <- data.frame(Pair=character(),
@@ -951,11 +962,15 @@ table25[4,] <- list("GDP & Vision",table2$GDPVisCoef[4],table2$P_valueGS[4], tab
 table25[5,] <- list("GDP & Calories",table2$GDPCalCoef[4],table2$P_valueGC[4], table2$GC_CI[4])
 table25[6,] <- list("Calories & Vision",table2$CalVisCoef[4],table2$P_valueCV[4], table2$CV_CI[4])
 
+#Combine p and C-value: 
+table25 <- table25 %>% mutate(`p-value (CI)`= paste0('p = ', table25$p, ' (', table25$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
+
 #Sort decimals: 
 table22 <- table22 %>% mutate(r = round(r,3))
 table23 <- table23 %>% mutate(r = round(r,3))
 table24 <- table24 %>% mutate(r = round(r,3))
 table25 <- table25 %>% mutate(r = round(r,3))
+
 
 
 #Makes tables in APA format: 
@@ -1024,13 +1039,13 @@ metadata_avg <- metadata_exc %>%
     
 #Change format: 
 tableMLE <- metadata_avg %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"),
-                                  'd-prime (SD)'=paste0((round(dprime,3)), paste0(" (", round(dprime_sd,3), ")")),
+                                  'dprime (SD)'=paste0((round(dprime,3)), paste0(" (", round(dprime_sd,3), ")")),
                                   'Criterion (SD)'=paste0((round(criterion,3)), paste0(" (", round(criterion_sd,3), ")")),
                                   'Meta-d (SD)'=paste0((round(metad,3)), paste0(" (", round(metad_sd,3), ")")),
                                   'Mratio (SD)'=paste0((round(mratio1,3)), paste0(" (", round(mratio_sd,3), ")")),
                                   'Avg Conf (SD)'=paste0((round(avg_conf1,3)), paste0(" (", round(avg_conf_sd,3), ")"))
                                   ) 
-tableMLE <- tableMLE %>% select(Modality, 'd-prime (SD)', 'Criterion (SD)', 'Avg Conf (SD)', 'Meta-d (SD)'=, 'Mratio (SD)')   
+tableMLE <- tableMLE %>% select(Modality, 'dprime (SD)', 'Criterion (SD)', 'Avg Conf (SD)', 'Meta-d (SD)', 'Mratio (SD)')   
 
 # Mratio estimations from Hierarhical Model.  
 
@@ -1041,7 +1056,7 @@ meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
          upper=exp(upper))
   
 #format and select: 
-meanMratio <- meanMratio %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"),
+meanMratio <- meanMratio %>% mutate(Modality=c("Memory", "Calories", "GDP", "Vision"),
          'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
          
 meanMratio <- meanMratio %>% select(Modality, 'HMratio (HDI)')
