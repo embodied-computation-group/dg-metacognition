@@ -906,7 +906,7 @@ table22 <- table22 %>% mutate(`p-value (CI)`= paste0('p = ', table22$p, ' (', ta
 
 
 
-##Sensitivity
+##Efficiency
 #Table with correlation coefficents for all pairwise correlations: 
 table23 <- data.frame(Pair=character(),
                  r=double(),
@@ -964,20 +964,20 @@ table25[6,] <- list("Calories & Vision",table2$CalVisCoef[4],table2$P_valueCV[4]
 
 #Combine p and C-value: 
 table25 <- table25 %>% mutate(`p-value (CI)`= paste0('p = ', table25$p, ' (', table25$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
+table25 <- table25 %>% mutate(r = round(r,3))
+table25 <- table25 %>% mutate( `Spearman's Correlation` = paste0("r(314) = ", r, " ",`p-value (CI)`)) %>% select(Pair, `Spearman's Correlation`)
 
 #Sort decimals: 
 table22 <- table22 %>% mutate(r = round(r,3))
 table23 <- table23 %>% mutate(r = round(r,3))
 table24 <- table24 %>% mutate(r = round(r,3))
-table25 <- table25 %>% mutate(r = round(r,3))
-
 
 
 #Makes tables in APA format: 
 CorEff<-apa(table23, "Table 2.a: MLE correlation of Metacognitive Efficiency")
 CorSen<-apa(table22, "Table 2.b: MLE correlation of Metacognitive Sensitivity")
 CorBias<-apa(table24, "Table 2.c: MLE correlation of Metacognitive Bias")
-CorD <-apa(table25, "Table 2.d: MLE correlation of Cognitive Sensitivity")
+CorD <-apa(table25, "Table 2: MLE correlation of Cognitive Sensitivity")
 
 ######Save tables. 
 #######################
@@ -1021,6 +1021,28 @@ Table2Hapa<-apa(Table2H, "Table 3: Hierarhical Bayesian estimation of correlatio
 Table2Hapa
   
 ```
+Combine MLE and Hierarchical fit of Mratio correlations:
+```{r}
+table23 
+Table2H
+
+TableHM <- full_join(table23, Table2H, by=c("Pair"="Pair"))
+TableHM <- TableHM %>% mutate( `MLE fit` = paste0("r(314) = ", r, " ",`p-value (CI)`),
+                               `Hierarchical fit` = `Rho (HDI)`) %>% 
+  select(Pair, `MLE fit`, `Hierarchical fit`)
+
+TableHMapa<-apa(TableHM, "Table 3: MLE and Hierarhical Bayesian estimation of correlation of Metacognitive Efficiency")
+
+######Save tables. 
+#######################
+###
+
+TableHMapa
+
+```
+
+
+
 Table 3: Average cognitive and Metacognitive performance across tasks 
 ```{r}
 
