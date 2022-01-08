@@ -1006,7 +1006,9 @@ Table2H <- RhoHDI %>% mutate(Pair= c("Memory & Calories", "Memory & Vision", "Me
                              Rho=round(value,3),
                              HDI = paste(round(lower,3), round(upper,3), sep=";")
                              )
-Table2H <- Table2H %>% select(Pair, Rho, HDI)
+
+Table2H <- Table2H %>% mutate(`Rho (HDI)`= paste0(Rho, " (", HDI, ")" )) %>% select(Pair, `Rho (HDI)`)
+
 
 #Put into APA format. 
 
