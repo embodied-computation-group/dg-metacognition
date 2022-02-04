@@ -138,6 +138,7 @@ output <- metad_groupcorr(nR_S1, nR_S2)
 }
 
 ```  
+
 This next chunk pulls out the data from the model needed to plot HDI intervals, point estimates, and correlations. 
 ```{r}
 
@@ -240,6 +241,7 @@ ggsave(here("figs", "mratio_hdi.png"))
 Here we plot the same, but for the correlation (rho) estimate for each condition
 
 ```{r}
+
 mcmc.rho <- mcmc.sample %>% 
   filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
 

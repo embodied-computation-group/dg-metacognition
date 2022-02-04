@@ -427,3 +427,4 @@ SpliHalf<-apa(tableSHT, "Table ??: Split Half Trials analyses of Metacognitive E
 
 SpliHalf
 ```
+
