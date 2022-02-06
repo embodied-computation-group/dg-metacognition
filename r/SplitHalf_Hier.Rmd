@@ -32,6 +32,7 @@ source(here("r", "function_rhoPlot.R"))
 source(here("r", "function_apa.R"))
 source(here("r", "fitMLEEven.R"))
 source(here("r", "fitMLEOdd.R"))
+source(here("r", "function_rhoPlotSplit.R"))
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
@@ -166,6 +167,7 @@ saveRDS(outputG, file = here("data_summary","Split_GDP.rds"))
 outputV <- metad_groupcorr(nR_S1[[4]], nR_S2[[4]])
 saveRDS(outputV, file = here("data_summary","Split_Vis.rds"))
 
+
 ```
 
 Pull the relevant data
@@ -241,8 +243,8 @@ mcmc.sampleV <- ggs(outputV)
 
 Graphs: 
 ```{r}
-mcmc.rho <- mcmc.sample %>% 
-  filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
+#mcmc.rho <- mcmc.sample %>% 
+ # filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
 
 meanRhoM <- mcmc.sampleM %>% summarise(value= mean(value, na.rm=TRUE)) 
 meanRhoC <- mcmc.sampleC %>% summarise(value= mean(value, na.rm=TRUE)) 
@@ -254,16 +256,23 @@ H2title <- paste("Rho =",round(meanRhoC$value, digits=3))
 H3title <- paste("Rho =",round(meanRhoG$value, digits=3))
 H4title <- paste("Rho =",round(meanRhoV$value, digits=3))
 
-R1 <- RhoPlot(mcmc.sampleM, "rho") + labs(title = "Memory", subtitle= paste(H1title))
-R2 <- RhoPlot(mcmc.sampleC, "rho") + labs(title = "Calories", subtitle= paste(H2title))
-R3 <- RhoPlot(mcmc.sampleG , "rho") + labs(title = "GDP", subtitle= paste(H3title))
-R4 <- RhoPlot(mcmc.sampleV , "rho") + labs(title = "Vision", subtitle= paste(H4title))
+Rho1 <- mcmc.sampleM %>% filter(Parameter == "rho") 
+Rho2 <- mcmc.sampleC %>% filter(Parameter == "rho") 
+Rho3 <- mcmc.sampleG %>% filter(Parameter == "rho") 
+Rho4 <- mcmc.sampleV %>% filter(Parameter == "rho") 
+
+R1 <- RhoPlotS(Rho1, "rho", HDIM, statM) + labs(title = "Memory", subtitle=paste(H1title))
+R2 <- RhoPlotS(Rho2, "rho", HDIC, statC) +labs(title = "Calories", subtitle= paste(H2title))
+R3 <- RhoPlotS(Rho3, "rho", HDIG, statG) +labs(title = "GDP", subtitle= paste(H3title))
+R4 <- RhoPlotS(Rho4, "rho", HDIV, statV) +labs(title = "Vision", subtitle= paste(H4title))
 
 #Bayesian Hierarhical fit: 
-RhoPlot <- ggarrange(R1, R3, R2, R6, R4)
-annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
+RhoPlot <- ggarrange(R1, R3, R2, R4)
+annotate_figure(RhoPlot, top = text_grob("Split Half trials analysis: Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
 
 ggsave(here("figs", "mrho_Split.png"), height = 7, width = 12)
+  
+
 ```
 
 ```
