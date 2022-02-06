@@ -1,8 +1,6 @@
 
-RhoPlot <- function(data, rho) {
+RhoPlot <- function(data, rho, HDI, stat) {
 
-  
-  
   ggplot(data, aes(value)) +
   geom_histogram(binwidth = 0.03, fill = "blue", colour = "grey", alpha = 0.5) +
   geom_vline(xintercept = stat$mean[stat$name == rho],linetype="dashed", size = 1.5) +
