@@ -1,4 +1,7 @@
-
+---
+title: "Tables and Figures"
+output: html_document
+---
 Setup - install packages and source functions. 
 ```{r}
 # clean slate to be sure
@@ -26,7 +29,6 @@ source(here("r", "function_rhoPlot.R"))
 source(here("r", "function_apa.R"))
 source(here("r", "Bayesfactor.R"))
 
-
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
   theme(panel.grid.major=element_blank(),
@@ -36,404 +38,14 @@ apatheme=theme_bw()+ #theme
         text = element_text(size = 15),
         axis.title = element_text(size = 12))
 
+
+
 # spider-man color palette
 
 colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
 
 ```
 
-Load the data. 
-```{r}
-# read in the data
-
-metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialData_master.csv"), 
-    col_types = cols(confidence = col_double(), 
-        rt_conf = col_double()))
-
-# set modality as factor
-metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
-
-# remove any rows containing NaNs (i.e., missing data)
-metacognition_trial_data <- na.omit(metacognition_trial_data)
-
-head(metacognition_trial_data)
-
-```
-
-Trial-level exclusion (following prereg)
-```{r}
-
-metadata <- metacognition_trial_data %>%
-  group_by(subject, modality) %>%
-  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
-
-metadata <- na.omit(metadata)
-
-#Exclude those with rt <50ms 
-metadata <- metadata%>%filter(rt>=0.05) 
-
-#Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
-metadata<-metadata%>%mutate(modality=as.factor(modality))
-metadatac<-metadata #create new dataframe
-metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks in new dataframe
-metadatac <- metadatac %>%
-  group_by(subject, modality)%>% count(subject) #count number of trials
-excD <- subset(metadatac, metadatac$n<100) 
-excID <-unique(excD$subject) #Identify participants for exclusion
-metadata <- subset(metadata, !is.element(metadata$subject, excID)) ##Exclude IDs from that vector in original dataframe
-
-```
-
-Let's loop over subjects now and fit the MLE model. 
-```{r}
-
-subjects = unique(metadata$subject) # subjects vector, for looping
-modalities = as.character(unique(metadata$modality)) # modalities vector, for looping
-
-
-# setup cluster
-n.cores <- parallel::detectCores() - 1 # 1 less than max cores to prevent crashing
-
-# since R can only work with around 120 cores maximum, set an upper limit if needed
-if (n.cores > 120) {
-n.cores <- 120
-}
-
-
-#create the cluster
-my.cluster <- parallel::makeCluster(
-  n.cores, 
-  type = "PSOCK"
-)
-
-#register it to be used by %dopar%
-doParallel::registerDoParallel(cl = my.cluster)
-
-
-# fit all subjects in parallel
-source(here("r", "parMLEfit.R"))
-
-# stop the cluster
-stopCluster(cl = my.cluster)
-
-# write out the data file
-write.csv(fit_data, file = here("data_summary","mle_mratio_fit_data.csv"))
-
-head(fit_data)
-
-```
-
-Group-level exclusion based on MAD rule (confidence, d', criterion)
-```{r}
-
-#exclude those where mratio could not be estimated  
-metadata_exc <- fit_data%>%filter(mratio!="NaN")
-
-
-#Exclude outliers based on MAD rule (confidence, d' and criterion)
-#Confidence:
-Avgmeta <- metadata %>% 
-  group_by(subject, modality) %>% 
-  summarise(avg_conf=mean(confidence, na_rm=TRUE)) #Mean confidence for each modality
-
-#join Avgmeta with fit_data 
-fitAvg_data<- fit_data %>% full_join(Avgmeta, 
-                                   by= c('subject'='subject', 
-                                         'modality' = 'modality'))
-
-fitAvg_data <- fitAvg_data%>%filter(mratio!="NaN")
-
-metadata_exc <- fitAvg_data%>%
-  group_by(modality) %>%
-  mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove RT outliers using MAD Rule 
-
-# d' 
-metadata_exc <- metadata_exc%>%
-  group_by(modality) %>%
-  mutate(da = remove_outliers_robust(da)) # remove RT outliers using MAD Rule 
-
-
-# criterion 
-metadata_exc <- metadata_exc%>%
-  group_by(modality) %>%
-  mutate(c = remove_outliers_robust(c)) # remove RT outliers using MAD Rule 
-
-metadata_exc <- na.omit(metadata_exc)
-
-
-
-head(metadata_exc)
-
-
-```
-
-Pivot the data frame to wide. 
-```{r}
-
-fit_data_wide <- metadata_exc %>% pivot_wider(
-  names_from = modality,
-  values_from = c(da, mda, mratio, c, avg_conf)
-)
-  
-
-write.csv(fit_data_wide, file = here("data_summary","mle_mratio_fit_data_wide.csv"))
-
-head(fit_data_wide)
-```
-
-Correlation  between domains: Using GRousselet bootcorci
-```{r}
-
-# Each correlation pair is estimated for Metacognitive sensitivity: 
-corr <- fit_data_wide %>%
-  na.omit() %>%
-  select(starts_with("mda"))
-res1 <- corci(corr$mda_memory, corr$mda_Calories, method="spearman")
-res2 <- corci(corr$mda_memory, corr$mda_vision, method="spearman")
-res3 <- corci(corr$mda_memory, corr$mda_GDP, method="spearman")
-res4 <- corci(corr$mda_GDP, corr$mda_vision, method="spearman")
-res5 <- corci(corr$mda_GDP, corr$mda_Calories, method="spearman")
-res6 <- corci(corr$mda_Calories, corr$mda_vision, method="spearman")
-
-# Each correlation pair is estimated for efficiency: 
-corr1 <- fit_data_wide %>%
-  na.omit() %>%
-  select(starts_with("mratio"))
-res1.1 <- corci(corr1$mratio_memory, corr1$mratio_Calories, method="spearman")
-res1.2 <- corci(corr1$mratio_memory, corr1$mratio_vision, method="spearman")
-res1.3 <- corci(corr1$mratio_memory, corr1$mratio_GDP, method="spearman")
-res1.4 <- corci(corr1$mratio_GDP, corr1$mratio_vision, method="spearman")
-res1.5 <- corci(corr1$mratio_GDP, corr1$mratio_Calories, method="spearman")
-res1.6 <- corci(corr1$mratio_Calories, corr1$mratio_vision, method="spearman")
-
-# Each correlation pair is estimated for bias: 
-corr2 <- fit_data_wide %>%
-  na.omit() %>%
-  select(starts_with("avg"))
-res2.1 <- corci(corr2$avg_conf_memory, corr2$avg_conf_Calories, method="spearman")
-res2.2 <- corci(corr2$avg_conf_memory, corr2$avg_conf_vision, method="spearman")
-res2.3 <- corci(corr2$avg_conf_memory, corr2$avg_conf_GDP, method="spearman")
-res2.4 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_vision, method="spearman")
-res2.5 <- corci(corr2$avg_conf_GDP, corr2$avg_conf_Calories, method="spearman")
-res2.6 <- corci(corr2$avg_conf_Calories, corr2$avg_conf_vision, method="spearman")
-
-# Each correlation pair is estimated for Cognitive sensitivity: 
-corr3 <- fit_data_wide %>%
-  na.omit() %>%
-  select(starts_with("da"))
-res31 <- corci(corr3$da_memory, corr3$da_Calories, method="spearman")
-res32 <- corci(corr3$da_memory, corr3$da_vision, method="spearman")
-res33 <- corci(corr3$da_memory, corr3$da_GDP, method="spearman")
-res34 <- corci(corr3$da_GDP, corr3$da_vision, method="spearman")
-res35 <- corci(corr3$da_GDP, corr3$da_Calories, method="spearman")
-res36 <- corci(corr3$da_Calories, corr3$da_vision, method="spearman")
-
-
-#Table with correlation coefficents for all pairwise correlations: 
-corrtable <- data.frame(Metric=character(),
-                 MemCalCoef=double(),
-                 CI_lowerMC=double(),
-                 CI_upperMC=double(),
-                 P_valueMC=double(),
-                 MemVisCoef=double(),
-                 CI_lowerMV=double(),
-                 CI_upperMV=double(),
-                 P_valueMV=double(),
-                 MemGDPCoef=double(),
-                 CI_lowerMG=double(),
-                 CI_upperMG=double(),
-                 P_valueMG=double(),
-                 GDPVisCoef=double(),
-                 CI_lowerGS=double(),
-                 CI_upperGS=double(),
-                 P_valueGS=double(),
-                 GDPCalCoef=double(),
-                 CI_lowerGC=double(),
-                 CI_upperGC=double(),
-                 P_valueGC=double(),
-                 CalVisCoef=double(),
-                 CI_lowerCV=double(),
-                 CI_upperCV=double(),
-                 P_valueCV=double(),
-                stringsAsFactors=FALSE)
-
-#Insert vaules in dataframe: 
-corrtable[1,] <- list("Meta-d",res1$estimate,res1$conf.int[1], res1$conf.int[2], res1$p.value,
-                       res2$estimate,res2$conf.int[1], res2$conf.int[2], res2$p.value,
-                       res3$estimate,res3$conf.int[1], res3$conf.int[2],  res3$p.value,
-                       res4$estimate,res4$conf.int[1], res4$conf.int[2],  res4$p.value,
-                       res5$estimate,res5$conf.int[1], res5$conf.int[2],  res5$p.value,
-                       res6$estimate,res6$conf.int[1],  res6$conf.int[2], res6$p.value)
-corrtable[2,] <- list("Mratio",res1.1$estimate,res1.1$conf.int[1], res1.1$conf.int[2],
-                      res1.1$p.value,res1.2$estimate,res1.2$conf.int[1], res1.2$conf.int[2],
-                      res1.2$p.value, res1.3$estimate,res1.3$conf.int[1], res1.3$conf.int[2],
-                      res1.3$p.value, res1.4$estimate,res1.4$conf.int[1], res1.4$conf.int[2],
-                      res1.4$p.value, res1.5$estimate,res1.5$conf.int[1], res1.5$conf.int[2],
-                      res1.5$p.value, res1.6$estimate,res1.6$conf.int[1],  res1.6$conf.int[2],
-                      res1.6$p.value)
-
-corrtable[3,] <- list("Bias",res1$estimate,res2.1$conf.int[1], res2.1$conf.int[2],
-                      res2.1$p.value,res2.2$estimate,res2.2$conf.int[1], res2.2$conf.int[2],
-                      res2.2$p.value,res2.3$estimate,res2.3$conf.int[1], res2.3$conf.int[2], 
-                      res2.3$p.value,res2.4$estimate,res2.4$conf.int[1], res2.4$conf.int[2], 
-                      res2.4$p.value,res2.5$estimate,res2.5$conf.int[1], res2.5$conf.int[2],
-                      res2.5$p.value,res2.6$estimate,res2.6$conf.int[1], res2.6$conf.int[2],
-                      res2.6$p.value)
-corrtable[4,] <- list("d'",res31$estimate,res31$conf.int[1], res31$conf.int[2], res31$p.value,
-                       res32$estimate,res32$conf.int[1], res32$conf.int[2], res32$p.value,
-                       res33$estimate,res33$conf.int[1], res33$conf.int[2],  res33$p.value,
-                       res34$estimate,res34$conf.int[1], res34$conf.int[2],  res34$p.value,
-                       res35$estimate,res35$conf.int[1], res35$conf.int[2],  res35$p.value,
-                       res36$estimate,res36$conf.int[1],  res36$conf.int[2], res36$p.value)
-
-head(corrtable)
-
-
-```
-Plot the bootstrap samples of the correlations: GRusselete 
-```{r}
-
-b1 <- plotBoot(res1) + ggtitle("Memory and Calories")
-b2 <- plotBoot(res2) + ggtitle("Memory and Vision")
-b3 <- plotBoot(res3) + ggtitle("Memory and GDP")
-b4 <- plotBoot(res4) + ggtitle("GDP and Vision")
-b5 <- plotBoot(res5) + ggtitle("GDP and Calories")
-b6 <- plotBoot(res6) + ggtitle("Vision and Calories")
-BootPlot1 <- ggarrange(b1, b2, b3, b4, b5, b6)
-annotate_figure(BootPlot1, top = text_grob("Bootstrap samples of Meta-d' correlations", color = "black", 
-                                         face = "bold", size = 14))  
-
-b11 <- plotBoot(res1.1) + ggtitle("Memory and Calories")
-b12 <- plotBoot(res1.2) + ggtitle("Memory and Vision")
-b13 <- plotBoot(res1.3) + ggtitle("Memory and GDP")
-b14 <- plotBoot(res1.4) + ggtitle("GDP and Vision")
-b15 <- plotBoot(res1.5) + ggtitle("GDP and Calories")
-b16 <- plotBoot(res1.6) + ggtitle("Vision and Calories")
-BootPlot2 <- ggarrange(b11, b12, b13, b14, b15, b16)
-annotate_figure(BootPlot2, top = text_grob("Bootstrap samples of Mratio correlations Efficiency", color = "black", 
-                                         face = "bold", size = 14))  
-b21 <- plotBoot(res2.1) + ggtitle("Memory and Calories")
-b22 <- plotBoot(res2.2) + ggtitle("Memory and Vision")
-b23 <- plotBoot(res2.3) + ggtitle("Memory and GDP")
-b24 <- plotBoot(res2.4) + ggtitle("GDP and Vision")
-b25 <- plotBoot(res2.5) + ggtitle("GDP and Calories")
-b26 <- plotBoot(res2.6) + ggtitle("Vision and Calories")
-BootPlot3 <- ggarrange(b21, b22, b23, b24, b25, b26)
-annotate_figure(BootPlot3, top = text_grob("Bootstrap samples of Meta-bias correlations", color = "black", 
-                                         face = "bold", size = 14))  
-
-BootPlot3
-
-ggsave(here("figs", "bootplot3.png"), height = 8, width = 8, dpi = 300)
-```
-
-Now we calculate and plot the Bayes factors for the correlations: 
-```{r}
-
-# Bayes factor is estimated  and plots are saved: 
-# Metacognitive sensitivity 
-bf1<- bayes(corr$mda_memory, corr$mda_Calories)
-ggsave(here("figs","bayes", "mda_Mem_cal.png"))
-bf2 <- bayes(corr$mda_memory, corr$mda_vision)
-ggsave(here("figs","bayes", "mda_Mem_vis.png"))
-bf3 <- bayes(corr$mda_memory, corr$mda_GDP)
-ggsave(here("figs","bayes", "mda_Mem_gdp.png"))
-bf4 <- bayes(corr$mda_GDP, corr$mda_vision)
-ggsave(here("figs","bayes", "mda_gdp_vis.png"))
-bf5 <- bayes(corr$mda_GDP, corr$mda_Calories)
-ggsave(here("figs","bayes", "mda_gdp_cal.png"))
-bf6 <- bayes(corr$mda_Calories, corr$mda_vision)
-ggsave(here("figs","bayes", "mda_cal_vis.png"))
- 
-#Metacognitive Efficiency
-bf11 <- bayes(corr1$mratio_memory, corr1$mratio_Calories)
-ggsave(here("figs","bayes", "mratio_Mem_cal.png"))
-bf12 <- bayes(corr1$mratio_memory, corr1$mratio_vision)
-ggsave(here("figs","bayes", "mratio_Mem_vis.png"))
-bf13 <- bayes(corr1$mratio_memory, corr1$mratio_GDP)
-ggsave(here("figs","bayes", "mratio_Mem_gdp.png"))
-bf14 <- bayes(corr1$mratio_GDP, corr1$mratio_vision)
-ggsave(here("figs","bayes", "mratio_gdp_vis.png"))
-bf15 <- bayes(corr1$mratio_GDP, corr1$mratio_Calories)
-ggsave(here("figs","bayes", "mratio_gdp_cal.png"))
-bf16 <- bayes(corr1$mratio_Calories, corr1$mratio_vision)
-ggsave(here("figs","bayes", "mratio_cal_vis.png"))
-
-#Metacognitive bias 
-bf21 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_Calories)
-ggsave(here("figs","bayes", "avgconf_Mem_cal.png"))
-bf22 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_vision)
-ggsave(here("figs","bayes", "avgconf_Mem_vis.png"))
-bf23 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_GDP)
-ggsave(here("figs","bayes", "avgconf_Mem_gdp.png"))
-bf24 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_vision)
-ggsave(here("figs","bayes", "avgconf_gdp_vis.png"))
-bf25 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_Calories)
-ggsave(here("figs","bayes", "avgconf_gdp_cal.png"))
-bf26 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
-ggsave(here("figs","bayes", "avgconf_cal_vis.png"))
-
-#Make the APA tables: 
-BayesSen <- data.frame(Pair=character(),
-  `Bayes Factor`=double())
-BayesEff <- data.frame( Pair=character(),
-  `Bayes Factor`=double())
-BayesBia <- data.frame( Pair=character(),
-  `Bayes Factor`=double())
-
-BayesSen <- BayesSen %>% rename( "Bayes Factor"= Bayes.Factor)
-BayesEff <- BayesEff %>% rename( "Bayes Factor"= Bayes.Factor)
-BayesBia <- BayesBia %>% rename( "Bayes Factor"= Bayes.Factor)
-
-BayesSen[1,] <-list(paste0('Memory & Calories'), paste0(round(bf1@bayesFactor$bf,3))) 
-BayesSen[2,] <-list(paste0('Memory & Vision'), paste0(round(bf2@bayesFactor$bf,3))) 
-BayesSen[3,] <-list(paste0('Memory & GDP'), paste0(round(bf3@bayesFactor$bf,3))) 
-BayesSen[4,] <-list(paste0('GDP & Calories'), paste0(round(bf4@bayesFactor$bf,3))) 
-BayesSen[5,] <-list(paste0('Vision & Calories'), paste0(round(bf5@bayesFactor$bf,3))) 
-
-BayesEff[1,] <-list(paste0('Memory & Calories'), paste0(round(bf11@bayesFactor$bf,3))) 
-BayesEff[2,] <-list(paste0('Memory & Vision'), paste0(round(bf12@bayesFactor$bf,3))) 
-BayesEff[3,] <-list(paste0('Memory & GDP'), paste0(round(bf13@bayesFactor$bf,3))) 
-BayesEff[4,] <-list(paste0('GDP & Calories'), paste0(round(bf14@bayesFactor$bf,3))) 
-BayesEff[5,] <-list(paste0('Vision & Calories'), paste0(round(bf15@bayesFactor$bf,3))) 
-
-BayesBia[1,] <-list(paste0('Memory & Calories'), paste0(round(bf21@bayesFactor$bf,3))) 
-BayesBia[2,] <-list(paste0('Memory & Vision'), paste0(round(bf22@bayesFactor$bf,3))) 
-BayesBia[3,] <-list(paste0('Memory & GDP'), paste0(round(bf23@bayesFactor$bf,3))) 
-BayesBia[4,] <-list(paste0('GDP & Calories'), paste0(round(bf24@bayesFactor$bf,3))) 
-BayesBia[5,] <-list(paste0('Vision & Calories'), paste0(round(bf25@bayesFactor$bf,3))) 
-
-BayesSenapa<-apa(BayesSen, "Table ???: Bayes factor: Metacognitive Sensitivity")
-BayesEffapa<-apa(BayesEff, "Table ???: Bayes factor: Metacognitive Efficiency") 
-BayesBiaapa<-apa(BayesBia, "Table ???: Bayes factor: Metacognitive Bias") 
-
-BayesSenapa
-BayesEffapa
-BayesBiaapa
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Here we plot the Figures from the Paper: 
 
 Rearrange accuracy data for plotting summary variables
 
@@ -474,6 +86,7 @@ ConfByError <- tmp_data  %>%
 ```
 
 
+Here we plot the Figures from the Paper: 
 Figure 2: d' and group staircase: 
 ```{r}
 # Figure2 
@@ -617,6 +230,8 @@ ggsave(here("figs", "Figure 2.png"), height = 16.8, width = 16.8, units = "cm", 
 
   
 ```
+
+
 
 
 Figure 3:  
@@ -835,130 +450,91 @@ ggsave(here("figs", "Figure 3 without Outliers.png"), height = 7, width = 12)
 
 ```
 
+Now the tables from the paper: 
+
+Table 1: Demographics 
+```{r}
+#load the demographics information: 
+survey_data_pre <- read_delim(here("data_summary", "/self_belief_pre_labels.csv"), 
+                              ";", escape_double = FALSE, trim_ws = TRUE)
+
+#Clean Data: 
+survey_data_pre <- survey_data_pre %>% select(Sid, age, gender)
+
+#Vector with IDs that should be included
+ID_incl <- unique(metadata_exc$subject)
+
+#demo only with included participants:
+demo <- subset(survey_data_pre, is.element(survey_data_pre$Sid, ID_incl))
+
+#summarise and format Gender:
+demoG <- demo %>% group_by(gender) %>% 
+  summarise(mean1=length(gender)) %>% mutate(per = 100*mean1/321) %>%
+  mutate(Count=paste0(round(mean1), paste0(" (", round(per,2), " %)"))) %>% mutate(Gender=gender)%>%
+  select(Gender, Count) 
 
 
+#summarise and format age:
+demoA <- demo %>% group_by(gender) %>% summarise(age1 =mean(age, na_rm=TRUE),
+                         age_sd=sd(age, na.rm=TRUE)) %>% 
+  mutate(Age= paste0(round(age1), paste0(" (", round(age_sd,3), " SD)"))) %>% select(Age, gender)
 
 
+#MANUALLY CHANGE NON_BINARY AGE
+demoA[3,1] <-'21 (0 SD)' 
 
+#Join the two tables: 
+table1 <- full_join(demoG, demoA, by = c("Gender"="gender"))
+table1[3,1] <-'Non-binary'
 
+#Apa format:
+table1apa<-apa(table1, "Table 1: Demographics")
+table1apa
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
 
 Now the tables from the paper: 
-Averages of performance for descriptive statistics: 
 
+Table 1: Demographics 
 ```{r}
-#Average everything and calculate standard deviations for the MLE model: 
-metadata_avg <- metadata_exc %>% 
-  group_by(modality) %>% 
-  summarise(dprime=mean(da, na_rm=TRUE), 
-            criterion=mean(c, na_rm=TRUE),
-            metad=mean(mda, na_rm=TRUE),
-            mratio1=mean(mratio, na_rm=TRUE),
-            avg_conf1=mean(avg_conf, na_rm=TRUE),
-            dprime_sd=sd(da),
-            criterion_sd=sd(c),
-            metad_sd=sd(mda),
-            mratio_sd=sd(mratio),
-            avg_conf_sd=sd(avg_conf)
-            ) %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"))
-#Do the same with the hierarhical model:
+#load the demographics information: 
+survey_data_pre <- read_delim(here("data_summary", "/self_belief_pre_labels.csv"), 
+                              ";", escape_double = FALSE, trim_ws = TRUE)
 
-#Select Mratio and take the exponential of the value:
-meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
-  mutate(mean=exp(mean), 
-         lower=exp(lower),
-         upper=exp(upper))
+#Clean Data: 
+survey_data_pre <- survey_data_pre %>% select(Sid, age, gender)
 
-#format and select: 
-meanMratio <- meanMratio %>% mutate(Modality=c("Memory", "Calories", "GDP", "Vision")) %>%
-  select(Modality, mean, lower, upper)
-                                    
-#'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
+#Vector with IDs that should be included
+ID_incl <- unique(metadata_exc$subject)
 
-#Join the two tables MLE and Hierarhical dataframes. 
-MetaSum <- left_join(metadata_avg, meanMratio, 
-                     by=c("Modality"="Modality"))
-         
+#demo only with included participants:
+demo <- subset(survey_data_pre, is.element(survey_data_pre$Sid, ID_incl))
+
+#summarise and format Gender:
+demoG <- demo %>% group_by(gender) %>% 
+  summarise(mean1=length(gender)) %>% mutate(per = 100*mean1/321) %>%
+  mutate(Count=paste0(round(mean1), paste0(" (", round(per,2), " %)"))) %>% mutate(Gender=gender)%>%
+  select(Gender, Count) 
+
+
+#summarise and format age:
+demoA <- demo %>% group_by(gender) %>% summarise(age1 =mean(age, na_rm=TRUE),
+                         age_sd=sd(age, na.rm=TRUE)) %>% 
+  mutate(Age= paste0(round(age1), paste0(" (", round(age_sd,3), " SD)"))) %>% select(Age, gender)
+
+
+#MANUALLY CHANGE NON_BINARY AGE
+demoA[3,1] <-'21 (0 SD)' 
+
+#Join the two tables: 
+table1 <- full_join(demoG, demoA, by = c("Gender"="gender"))
+table1[3,1] <-'Non-binary'
+
+#Apa format:
+table1apa<-apa(table1, "Table 1: Demographics")
+table1apa
 
 ```
-
-
-Table 1: Cognitive Performance: 
-```{r}
-
-#Choose cognitive Performance: 
-metadata_cog <- MetaSum %>% select(dprime, criterion)
-
-  
-
-
-
-```
-
-
-
-
-Table 3: Average cognitive and Metacognitive performance across tasks 
-```{r}
-
-
-#Change format: 
-tableMLE <- metadata_avg %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"),
-                                  'dprime (SD)'=paste0((round(dprime,3)), paste0(" (", round(dprime_sd,3), ")")),
-                                  'Criterion (SD)'=paste0((round(criterion,3)), paste0(" (", round(criterion_sd,3), ")")),
-                                  'Meta-d (SD)'=paste0((round(metad,3)), paste0(" (", round(metad_sd,3), ")")),
-                                  'Mratio (SD)'=paste0((round(mratio1,3)), paste0(" (", round(mratio_sd,3), ")")),
-                                  'Avg Conf (SD)'=paste0((round(avg_conf1,3)), paste0(" (", round(avg_conf_sd,3), ")"))
-                                  ) 
-tableMLE <- tableMLE %>% select(Modality, 'dprime (SD)', 'Criterion (SD)', 'Avg Conf (SD)', 'Meta-d (SD)', 'Mratio (SD)')   
-
-# Mratio estimations from Hierarhical Model.  
-
-#Select Mratio and take the expontial of the value:
-meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
-  mutate(mean=exp(mean), 
-         lower=exp(lower),
-         upper=exp(upper))
-  
-#format and select: 
-meanMratio <- meanMratio %>% mutate(Modality=c("Memory", "Calories", "GDP", "Vision"),
-         'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
-         
-meanMratio <- meanMratio %>% select(Modality, 'HMratio (HDI)')
-  
-#Join the two tables MLE and Hierarhical dataframes. 
-
-table3 <- left_join(tableMLE, meanMratio, 
-                     by=c("Modality"="Modality"))
-
-
-#Put into APA format.                                     
-table3apa<-apa(table3, "Table 4: Cognitive and Metacognitive performance")
-
-######Save tables. 
-#######################
-###
-
-table3apa
-
-```
-
-
 
 Table 2: Hierarchical correlation of Metacognitive efficiency
 NOTE you need the hierarhical fit to do this. 
@@ -992,7 +568,7 @@ Table2Hapa
   
 ```
 
-MLE and Hierarchical fit of Mratio correlations:
+ MLE and Hierarchical fit of Mratio correlations:
 ```{r}
 table23 
 Table2H
@@ -1143,10 +719,64 @@ CorD
 ```
 
 
+Table 3: Average cognitive and Metacognitive performance across tasks 
+```{r}
+
+#Average everything and calculate standard deviations: 
+metadata_avg <- metadata_exc %>% 
+  group_by(modality) %>% 
+  summarise(dprime=mean(da, na_rm=TRUE), 
+            criterion=mean(c, na_rm=TRUE),
+            metad=mean(mda, na_rm=TRUE),
+            mratio1=mean(mratio, na_rm=TRUE),
+            avg_conf1=mean(avg_conf, na_rm=TRUE),
+            dprime_sd=sd(da),
+            criterion_sd=sd(c),
+            metad_sd=sd(mda),
+            mratio_sd=sd(mratio),
+            avg_conf_sd=sd(avg_conf)
+            )
+    
+#Change format: 
+tableMLE <- metadata_avg %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"),
+                                  'dprime (SD)'=paste0((round(dprime,3)), paste0(" (", round(dprime_sd,3), ")")),
+                                  'Criterion (SD)'=paste0((round(criterion,3)), paste0(" (", round(criterion_sd,3), ")")),
+                                  'Meta-d (SD)'=paste0((round(metad,3)), paste0(" (", round(metad_sd,3), ")")),
+                                  'Mratio (SD)'=paste0((round(mratio1,3)), paste0(" (", round(mratio_sd,3), ")")),
+                                  'Avg Conf (SD)'=paste0((round(avg_conf1,3)), paste0(" (", round(avg_conf_sd,3), ")"))
+                                  ) 
+tableMLE <- tableMLE %>% select(Modality, 'dprime (SD)', 'Criterion (SD)', 'Avg Conf (SD)', 'Meta-d (SD)', 'Mratio (SD)')   
+
+# Mratio estimations from Hierarhical Model.  
+
+#Select Mratio and take the expontial of the value:
+meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
+  mutate(mean=exp(mean), 
+         lower=exp(lower),
+         upper=exp(upper))
+  
+#format and select: 
+meanMratio <- meanMratio %>% mutate(Modality=c("Memory", "Calories", "GDP", "Vision"),
+         'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
+         
+meanMratio <- meanMratio %>% select(Modality, 'HMratio (HDI)')
+  
+#Join the two tables MLE and Hierarhical dataframes. 
+
+table3 <- left_join(tableMLE, meanMratio, 
+                     by=c("Modality"="Modality"))
 
 
+#Put into APA format.                                     
+table3apa<-apa(table3, "Table 4: Cognitive and Metacognitive performance")
 
+######Save tables. 
+#######################
+###
 
+table3apa
+
+```
 
 Here are some additional plots - you can un-comment these sections to see them.
 Note that the individual staircase plots may take a LONG time to produce. 
@@ -1199,44 +829,4 @@ Individual-level staircase plots: (Takes a long time)
 
 ```
 
-Demographics (NOT IN THE PAPER ANYMORE) 
-```{r}
-#load the demographics information: 
-#survey_data_pre <- read_delim(here("data_summary", "/self_belief_pre_labels.csv"), 
-                            #  ";", escape_double = FALSE, trim_ws = TRUE)
-
-#Clean Data: 
-#survey_data_pre <- survey_data_pre %>% select(Sid, age, gender)
-
-#Vector with IDs that should be included
-#ID_incl <- unique(metadata_exc$subject)
-
-#demo only with included participants:
-#demo <- subset(survey_data_pre, is.element(survey_data_pre$Sid, ID_incl))
-
-#summarise and format Gender:
-#demoG <- demo %>% group_by(gender) %>% 
- # summarise(mean1=length(gender)) %>% mutate(per = 100*mean1/321) %>%
-  #mutate(Count=paste0(round(mean1), paste0(" (", round(per,2), " %)"))) %>% mutate(Gender=gender)%>%
-  #select(Gender, Count) 
-
-
-#summarise and format age:
-#demoA <- demo %>% group_by(gender) %>% summarise(age1 =mean(age, na_rm=TRUE),
- #                        age_sd=sd(age, na.rm=TRUE)) %>% 
-  #mutate(Age= paste0(round(age1), paste0(" (", round(age_sd,3), " SD)"))) %>% select(Age, gender)
-
-
-#MANUALLY CHANGE NON_BINARY AGE
-#demoA[3,1] <-'21 (0 SD)' 
-
-#Join the two tables: 
-#table1 <- full_join(demoG, demoA, by = c("Gender"="gender"))
-#table1[3,1] <-'Non-binary'
-
-#Apa format:
-#table1apa<-apa(table1, "Table 1: Demographics")
-#table1apa
-
-```
 

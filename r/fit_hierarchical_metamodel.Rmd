@@ -135,6 +135,11 @@ output <- metad_groupcorr(nR_S1, nR_S2)
 
 }
 
+
+#For Astrid: 
+
+output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
+
 ```  
 
 This next chunk pulls out the data from the model needed to plot HDI intervals, point estimates, and correlations. 
