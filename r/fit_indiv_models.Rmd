@@ -884,6 +884,16 @@ meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
          lower=exp(lower),
          upper=exp(upper))
 
+#Load criterion and dprime - Astrid:
+c1 <-readRDS("C:/Users/Astrid/Documents/DomainGen/fit_c1")
+d1 <-readRDS("C:/Users/Astrid/Documents/DomainGen/fit_d1")
+
+
+
+
+
+
+
 #format and select: 
 meanMratio <- meanMratio %>% mutate(Modality=c("Memory", "Calories", "GDP", "Vision")) %>%
   select(Modality, mean, lower, upper)
@@ -1057,6 +1067,9 @@ table22 <- table22 %>% mutate(`p-value (CI)`= paste0('p = ', table22$p, ' (', ta
 
 
 
+
+saveRDS(x, file = "myvector_serialized.rds")
+x <- readRDS("myvector_serialized.rds")
 
 ##Efficiency
 #Table with correlation coefficents for all pairwise correlations: 
