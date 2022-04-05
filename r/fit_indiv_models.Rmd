@@ -1173,9 +1173,7 @@ Bayes <- left_join(Bayes1 , BayesBia,
 BayesT <- apa(Bayes, "Table X: Bayes factor: Metacognitive Sensitivity, Efficiency, and Bias (MLE)")
 
 ```
-
-
-
+CHECK IF THESE CAN BE DELETED ?!?!?!?!?
 
 ```{r}
 
