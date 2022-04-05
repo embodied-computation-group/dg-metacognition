@@ -403,14 +403,6 @@ BayesBia[3,] <-list(paste0('Memory & GDP'), paste0(round(bf23@bayesFactor$bf,3))
 BayesBia[4,] <-list(paste0('GDP & Calories'), paste0(round(bf24@bayesFactor$bf,3))) 
 BayesBia[5,] <-list(paste0('Vision & Calories'), paste0(round(bf25@bayesFactor$bf,3))) 
 
-BayesSenapa<-apa(BayesSen, "Table ???: Bayes factor: Metacognitive Sensitivity")
-BayesEffapa<-apa(BayesEff, "Table ???: Bayes factor: Metacognitive Efficiency") 
-BayesBiaapa<-apa(BayesBia, "Table ???: Bayes factor: Metacognitive Bias") 
-
-BayesSenapa
-BayesEffapa
-BayesBiaapa
-
 ```
 
 
@@ -471,6 +463,58 @@ ConfByError <- tmp_data  %>%
   group_by(subject, modality, accuracy) %>% 
   summarise(avgCF_Corr=mean(confidence, na_rm=TRUE)) 
 
+```
+Load the hierarhical fit: 
+```{r}
+#For Astrid: 
+output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
+
+fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
+
+if (file.exists(fit_filename) == 1 ) {
+
+output <- readRDS(fit_filename)
+  
+} else{
+  
+message("OBS: You need to fit the hierarhical model using 'fit_hierarhicical_metamodel.rmd' - this will take a LONG time")
+
+}
+
+#Prepare the hierarhical fit for the figure: 
+Value <- gelman.diag(output, confidence = 0.95)
+Rhat <- data.frame(conv = Value$psrf)
+
+
+# Values (mean and CI)
+Value <- summary(output)
+stat <- data.frame(mean = Value$statistics[,"Mean"])
+stat %<>%
+  rownames_to_column(var = "name") %>% 
+  cbind(CILow = Value$quantiles[,"2.5%"]) %>% 
+  cbind(CIUp = Value$quantiles[,"97.5%"])
+
+
+# HDI function 
+HDI <- data.frame(HPDinterval(output, prob = 0.95))
+HDI %<>%
+  rownames_to_column(var = "name")
+
+# Posterior distributions 
+mcmc.sample <- ggs(output) 
+
+
+mcmc.rho <- mcmc.sample %>% 
+  filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
+
+#Plot titles: 
+meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
+
+#Fit stats summary. 
+Fit <- stat %>%
+  cbind(lower = HDI$lower,
+        upper = HDI$upper,
+        Rhat = Rhat[,1])
 ```
 
 
@@ -648,56 +692,6 @@ annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "b
 
 #The plots for the hierarhical model - sample estimations of rho: 
 
-#For Astrid: 
-output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
-
-fit_filename = "/home/micah/metad_groupfit.RDS" ## change this to the correct place! 
-
-if (file.exists(fit_filename) == 1 ) {
-
-output <- readRDS(fit_filename)
-  
-} else{
-  
-message("OBS: You need to fit the hierarhical model using 'fit_hierarhicical_metamodel.rmd' - this will take a LONG time")
-
-}
-
-#Prepare the hierarhical fit for the figure: 
-Value <- gelman.diag(output, confidence = 0.95)
-Rhat <- data.frame(conv = Value$psrf)
-
-
-# Values (mean and CI)
-Value <- summary(output)
-stat <- data.frame(mean = Value$statistics[,"Mean"])
-stat %<>%
-  rownames_to_column(var = "name") %>% 
-  cbind(CILow = Value$quantiles[,"2.5%"]) %>% 
-  cbind(CIUp = Value$quantiles[,"97.5%"])
-
-
-# HDI function 
-HDI <- data.frame(HPDinterval(output, prob = 0.95))
-HDI %<>%
-  rownames_to_column(var = "name")
-
-# Posterior distributions 
-mcmc.sample <- ggs(output) 
-
-
-mcmc.rho <- mcmc.sample %>% 
-  filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
-
-#Plot titles: 
-meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
-
-#Fit stats summary. 
-Fit <- stat %>%
-  cbind(lower = HDI$lower,
-        upper = HDI$upper,
-        Rhat = Rhat[,1])
-
 H1title <- paste("Rho =",round(meanRho$value[1], digits=3))
 H2title <- paste("Rho =",round(meanRho$value[2], digits=3))
 H3title <- paste("Rho =",round(meanRho$value[3], digits=3))
@@ -874,56 +868,315 @@ metadata_avg <- metadata_exc %>%
             criterion_sd=sd(c),
             metad_sd=sd(mda),
             mratio_sd=sd(mratio),
-            avg_conf_sd=sd(avg_conf)
-            ) %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision"))
+            avg_conf_sd=sd(avg_conf), 
+            n1 = n()
+            )  %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision")) %>%
+  select(-modality)
+
 #Do the same with the hierarhical model:
 
 #Select Mratio and take the exponential of the value:
 meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
-  mutate(mean=exp(mean), 
-         lower=exp(lower),
-         upper=exp(upper))
+  mutate(Hmratio=exp(mean), 
+         lowerHDI=exp(lower),
+         upperHDI=exp(upper)) %>% 
+    mutate(Modality=c("Memory", "Calories", "GDP", "Vision"), 
+           n2="319") %>%
+  select(Modality, Hmratio, lowerHDI, upperHDI, n2)
+                                    
+#'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
+
+#Join the two tables MLE and Hierarhical dataframes. 
+MSum <- left_join(metadata_avg, meanMratio, 
+                     by=c("Modality"="Modality"))
+
 
 #Load criterion and dprime - Astrid:
 c1 <-readRDS("C:/Users/Astrid/Documents/DomainGen/fit_c1")
 d1 <-readRDS("C:/Users/Astrid/Documents/DomainGen/fit_d1")
 
+#Label tasks and pivot the vectors: 
+c1 <- data.frame(c1)
+d1 <- data.frame(d1)
+c1 <- c1 %>% mutate (Memory=T1, Calories= T2, GDP = T3, Vision = T4, subject = row_number())%>% select(-T1, -T2, -T3, -T4)
+d1 <- d1 %>% mutate (Memory=T1, Calories= T2, GDP = T3, Vision = T4, subject = row_number())%>% select(-T1, -T2, -T3, -T4)
 
+c1l <- c1 %>% pivot_longer(
+  cols = c("Memory", "Calories", "GDP", "Vision"), 
+  names_to="Modality",
+  values_to ="Criterion")
 
+d1l <- d1 %>% pivot_longer(
+  cols = c("Memory", "Calories", "GDP", "Vision"), 
+  names_to="Modality",
+  values_to ="d'")
 
+#Summarise - mean and SD: 
+c1l_avg <- c1l %>% 
+  group_by(Modality) %>% 
+  summarise(Hcriterion=mean(Criterion, na_rm=TRUE), 
+            Hcriterion_sd=sd(Criterion), n3=n())
 
+d1l_avg <- d1l %>% 
+  group_by(Modality) %>% 
+  summarise(Hdprime=mean(`d'`, na_rm=TRUE), 
+            Hdprime_SD= sd(`d'`), n4=n())
 
+#Join the two: 
+HdcSum <- left_join(c1l_avg , d1l_avg , 
+                     by=c("Modality"="Modality"))
 
-#format and select: 
-meanMratio <- meanMratio %>% mutate(Modality=c("Memory", "Calories", "GDP", "Vision")) %>%
-  select(Modality, mean, lower, upper)
-                                    
-#'HMratio (HDI)'=paste0(round(mean,3), paste0(" (", round(lower,3),";",round(upper,3), ")"))) 
-
-#Join the two tables MLE and Hierarhical dataframes. 
-MetaSum <- left_join(metadata_avg, meanMratio, 
+#Join MLE and Hier: 
+MetaSum <- left_join(MSum , HdcSum , 
                      by=c("Modality"="Modality"))
          
+head(MetaSum)
+```
+
+Table 1: Cognitive Descriptives. 
+```{r}
+#Descriptive Cognitive Performance Data: 
+metadata_cog <- MetaSum %>% select(Modality, dprime,dprime_sd, criterion,  criterion_sd, Hdprime, Hdprime_SD, Hcriterion, Hcriterion_sd, n1, n2, n3, n4)
+
+metadata_cog1 <- metadata_cog %>% select(Modality, n3, n4, starts_with("H")) 
+metadata_cog2 <- metadata_cog %>% select(Modality, n1, dprime,dprime_sd, criterion,  criterion_sd) 
+
+Cog12<- left_join(metadata_cog1 , metadata_cog2, 
+                     by=c("Modality"="Modality"))
+
+Cog12 <- Cog12 %>% add_row(Modality = "NA" ,.before=1) %>% add_row(Modality = "NA" ,.before=1)  %>% select(-n4)
+
+#Number of decimals: 
+Cog12 <- Cog12 %>% mutate_if(is.numeric, round, 2)
+
+#Change to Characteris: 
+Cog12 <- Cog12 %>%
+  mutate_all(as.character)
+
+#Add labels: 
+Cog12[1,1] <- "Modality"
+Cog12[1,2] <- "n"
+Cog12[1,3] <- "d' (Bayes)"
+Cog12[1,4] <- "d' (Bayes)"
+Cog12[1,5] <- "Criterion (Bayes)"
+Cog12[1,6] <- "Criterion (Bayes)"
+Cog12[1,7] <- "n"
+Cog12[1,8] <- "d' (MLE)"
+Cog12[1,9] <- "d' (MLE)"
+Cog12[1,10] <- "Criterion (MLE)"
+Cog12[1,11] <- "Criterion (MLE)"
+Cog12[2,3] <- "M"
+Cog12[2,4] <- "SD"
+Cog12[2,5] <- "M"
+Cog12[2,6] <- "SD"
+Cog12[2,8] <- "M"
+Cog12[2,9] <- "SD"
+Cog12[2,10] <- "M"
+Cog12[2,11] <- "SD"
+
+Cog12 <- Cog12 %>% select(Modality, n1, dprime, dprime_sd, criterion, criterion_sd, n3, Hdprime, Hdprime_SD, Hcriterion, Hcriterion_sd)
+
+Des <-apa(Cog12, "Cognitive performance: MLE and Bayesian estimations")
 
 ```
 
-
-Table 1: Cognitive Performance: 
+All MLE Correlations: 
 ```{r}
 
-#Choose cognitive Performance: 
-metadata_cog <- MetaSum %>% select(dprime, criterion)
+#combine upper and lower limit of CI into one. 
+MLEcorr <- corrtable %>% mutate(MC_CI = paste(round(corrtable$CI_lowerMC,3), round(corrtable$CI_upperMC,3), sep=";")) %>%
+  mutate(MV_CI= paste(round(corrtable$CI_lowerMV,3), round(corrtable$CI_upperMV,3), sep=";")) %>%
+  mutate(MG_CI= paste(round(corrtable$CI_lowerMG,3), round(corrtable$CI_upperMG,3), sep=";")) %>%
+  mutate(GS_CI= paste(round(corrtable$CI_lowerGS,3), round(corrtable$CI_upperGS,3), sep=";")) %>%
+  mutate(GC_CI= paste(round(corrtable$CI_lowerGC,3), round(corrtable$CI_upperGC,3), sep=";")) %>%
+  mutate(CV_CI= paste(round(corrtable$CI_lowerCV,3), round(corrtable$CI_upperCV,3), sep=";")) 
 
-  
+#Select relevant columns 
+MLEcorr <- MLEcorr %>% select(Metric, 
+                            MemCalCoef, P_valueMC, MC_CI, 
+                            MemVisCoef, P_valueMV, MV_CI, 
+                            MemGDPCoef, P_valueMG, MG_CI, 
+                            GDPVisCoef, P_valueGS, GS_CI,
+                            GDPCalCoef, P_valueGC, GC_CI, 
+                            CalVisCoef, P_valueCV, CV_CI
+                            )
+
+```
+
+Table 2: Correlation of Cognitive Sensitivity 
+```{r}
+
+#d' correlation: 
+table2 <- data.frame(Pair=character(),
+                 r=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table2[1,] <- list("Memory & Calories",MLEcorr$MemCalCoef[4],MLEcorr$P_valueMC[4], MLEcorr$MC_CI[4])
+table2[2,] <- list("Memory & Vision",MLEcorr$MemVisCoef[4],MLEcorr$P_valueMV[4], MLEcorr$MV_CI[4])
+table2[3,] <- list("Memory & GDP",MLEcorr$MemGDPCoef[4],MLEcorr$P_valueMG[4], MLEcorr$MG_CI[4])
+table2[4,] <- list("GDP & Vision",MLEcorr$GDPVisCoef[4],MLEcorr$P_valueGS[4], MLEcorr$GS_CI[4])
+table2[5,] <- list("GDP & Calories",MLEcorr$GDPCalCoef[4],MLEcorr$P_valueGC[4], MLEcorr$GC_CI[4])
+table2[6,] <- list("Calories & Vision",MLEcorr$CalVisCoef[4],MLEcorr$P_valueCV[4], MLEcorr$CV_CI[4])
+
+#Create table
+CorT <- data.frame((matrix(NA, nrow=4, ncol=7)))
+
+#Insert values in the table 
+CorT[,1] <-metadata_cog2$Modality
+CorT[,2] <-metadata_cog2$n1
+CorT[,3] <-metadata_cog2$dprime
+CorT[,4] <-metadata_cog2$dprime_sd
+CorT[2,5] <- table2[5,2] # Cal and GDP
+CorT[3,5] <- table2[1,2] # Cal and Mem
+CorT[4,5] <- table2[6,2] # Cal and Vis
+CorT[3,6] <- table2[3,2] # GDP and Mem
+CorT[4,6] <- table2[4,2] # GDP and Vis
+CorT[4,7] <- table2[2,2] # Mem and Vis
+
+# None of them are significant, as can be seen in the dataframe 'table2' so I am not adding any *. 
+
+#Number of decimals: 
+CorT <- CorT %>% mutate_if(is.numeric, round, 3)
+
+#Rename and select Columns: 
+CorT <- CorT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
+  select(Modality, n, M, SD, Calories, GDP, Memory)
+
+#number of digits, and change NA to blank 
+
+#APA format:
 
 
+CorD <-apa(CorT, "Cognitive Sensitivity (d') descriptives and correlation: MLE")
+
+```
+Table 3: Metacognitive Correlation and descriptive: MLE
+```{r}
+
+#Table with correlation coefficents for all pairwise correlations: 
+table3 <- data.frame(Pair=character(),
+                 r=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table3[1,] <- list("Memory & Calories",MLEcorr$MemCalCoef[2],MLEcorr$P_valueMC[2], MLEcorr$MC_CI[2])
+table3[2,] <- list("Memory & Vision",MLEcorr$MemVisCoef[2],MLEcorr$P_valueMV[2], MLEcorr$MV_CI[2])
+table3[3,] <- list("Memory & GDP",MLEcorr$MemGDPCoef[2],MLEcorr$P_valueMG[2], MLEcorr$MG_CI[2])
+table3[4,] <- list("GDP & Vision",MLEcorr$GDPVisCoef[2],MLEcorr$P_valueGS[2], MLEcorr$GS_CI[2])
+table3[5,] <- list("GDP & Calories",MLEcorr$GDPCalCoef[2],MLEcorr$P_valueGC[2], MLEcorr$GC_CI[2])
+table3[6,] <- list("Calories & Vision",MLEcorr$CalVisCoef[2],MLEcorr$P_valueCV[2], MLEcorr$CV_CI[2])
+
+#Create table
+MLEMT <- data.frame((matrix(NA, nrow=4, ncol=7)))
+
+#Insert values in the table 
+MLEMT [,1] <-MetaSum$Modality
+MLEMT [,2] <-MetaSum$n1
+MLEMT [,3] <-paste0(round(MetaSum$mratio1,2))
+MLEMT [,4] <-paste0(round(MetaSum$mratio_sd,2))
+MLEMT [2,5] <- paste0(round(table3[5,2],3)) # Cal and GDP
+MLEMT [3,5] <- paste0(round(table3[1,2],3)) # Cal and Mem
+MLEMT [4,5] <- paste0(round(table3[6,2],3), "*") # Cal and Vis
+MLEMT [3,6] <- paste0(round(table3[3,2],3), "*") # GDP and Mem
+MLEMT [4,6] <- paste0(round(table3[4,2],3)) # GDP and Vis
+MLEMT [4,7] <- paste0(round(table3[2,2],3)) # Mem and Vis
+
+#  * : under 0.05 - can be seen in dataframe table3. 
+
+#Rename and select Columns: 
+MLEMT  <- MLEMT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
+  select(Modality, n, M, SD, Calories, GDP, Memory)
+
+
+#Change NA to blank 
+
+#APA format:
+
+CorEff<-apa(MLEMT, "Table 3: Correlation of Metacognitive Efficiency (meta-d'/d'): MLE")
+
+```
+Table 4: Correlation of Hierarchical correlation: 
+
+```{r}
+
+# select the HDIs for each rho  
+rHDI <- HDI %>% filter(str_detect(name,"rho")) %>% select(name, lower, upper)
+#join these HDIs with mean rho
+RhoHDI <- full_join(meanRho, rHDI, 
+                    by= c("Parameter"="name"))
+
+#Change names and layout: 
+table4 <- RhoHDI %>% mutate(Pair= c("Memory & Calories", "Memory & Vision", "Memory & GDP", 
+                                     "GDP & Vision", "GDP & Calories", "Calories & Vision"),
+                             Rho=round(value,3),
+                             HDIr = paste(round(lower,3), round(upper,3), sep=" ; "))
+table4 <- table4 %>% mutate(HDI = paste0("[", table4$HDIr, "]"))
+
+#HDI for mean mratio: 
+meanMratio1 <- MSum %>% mutate(HDIr = paste(round(lowerHDI,3), round(upperHDI,3), sep=" ; "))
+meanMratio1  <- meanMratio1  %>% mutate(HDI = paste0("[", meanMratio1$HDIr, "]"))
+
+#Create table
+HMT <- data.frame((matrix(NA, nrow=4, ncol=7)))
+
+#Insert values in the table 
+HMT [,1] <-meanMratio1$Modality
+HMT [,2] <-meanMratio1$n2
+HMT [,3] <-paste0(round(meanMratio1$Hmratio,2))
+HMT [,4] <-meanMratio1$HDI
+HMT [2,5] <- paste0(round(table4[5,6],3), " ", table4[5,8]) # Cal and GDP
+HMT [3,5] <- paste0(round(table4[1,6],3), " ",table4[1,8]) # Cal and Mem
+HMT [4,5] <- paste0(round(table4[6,6],3), " ",table4[6,8]) # Cal and Vis
+HMT [3,6] <- paste0(round(table4[3,6],3), " ",table4[3,8]) # GDP and Mem
+HMT [4,6] <- paste0(round(table4[4,6],3), " ",table4[4,8]) # GDP and Vis
+HMT [4,7] <- paste0(round(table4[2,6],3), " ",table4[2,8]) # Mem and Vis
+
+#  * : under 0.05 - can be seen in dataframe table3. 
+
+#Rename and select Columns: 
+HMT  <- HMT %>% mutate(Modality =X1, n=X2, M=X3, HDI=X4, Calories = X5, GDP = X6, Memory =X7) %>%
+  select(Modality, n, M, HDI, Calories, GDP, Memory)
+
+#Change NA to Blank: 
+
+#Put into APA format. 
+
+Table4 <-apa(HMT, "Table 4: Correlation of Metacognitive Efficiency (meta-d'/d'): Hierarchical Bayesian")
+
+
+```
+
+Tables in Supplementary Material: 
+
+Split half analysis: in SplitHalf.RMd and SplitHald_Hier.Rmd
+ANOVA: in ANOVA.Rmd
+
+Bayes Factor: 
+```{r}
+
+#Change labels
+BayesSen <- BayesSen %>% mutate(`meta-d'` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+BayesEff <- BayesEff %>% mutate(`meta-d/d''` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+BayesBia <- BayesBia %>% mutate(`Avg. Conf` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+
+#Join the dataframes:
+Bayes1 <- left_join(BayesSen, BayesEff, 
+                     by=c("Pair"="Pair"))
+Bayes <- left_join(Bayes1 , BayesBia, 
+                     by=c("Pair"="Pair"))
+
+BayesT <- apa(Bayes, "Table X: Bayes factor: Metacognitive Sensitivity, Efficiency, and Bias (MLE)")
 
 ```
 
 
 
 
-Table 3: Average cognitive and Metacognitive performance across tasks 
 ```{r}
 
 
@@ -1026,24 +1279,6 @@ TableHMapa
 Table 2: MLE correlation between domains 
 ```{r}
 
-#combine upper and lower limit of CI into one. 
-table2 <- corrtable %>% mutate(MC_CI = paste(round(corrtable$CI_lowerMC,3), round(corrtable$CI_upperMC,3), sep=";")) %>%
-  mutate(MV_CI= paste(round(corrtable$CI_lowerMV,3), round(corrtable$CI_upperMV,3), sep=";")) %>%
-  mutate(MG_CI= paste(round(corrtable$CI_lowerMG,3), round(corrtable$CI_upperMG,3), sep=";")) %>%
-  mutate(GS_CI= paste(round(corrtable$CI_lowerGS,3), round(corrtable$CI_upperGS,3), sep=";")) %>%
-  mutate(GC_CI= paste(round(corrtable$CI_lowerGC,3), round(corrtable$CI_upperGC,3), sep=";")) %>%
-  mutate(CV_CI= paste(round(corrtable$CI_lowerCV,3), round(corrtable$CI_upperCV,3), sep=";")) 
-
-#Select relevant columns 
-table2 <- table2 %>% select(Metric, 
-                            MemCalCoef, P_valueMC, MC_CI, 
-                            MemVisCoef, P_valueMV, MV_CI, 
-                            MemGDPCoef, P_valueMG, MG_CI, 
-                            GDPVisCoef, P_valueGS, GS_CI,
-                            GDPCalCoef, P_valueGC, GC_CI, 
-                            CalVisCoef, P_valueCV, CV_CI
-                            )
-
 #Change the layout of the table: 
 
 ##Sensitivity 
@@ -1072,23 +1307,7 @@ saveRDS(x, file = "myvector_serialized.rds")
 x <- readRDS("myvector_serialized.rds")
 
 ##Efficiency
-#Table with correlation coefficents for all pairwise correlations: 
-table23 <- data.frame(Pair=character(),
-                 r=double(),
-                 p=double(),
-                 'Conf Interval'=double(),
-                stringsAsFactors=FALSE)
 
-#Insert vaules in dataframe: 
-table23[1,] <- list("Memory & Calories",table2$MemCalCoef[2],table2$P_valueMC[2], table2$MC_CI[2])
-table23[2,] <- list("Memory & Vision",table2$MemVisCoef[2],table2$P_valueMV[2], table2$MV_CI[2])
-table23[3,] <- list("Memory & GDP",table2$MemGDPCoef[2],table2$P_valueMG[2], table2$MG_CI[2])
-table23[4,] <- list("GDP & Vision",table2$GDPVisCoef[2],table2$P_valueGS[2], table2$GS_CI[2])
-table23[5,] <- list("GDP & Calories",table2$GDPCalCoef[2],table2$P_valueGC[2], table2$GC_CI[2])
-table23[6,] <- list("Calories & Vision",table2$CalVisCoef[2],table2$P_valueCV[2], table2$CV_CI[2])
-
-#Combine p and C-value: 
-table23 <- table23 %>% mutate(`p-value (CI)`= paste0('p = ', table23$p, ' (', table23$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
 
 ##Bias
 #Table with correlation coefficents for all pairwise correlations: 
@@ -1112,37 +1331,22 @@ table24 <- table24 %>% mutate(p = as.character("<.001"))
 table24 <- table24 %>% mutate(`p-value (CI)`= paste0('p = ', table24$p, ' (', table24$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
 
 
-#d' correlation: 
-table25 <- data.frame(Pair=character(),
-                 r=double(),
-                 p=double(),
-                 'Conf Interval'=double(),
-                stringsAsFactors=FALSE)
-
-#Insert vaules in dataframe: 
-table25[1,] <- list("Memory & Calories",table2$MemCalCoef[4],table2$P_valueMC[4], table2$MC_CI[4])
-table25[2,] <- list("Memory & Vision",table2$MemVisCoef[4],table2$P_valueMV[4], table2$MV_CI[4])
-table25[3,] <- list("Memory & GDP",table2$MemGDPCoef[4],table2$P_valueMG[4], table2$MG_CI[4])
-table25[4,] <- list("GDP & Vision",table2$GDPVisCoef[4],table2$P_valueGS[4], table2$GS_CI[4])
-table25[5,] <- list("GDP & Calories",table2$GDPCalCoef[4],table2$P_valueGC[4], table2$GC_CI[4])
-table25[6,] <- list("Calories & Vision",table2$CalVisCoef[4],table2$P_valueCV[4], table2$CV_CI[4])
-
 #Combine p and C-value: 
-table25 <- table25 %>% mutate(`p-value (CI)`= paste0('p = ', table25$p, ' (', table25$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
-table25 <- table25 %>% mutate(r = round(r,3))
-table25 <- table25 %>% mutate( `Spearman's Correlation` = paste0("r(314) = ", r, " ",`p-value (CI)`)) %>% select(Pair, `Spearman's Correlation`)
+table2 <- table2 %>% mutate(`p-value (CI)`= paste0('p = ', table2$p, ' (', table2$Conf.Interval, ')')) %>% select(Pair,r, `p-value (CI)`)
+table2 <- table2 %>% mutate(r = round(r,3))
+table2 <- table2 %>% mutate( `Spearman's Correlation` = paste0("r(314) = ", r, " ",`p-value (CI)`)) %>% select(Pair, `Spearman's Correlation`)
+
 
 #Sort decimals: 
 table22 <- table22 %>% mutate(r = round(r,3))
-table23 <- table23 %>% mutate(r = round(r,3))
 table24 <- table24 %>% mutate(r = round(r,3))
 
 
 #Makes tables in APA format: 
-CorEff<-apa(table23, "Table 2.a: MLE correlation of Metacognitive Efficiency")
+
 CorSen<-apa(table22, "Table 2.b: MLE correlation of Metacognitive Sensitivity")
 CorBias<-apa(table24, "Table 2.c: MLE correlation of Metacognitive Bias")
-CorD <-apa(table25, "Table 2: MLE correlation of Cognitive Sensitivity")
+
 
 ######Save tables. 
 #######################
