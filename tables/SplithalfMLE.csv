@@ -1,0 +1,5 @@
+"","Modality","n (Even)","M (Even)","SD (Even)","n (Odd)","M (Odd)","SD (Odd)","Modality1","Calories (Odd)","GDP (Odd)","Memory (Odd)","Vision (Odd)"
+"1","Calories",311,"0.97","0.65",314,"1.03","0.69","Calories (Even)","0.225***",NA,NA,NA
+"2","GDP",311,"1.29","0.81",314,"1.25","0.87","GDP (Even)",NA,"0.258***",NA,NA
+"3","Memory",310,"1.17","0.41",313,"1.11","0.43","Memory (Even)",NA,NA,"0.229***",NA
+"4","Vision",311,"0.75","0.48",314,"0.67","0.46","Vision (Even)",NA,NA,NA,"0.45***"

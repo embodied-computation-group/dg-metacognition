@@ -976,7 +976,13 @@ Cog12[2,11] <- "SD"
 
 Cog12 <- Cog12 %>% select(Modality, n1, dprime, dprime_sd, criterion, criterion_sd, n3, Hdprime, Hdprime_SD, Hcriterion, Hcriterion_sd)
 
+#Save as csv
+write.csv(Cog12 ,file= here("tables", 'CogPer_MLEHier.csv'))
+
+#APA
 Des <-apa(Cog12, "Cognitive performance: MLE and Bayesian estimations")
+Des
+
 
 ```
 
@@ -1045,13 +1051,13 @@ CorT <- CorT %>% mutate_if(is.numeric, round, 3)
 CorT <- CorT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
   select(Modality, n, M, SD, Calories, GDP, Memory)
 
-#number of digits, and change NA to blank 
+#Save as csv
+write.csv(CorT ,file= here("tables", 'CogCor_MLE.csv'))
+
 
 #APA format:
-
-
 CorD <-apa(CorT, "Cognitive Sensitivity (d') descriptives and correlation: MLE")
-
+CorD
 ```
 Table 3: Metacognitive Correlation and descriptive: MLE
 ```{r}
@@ -1093,11 +1099,13 @@ MLEMT  <- MLEMT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP =
   select(Modality, n, M, SD, Calories, GDP, Memory)
 
 
-#Change NA to blank 
+#Write csv
+write.csv(MLEMT ,file= here("tables", 'EffCor_MLE.csv'))
 
 #APA format:
-
 CorEff<-apa(MLEMT, "Table 3: Correlation of Metacognitive Efficiency (meta-d'/d'): MLE")
+
+CorEff
 
 ```
 Table 4: Correlation of Hierarchical correlation: 
@@ -1142,12 +1150,13 @@ HMT [4,7] <- paste0(round(table4[2,6],3), " ",table4[2,8]) # Mem and Vis
 HMT  <- HMT %>% mutate(Modality =X1, n=X2, M=X3, HDI=X4, Calories = X5, GDP = X6, Memory =X7) %>%
   select(Modality, n, M, HDI, Calories, GDP, Memory)
 
-#Change NA to Blank: 
+#Save as csv
+write.csv(HMT ,file= here("tables", 'EffCor_Hier.csv'))
+ 
 
 #Put into APA format. 
-
 Table4 <-apa(HMT, "Table 4: Correlation of Metacognitive Efficiency (meta-d'/d'): Hierarchical Bayesian")
-
+Table4
 
 ```
 
@@ -1169,8 +1178,12 @@ Bayes1 <- left_join(BayesSen, BayesEff,
                      by=c("Pair"="Pair"))
 Bayes <- left_join(Bayes1 , BayesBia, 
                      by=c("Pair"="Pair"))
+#write csv
+write.csv(MLEMT ,file= here("tables", 'MLECorrBayes.csv'))
 
+#apa
 BayesT <- apa(Bayes, "Table X: Bayes factor: Metacognitive Sensitivity, Efficiency, and Bias (MLE)")
+BayesT
 
 ```
 CHECK IF THESE CAN BE DELETED ?!?!?!?!?

@@ -274,6 +274,8 @@ ggsave(here("figs", "mrho_Split.png"), height = 7, width = 12)
   
 
 ```
+Table of correlations: 
+```{r}
 
 ```
 

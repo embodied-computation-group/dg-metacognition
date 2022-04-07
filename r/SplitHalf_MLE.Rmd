@@ -378,6 +378,54 @@ annotate_figure(comPlot1, top = text_grob("Split-half Analysis of Metacognitive 
 ggsave(here("figs", "SplitHald_Filtered.png")) 
 ```
 
+Descriptive data:
+```{r}
+#Average everything and calculate standard deviations for the MLE model: 
+
+head(metadata_exc_even)
+head(metadata_exc_odd)
+
+#Exclude those with missing data: 
+
+#Identify participants with NAs: 
+NAsE <- metadata_exc_even[rowSums(is.na(metadata_exc_even)) > 0,]
+rowexcIDE <-unique(NAsE$subject)
+NAsO <- metadata_exc_odd[rowSums(is.na(metadata_exc_odd)) > 0,]
+rowexcIDO <-unique(NAsO$subject)
+
+#Exclude IDs from that vector in original dataframe:
+metadata_exc_even1 <- metadata_exc_even %>% group_by(subject)  %>% subset(!is.element(subject, rowexcIDE))
+metadata_exc_odd1 <- subset(metadata_exc_odd, !is.element(metadata_exc_odd$subject, rowexcIDO))
+
+metadata_even_avg <- metadata_exc_even1 %>% 
+  group_by(modality) %>% 
+  summarise(dprime=mean(da, na_rm=TRUE), 
+            criterion=mean(c, na_rm=TRUE),
+            metad=mean(mda, na_rm=TRUE),
+            mratio1=mean(mratio, na_rm=TRUE),
+            dprime_sd=sd(da),
+            criterion_sd=sd(c),
+            metad_sd=sd(mda),
+            mratio_sd=sd(mratio), 
+            n1 = n()
+            )  %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision")) %>%
+  select(-modality)
+
+metadata_odd_avg <- metadata_exc_odd1 %>% 
+  group_by(modality) %>% 
+  summarise(dprime=mean(da, na_rm=TRUE), 
+            criterion=mean(c, na_rm=TRUE),
+            metad=mean(mda, na_rm=TRUE),
+            mratio1=mean(mratio, na_rm=TRUE),
+            dprime_sd=sd(da),
+            criterion_sd=sd(c),
+            metad_sd=sd(mda),
+            mratio_sd=sd(mratio), 
+            n1 = n()
+            )  %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision")) %>%
+  select(-modality)
+```
+
 
 Table with the correlation coefficients and significance level: 
 
@@ -385,45 +433,49 @@ Table with the correlation coefficients and significance level:
 #Choose only filtered: 
 corrtableF <- corrtable[2,]
 
-
-
-
 #combine upper and lower limit of CI into one. 
 tableSH <- corrtableF %>% mutate(Mem_CI = paste(round(corrtableF$CI_lowerM,3), round(corrtableF$CI_upperM,3), sep=";")) %>%
   mutate(Cal_CI= paste(round(corrtableF$CI_lowerC,3), round(corrtableF$CI_upperC,3), sep=";")) %>%
   mutate(GDP_CI= paste(round(corrtableF$CI_lowerG,3), round(corrtableF$CI_upperG,3), sep=";")) %>%
   mutate(Vis_CI= paste(round(corrtableF$CI_lowerV,3), round(corrtableF$CI_upperV,3), sep=";")) 
+#Create table
+SHMLE <- data.frame((matrix(NA, nrow=4, ncol=12)))
 
-#Sort number of decimals: 
-tableSH <- tableSH %>% mutate(Memory = round(Memory,3),
-                              Calories = round(Calories,3),
-                              GDP = round(GDP,3),
-                              Vision = round(Vision,3)
-                              )
+#Insert values in the table 
+SHMLE  [1,1] <-"Calories"
+SHMLE  [2,1] <-"GDP"
+SHMLE  [3,1] <-"Memory"
+SHMLE  [4,1] <-"Vision"
+SHMLE [,2] <-metadata_even_avg$n1
+SHMLE [,3] <-paste0(round(metadata_even_avg$mratio1,2))
+SHMLE [,4] <-paste0(round(metadata_even_avg$mratio_sd,2))
+SHMLE [,5] <-metadata_odd_avg$n1
+SHMLE [,6] <-paste0(round(metadata_odd_avg$mratio1,2))
+SHMLE [,7] <-paste0(round(metadata_odd_avg$mratio_sd,2))
+SHMLE  [1,8] <-"Calories (Even)"
+SHMLE  [2,8] <-"GDP (Even)"
+SHMLE  [3,8] <-"Memory (Even)"
+SHMLE  [4,8] <-"Vision (Even)"
+SHMLE [1,9] <- paste0(round(tableSH$Calories,3), "***") # Memory
+SHMLE [2,10] <- paste0(round(tableSH$GDP,3), "***") # Cal and Mem
+SHMLE [3,11] <- paste0(round(tableSH$Memory,3), "***") # Cal and Vis
+SHMLE [4,12] <- paste0(round(tableSH$Vision,3), "***") # GDP and Mem
 
-#NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
-tableSH <- tableSH %>% mutate(P_valueM = as.character("<.001"),
-                              P_valueC = as.character("<.001"),
-                              P_valueG = as.character("<.001"),
-                              P_valueV = as.character("<.001"))
-#Make a dataframe with right format
-tableSHT <- data.frame(Domain=character(),
-                 r=double(),
-                 p=double(),
-                stringsAsFactors=FALSE)
+#Exact p-vaue can be found in tableSH
 
-tableSHT <- tableSHT %>% rename('p (CI)'= p)
+#Rename and select Columns: 
+SHMLE  <- SHMLE %>% mutate(Modality =X1, `n (Even)`=X2, `M (Even)`=X3, `SD (Even)`=X4, 
+                           `n (Odd)`=X5, `M (Odd)`=X6, `SD (Odd)`=X7, Modality1 = X8,
+                           `Calories (Odd)` = X9, `GDP (Odd)` = X10, `Memory (Odd)` =X11, `Vision (Odd)`=X12) %>%
+  select(Modality, `n (Even)`, `M (Even)`, `SD (Even)`, `n (Odd)`, `M (Odd)`, `SD (Odd)`, Modality1,
+         `Calories (Odd)`, `GDP (Odd)`, `Memory (Odd)`, `Vision (Odd)`)
 
-#Put values into dataframe
-tableSHT[1,] <- list("Memory", tableSH$Memory, paste0(tableSH$P_valueM, "(", (tableSH$Mem_CI), ")"))
-tableSHT[2,] <- list("Calories", tableSH$Calories, paste0(tableSH$P_valueC, "(", (tableSH$Cal_CI), ")"))
-tableSHT[3,] <- list("GDP", tableSH$GDP, paste0(tableSH$P_valueG, "(", (tableSH$GDP_CI), ")"))
-tableSHT[4,] <- list("Vision",tableSH$Vision, paste0(tableSH$P_valueV, "(", (tableSH$Vis_CI), ")"))
 
 
 #Add APA Format:
-SpliHalf<-apa(tableSHT, "Table ??: Split Half Trials analyses of Metacognitive Efficiency")
+SpliHalf<-apa(SHMLE , "Table ??: Split Half Trials analyses of Metacognitive Efficiency (MLE)")
 
+write.csv(SHMLE ,file= here("tables", 'SplithalfMLE.csv'))
 
 SpliHalf
 ```
