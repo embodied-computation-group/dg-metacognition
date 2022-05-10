@@ -1179,7 +1179,7 @@ Bayes1 <- left_join(BayesSen, BayesEff,
 Bayes <- left_join(Bayes1 , BayesBia, 
                      by=c("Pair"="Pair"))
 #write csv
-write.csv(MLEMT ,file= here("tables", 'MLECorrBayes.csv'))
+write.csv(Bayes ,file= here("tables", 'MLECorrBayes.csv'))
 
 #apa
 BayesT <- apa(Bayes, "Table X: Bayes factor: Metacognitive Sensitivity, Efficiency, and Bias (MLE)")

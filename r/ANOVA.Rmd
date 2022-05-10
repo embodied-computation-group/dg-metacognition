@@ -315,6 +315,9 @@ ANOT[5,] <- list(paste0("Meta-d'/d'"), paste0(ME_aov1$SSn[2]),paste0(ME_aov1$DFn
 #NOTE I MANUALLY CHANGE THE P-values to <.001 here! Thus with different data this may not be appropriate. 
 ANOT <- ANOT %>% mutate(p = as.character("<.001"))  
 
+#write csv
+write.csv(ANOT ,file= here("tables", 'ANOVA.csv'))
+
 #Put into APA format: 
 ANOTapa<-apa(ANOT, "Table ?: ANOVA of cognitive and metacognitive performances across domains") 
 ANOTapa
@@ -398,6 +401,15 @@ CTT <- CTT %>% mutate(p = ifelse(p == '0', "p <.001", paste0(p)))
 MBTT <- MBTT %>% mutate(p = ifelse(p == '0', "p <.001", paste0(p)))
 MSTT <- MSTT %>% mutate(p = ifelse(p == '0', "p <.001", paste0(p)))
 METT <- METT %>% mutate(p = ifelse(p == '0', "p <.001", paste0(p)))
+
+
+#write csv
+write.csv(DTT ,file= here("tables", 'ttest_dprime.csv'))
+write.csv(CTT ,file= here("tables", 'ttest_criterion.csv'))
+write.csv(MBTT ,file= here("tables", 'ttest_metabias.csv'))
+write.csv(MSTT ,file= here("tables", 'ttest_metasens.csv'))
+write.csv(METT ,file= here("tables", 'ttest_metaeffi.csv'))
+
 
 #Put into APA format: 
 Dprimeapa<-apa(DTT, "Table 1: Post Hoc: Paired t-tests of cognitive sensitivity (d')")
