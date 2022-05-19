@@ -129,7 +129,6 @@ Group-level exclusion based on MAD rule (confidence, d', criterion)
 #exclude those where mratio could not be estimated  
 metadata_exc <- fit_data%>%filter(mratio!="NaN")
 
-
 #Exclude outliers based on MAD rule (confidence, d' and criterion)
 #Confidence:
 Avgmeta <- metadata %>% 
@@ -145,22 +144,20 @@ fitAvg_data <- fitAvg_data%>%filter(mratio!="NaN")
 
 metadata_exc <- fitAvg_data%>%
   group_by(modality) %>%
-  mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove RT outliers using MAD Rule 
+  mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove average confidence using MAD Rule 
 
 # d' 
 metadata_exc <- metadata_exc%>%
   group_by(modality) %>%
-  mutate(da = remove_outliers_robust(da)) # remove RT outliers using MAD Rule 
+  mutate(da = remove_outliers_robust(da)) # remove dprime outliers using MAD Rule 
 
 
 # criterion 
 metadata_exc <- metadata_exc%>%
   group_by(modality) %>%
-  mutate(c = remove_outliers_robust(c)) # remove RT outliers using MAD Rule 
+  mutate(c = remove_outliers_robust(c)) # remove criterion outliers using MAD Rule 
 
 metadata_exc <- na.omit(metadata_exc)
-
-
 
 head(metadata_exc)
 
@@ -740,7 +737,9 @@ metadata_excMratio <- metadata_exc%>%filter(mratio!="NaN")
 #mratio
 metadata_excMratio <- metadata_excMratio%>%
   group_by(modality) %>%
-  mutate(mratio = remove_outliers_robust(mratio)) 
+  mutate(mratio = remove_outliers_robust(mratio))
+
+metadata_excMratio <- na.omit(metadata_excMratio)
 
 #Pivot: 
 fit_data_wideExc <- metadata_excMratio %>% pivot_wider(
