@@ -682,8 +682,7 @@ annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "b
 
 ```
 
-
-Figure 3 without Mratio outliers: THIS IS THE ONE WE ARE ACTUALLY USING
+Figure 3 without Mratio outliers: 
 ```{r}
 
 #exclude those where mratio could not be estimated (MLE):  
@@ -788,30 +787,9 @@ The plots for the hierarhical model - sample estimations of rho: + Combine the M
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Now the tables from the paper: 
-Averages of performance for descriptive statistics: 
 
+Averages of performance for descriptive statistics: 
 ```{r}
 #Average everything and calculate standard deviations for the MLE model: 
 metadata_avg <- metadata_exc %>% 
@@ -1016,7 +994,8 @@ write.csv(CorT ,file= here("tables", 'CogCor_MLE.csv'))
 CorD <-apa(CorT, "Cognitive Sensitivity (d') descriptives and correlation: MLE")
 CorD
 ```
-Table 3: Metacognitive Correlation and descriptive: MLE
+
+Table 3: Metacognitive Correlation and descriptive: MLE - Efficiency
 ```{r}
 
 #Table with correlation coefficents for all pairwise correlations: 
@@ -1043,8 +1022,8 @@ MLEMT [,2] <-MetaSum$n1
 MLEMT [,3] <-paste0(round(MetaSum$mratio1,2))
 MLEMT [,4] <-paste0(round(MetaSum$mratio_sd,2))
 MLEMT [2,5] <- paste0(round(table3[5,2],3)) # Cal and GDP
-MLEMT [3,5] <- paste0(round(table3[1,2],3)) # Cal and Mem
-MLEMT [4,5] <- paste0(round(table3[6,2],3), "*") # Cal and Vis
+MLEMT [3,5] <- paste0(round(table3[1,2],3), "*") # Cal and Mem
+MLEMT [4,5] <- paste0(round(table3[6,2],3)) # Cal and Vis
 MLEMT [3,6] <- paste0(round(table3[3,2],3), "*") # GDP and Mem
 MLEMT [4,6] <- paste0(round(table3[4,2],3)) # GDP and Vis
 MLEMT [4,7] <- paste0(round(table3[2,2],3)) # Mem and Vis
@@ -1065,6 +1044,107 @@ CorEff<-apa(MLEMT, "Table 3: Correlation of Metacognitive Efficiency (meta-d'/d'
 CorEff
 
 ```
+
+Table X: Metacognitive Correlation and descriptive: MLE - Bias
+```{r}
+
+#Table with correlation coefficents for all pairwise correlations: 
+table3a <- data.frame(Pair=character(),
+                 r=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table3a[1,] <- list("Memory & Calories",MLEcorr$MemCalCoef[3],MLEcorr$P_valueMC[3], MLEcorr$MC_CI[3])
+table3a[2,] <- list("Memory & Vision",MLEcorr$MemVisCoef[3],MLEcorr$P_valueMV[3], MLEcorr$MV_CI[3])
+table3a[3,] <- list("Memory & GDP",MLEcorr$MemGDPCoef[3],MLEcorr$P_valueMG[3], MLEcorr$MG_CI[3])
+table3a[4,] <- list("GDP & Vision",MLEcorr$GDPVisCoef[3],MLEcorr$P_valueGS[3], MLEcorr$GS_CI[3])
+table3a[5,] <- list("GDP & Calories",MLEcorr$GDPCalCoef[3],MLEcorr$P_valueGC[3], MLEcorr$GC_CI[3])
+table3a[6,] <- list("Calories & Vision",MLEcorr$CalVisCoef[3],MLEcorr$P_valueCV[3], MLEcorr$CV_CI[3])
+
+#Create table
+MLEBI <- data.frame((matrix(NA, nrow=4, ncol=7)))
+
+#Insert values in the table 
+MLEBI [,1] <-MetaSum$Modality
+MLEBI [,2] <-MetaSum$n1
+MLEBI [,3] <-paste0(round(MetaSum$avg_conf1,2))
+MLEBI [,4] <-paste0(round(MetaSum$avg_conf_sd,2))
+MLEBI [2,5] <- paste0(round(table3a[5,2],3), "***") # Cal and GDP
+MLEBI [3,5] <- paste0(round(table3a[1,2],3), "***") # Cal and Mem
+MLEBI [4,5] <- paste0(round(table3a[6,2],3), "***") # Cal and Vis
+MLEBI [3,6] <- paste0(round(table3a[3,2],3), "***") # GDP and Mem
+MLEBI [4,6] <- paste0(round(table3a[4,2],3), "***") # GDP and Vis
+MLEBI [4,7] <- paste0(round(table3a[2,2],3), "***") # Mem and Vis
+
+#  * : under 0.05 - can be seen in dataframe table3. 
+
+#Rename and select Columns: 
+MLEBI  <- MLEBI %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
+  select(Modality, n, M, SD, Calories, GDP, Memory)
+
+
+#Write csv
+write.csv(MLEBI ,file= here("tables", 'BiasCor_MLE.csv'))
+
+#APA format:
+CorBia<-apa(MLEBI, "Table 3: Correlation of Metacognitive Bias")
+
+CorBia
+
+```
+Table X: Metacognitive Correlation and descriptive: MLE - Sensitivity
+```{r}
+
+#Table with correlation coefficents for all pairwise correlations: 
+table3b <- data.frame(Pair=character(),
+                 r=double(),
+                 p=double(),
+                 'Conf Interval'=double(),
+                stringsAsFactors=FALSE)
+
+#Insert vaules in dataframe: 
+table3b[1,] <- list("Memory & Calories",MLEcorr$MemCalCoef[1],MLEcorr$P_valueMC[1], MLEcorr$MC_CI[1])
+table3b[2,] <- list("Memory & Vision",MLEcorr$MemVisCoef[1],MLEcorr$P_valueMV[1], MLEcorr$MV_CI[1])
+table3b[3,] <- list("Memory & GDP",MLEcorr$MemGDPCoef[1],MLEcorr$P_valueMG[1], MLEcorr$MG_CI[1])
+table3b[4,] <- list("GDP & Vision",MLEcorr$GDPVisCoef[1],MLEcorr$P_valueGS[1], MLEcorr$GS_CI[1])
+table3b[5,] <- list("GDP & Calories",MLEcorr$GDPCalCoef[1],MLEcorr$P_valueGC[1], MLEcorr$GC_CI[1])
+table3b[6,] <- list("Calories & Vision",MLEcorr$CalVisCoef[1],MLEcorr$P_valueCV[1], MLEcorr$CV_CI[1])
+
+#Create table
+MLESE <- data.frame((matrix(NA, nrow=4, ncol=7)))
+
+#Insert values in the table 
+MLESE [,1] <-MetaSum$Modality
+MLESE [,2] <-MetaSum$n1
+MLESE [,3] <-paste0(round(MetaSum$metad,2))
+MLESE [,4] <-paste0(round(MetaSum$metad_sd,2))
+MLESE [2,5] <- paste0(round(table3b[5,2],3)) # Cal and GDP
+MLESE [3,5] <- paste0(round(table3b[1,2],3), "**") # Cal and Mem
+MLESE [4,5] <- paste0(round(table3b[6,2],3), "*") # Cal and Vis
+MLESE [3,6] <- paste0(round(table3b[3,2],3), "*") # GDP and Mem
+MLESE [4,6] <- paste0(round(table3b[4,2],3)) # GDP and Vis
+MLESE [4,7] <- paste0(round(table3b[2,2],3), "*") # Mem and Vis
+
+#  * : under 0.05 - can be seen in dataframe table3. 
+
+#Rename and select Columns: 
+MLESE  <- MLESE %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
+  select(Modality, n, M, SD, Calories, GDP, Memory)
+
+
+#Write csv
+write.csv(MLESE ,file= here("tables", 'SenCor_MLE.csv'))
+
+#APA format:
+CorSen<-apa(MLESE, "Table 3: Correlation of Metacognitive Sensitivity")
+
+CorSen
+
+```
+
+
 Table 4: Correlation of Hierarchical correlation: 
 
 ```{r}
