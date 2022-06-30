@@ -515,7 +515,7 @@ Fit <- stat %>%
 ```
 
 
-Figure 2: d' and group staircase: 
+Figure 2: d' and group staircase
 ```{r}
 # Figure2 
 
@@ -537,7 +537,6 @@ p1<-ggplot(metadata_exc, aes(x = modality, y = da, fill= modality)) +
         axis.title=element_text(size=10,face="bold"))
 
 #Plot of group-level Staircases: 
-
 
 pd <- position_dodge(0.1)
 p2 <- ggplot(metadataPlotMean, aes(x = trial_bin, y = mean.acc, group = modality, color= modality)) +
@@ -572,12 +571,6 @@ f2 <- f2 +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') &
   theme(plot.tag = element_text(size = 12))
 
 f2
-```
-
-
-Figure 4
-```{r}
-
 
 p3 <- ggplot(data=ConfByError, 
        aes(x = modality, y = avgCF_Corr, fill=modality, shape = accuracy)) + 
@@ -613,8 +606,6 @@ p3 <- ggplot(data=ConfByError,
           plot.title = element_text(size = 12), 
           axis.text=element_text(size=10),
           axis.title=element_text(size=10,face="bold")) 
-
-p3
 # M-ratio across modalities:
 
 
@@ -656,11 +647,11 @@ f3a
 
 ggsave(here("figs", "Figure 2.png"), height = 16.8, width = 16.8, units = "cm", dpi = 300)  
 
-  
+
 ```
 
 
-Figure 3:  
+Figure 3: Scatter Plot MLE estimation
 ```{r}
 
 #The scatter plot for the MLE estimation of Mratio: 
@@ -686,49 +677,13 @@ s16 <- scatter(scat2, scat2$mratio_Calories, scat2$mratio_vision) + theme(plot.t
 comPlot2 <- ggarrange(s11, s12, s13, s14, s15, s16) 
 annotate_figure(comPlot2, top = text_grob("Metacognitive Efficiency", color = "black", 
                                          face = "bold", size = 14))    
-
-#The plots for the hierarhical model - sample estimations of rho: 
-
-H1title <- paste("Rho =",round(meanRho$value[1], digits=3))
-H2title <- paste("Rho =",round(meanRho$value[2], digits=3))
-H3title <- paste("Rho =",round(meanRho$value[3], digits=3))
-H4title <- paste("Rho =",round(meanRho$value[4], digits=3))
-H5title <- paste("Rho =",round(meanRho$value[5], digits=3))
-H6title <- paste("Rho =",round(meanRho$value[6], digits=3))
-
-# split per correlation pair: 
-Rho1 <- mcmc.sample %>% filter(Parameter == "rho[1]") 
-Rho2 <- mcmc.sample %>% filter(Parameter == "rho[2]") 
-Rho3 <- mcmc.sample %>% filter(Parameter == "rho[3]") 
-Rho4 <- mcmc.sample %>% filter(Parameter == "rho[4]") 
-Rho5 <- mcmc.sample %>% filter(Parameter == "rho[5]") 
-Rho6 <- mcmc.sample %>% filter(Parameter == "rho[6]") 
-
-#plot Rho samples + indication of mean rho estimation 
-R1 <- RhoPlot(Rho1, "rho[1]") + labs(title = "Memory and Calories", subtitle= paste(H1title))
-R2 <- RhoPlot(Rho2, "rho[2]") + labs(title = "Memory and GDP", subtitle= paste(H2title))
-R3 <- RhoPlot(Rho3, "rho[3]") + labs(title = "Memory and Vision", subtitle= paste(H3title))
-R4 <- RhoPlot(Rho4, "rho[4]") + labs(title = "GDP and Calories", subtitle= paste(H4title))
-R5 <- RhoPlot(Rho5, "rho[5]") + labs(title = "Calories and Vision", subtitle= paste(H5title))
-R6 <- RhoPlot(Rho6, "rho[6]") + labs(title = "GDP and Vision", subtitle= paste(H6title))
-
-#Combine plots for the hierarhical fit: 
-RhoPlot <- ggarrange(R1, R3, R2, R6, R4, R5)
-CorHi <- annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
-
-#MLE fit:
-CorMLE <- annotate_figure(comPlot2, top = text_grob("Maximum likelihood estimation  ", color = "black", face = "bold", size = 14)) 
-
-#Combine MLe and hierarhical estimation of correlations: 
-Figure3 <- ggarrange(CorMLE, CorHi, ncol= 1, nrow=2)  
-  annotate_figure(Figure3, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
-
   
-ggsave(here("figs", "Figure 3.png"), height = 7, width = 12)  
+
 
 ```
 
-Figure 3 without Mratio outliers: 
+
+Figure 3 without Mratio outliers: THIS IS THE ONE WE ARE ACTUALLY USING
 ```{r}
 
 #exclude those where mratio could not be estimated (MLE):  
@@ -804,31 +759,34 @@ S6Etitle <- paste("r =",round(res1.6E$estimate, digits=3))
 
 #Plot the correlations: 
 scat2E <- as_tibble(corr1E)
-s11E <-scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_Calories) + theme(plot.title = element_text( size = 10)) +
+s11E <-scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_Calories) + theme(plot.title = element_text( size = 13)) +
   scale_y_continuous("Calories")+scale_x_continuous("Memory") + ggtitle(paste(S1Etitle))
-s12E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_vision) + theme(plot.title = element_text( size = 10)) +
+s12E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_vision) + theme(plot.title = element_text( size = 13)) +
   scale_y_continuous("Vision")+scale_x_continuous("Memory") + ggtitle(paste(S2Etitle))
-s13E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_GDP) + theme(plot.title = element_text( size = 10)) +
+s13E <- scatter(scat2E, scat2E$mratio_memory, scat2E$mratio_GDP) + theme(plot.title = element_text( size = 13)) +
   scale_y_continuous("GDP")+scale_x_continuous("Memory") + ggtitle(paste(S3Etitle))
-s14E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_vision) + theme(plot.title = element_text( size = 10)) +
+s14E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_vision) + theme(plot.title = element_text( size = 13)) +
   scale_y_continuous("Vision")+scale_x_continuous("GDP") + ggtitle(paste(S4Etitle))
-s15E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_Calories) + theme(plot.title = element_text( size = 10)) +
+s15E <- scatter(scat2E, scat2E$mratio_GDP, scat2E$mratio_Calories) + theme(plot.title = element_text( size = 13)) +
   scale_y_continuous("Calories")+ scale_x_continuous("GDP") + ggtitle(paste(S5Etitle))
-s16E <- scatter(scat2E, scat2E$mratio_Calories, scat2E$mratio_vision) + theme(plot.title = element_text( size = 10)) +
+s16E <- scatter(scat2E, scat2E$mratio_Calories, scat2E$mratio_vision) + theme(plot.title = element_text( size = 13)) +
   scale_y_continuous("Vision")+scale_x_continuous("Calories") + ggtitle(paste(S6Etitle))
 
 comPlotE <- ggarrange(s11E, s12E, s13E, s14E, s15E, s16E) 
-CorExcMLE<-annotate_figure(comPlotE, top = text_grob("Maximum likelihood estimation", color = "black", face = "bold", size = 14))   
-
+annotate_figure(comPlotE, top = text_grob("Maximum Likelihood Model", color = "black", face = "bold", size = 18))   
 #figure 3 now without MLE mratio outliers: 
-Figure3E <- ggarrange(CorExcMLE, CorHi, ncol= 1, nrow=2)  
-  annotate_figure(Figure3E, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
+#Figure3E <- ggarrange(CorExcMLE, CorHi, ncol= 1, nrow=2)  
+  #annotate_figure(Figure3E, top = text_grob("Figure 3", color = "black",face = "bold", size = 14))
 
 ggsave(here("figs", "Figure 3 without Outliers.png"), height = 7, width = 12)
 
 ```
 
+The plots for the hierarhical model - sample estimations of rho: + Combine the MLE from above
+```{r}
+#SEE document fit_hierarhical_metamodel
 
+```
 
 
 

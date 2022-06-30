@@ -1,7 +1,7 @@
 ---
 title: "Fit Hierarchical Metacognition Model"
 output: html_notebook
-This script will fit the metacognition data from all four tasks in one group, using the HMetad approach (see Fleming 2017).
+#This script will fit the metacognition data from all four tasks in one group, using the HMetad approach (see Fleming 2017)
 ---
 ```{r}
 
@@ -20,6 +20,7 @@ source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
 source(here("r", "function_rhoPlot.R"))
+source(here("r", "function_ind_hier.R"))
 
 
 # set apa theme for plots
@@ -136,11 +137,14 @@ output <- metad_groupcorr(nR_S1, nR_S2)
 }
 
 
-#For Astrid: 
-
-output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
 
 ```  
+
+For Astrid: 
+```{r}
+output <- readRDS("C:/Users/Astrid/Documents/DomainGen/modelfit.RDS")
+```
+
 
 This next chunk pulls out the data from the model needed to plot HDI intervals, point estimates, and correlations. 
 ```{r}
@@ -174,6 +178,8 @@ traceplot(output)
 mcmc.sample <- ggs(output)
 
 ```
+
+
 
 Next, we plot the samples for point estimates of M-ratio together with the 95% HDI, seperate for each condition.
 
@@ -244,19 +250,21 @@ ggsave(here("figs", "mratio_hdi.png"))
 Here we plot the same, but for the correlation (rho) estimate for each condition
 
 ```{r}
-
+#calculate mean rho for each plot
 mcmc.rho <- mcmc.sample %>% 
   filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
 
 meanRho <- mcmc.rho %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
 
-H1title <- paste("Rho =",round(meanRho$value[1], digits=3))
-H2title <- paste("Rho =",round(meanRho$value[2], digits=3))
-H3title <- paste("Rho =",round(meanRho$value[3], digits=3))
-H4title <- paste("Rho =",round(meanRho$value[4], digits=3))
-H5title <- paste("Rho =",round(meanRho$value[5], digits=3))
-H6title <- paste("Rho =",round(meanRho$value[6], digits=3))
+#MReport the mean rho for each plot
+H1title <- paste("Rho =",round(meanRho$value[1], digits=3)) #Mem-Cal
+H2title <- paste("Rho =",round(meanRho$value[2], digits=3)) #Mem-GDP
+H3title <- paste("Rho =",round(meanRho$value[3], digits=3)) #Mem-Vis
+H4title <- paste("Rho =",round(meanRho$value[4], digits=3)) #GDP-CAL
+H5title <- paste("Rho =",round(meanRho$value[5], digits=3)) #CAl-vis
+H6title <- paste("Rho =",round(meanRho$value[6], digits=3)) #GDP-Vis
 
+#filter to get relevant data for each plot
 Rho1 <- mcmc.sample %>% filter(Parameter == "rho[1]") 
 Rho2 <- mcmc.sample %>% filter(Parameter == "rho[2]") 
 Rho3 <- mcmc.sample %>% filter(Parameter == "rho[3]") 
@@ -264,15 +272,16 @@ Rho4 <- mcmc.sample %>% filter(Parameter == "rho[4]")
 Rho5 <- mcmc.sample %>% filter(Parameter == "rho[5]") 
 Rho6 <- mcmc.sample %>% filter(Parameter == "rho[6]") 
 
-#### NEED TO CHANGE RHO[1] in the FUNCTION!! 
-R1 <- RhoPlot(Rho1, "rho[1]") + labs(title = "Memory and Calories", subtitle= paste(H1title))
-R2 <- RhoPlot(Rho2, "rho[2]") + labs(title = "Memory and GDP", subtitle= paste(H2title))
-R3 <- RhoPlot(Rho3, "rho[3]") + labs(title = "Memory and Vision", subtitle= paste(H3title))
-R4 <- RhoPlot(Rho4, "rho[4]") + labs(title = "GDP and Calories", subtitle= paste(H4title))
-R5 <- RhoPlot(Rho5, "rho[5]") + labs(title = "Calories and Vision", subtitle= paste(H5title))
-R6 <- RhoPlot(Rho6, "rho[6]") + labs(title = "GDP and Vision", subtitle= paste(H6title))
+## MAke plots
+R1 <- RhoPlot(Rho1, "rho[1]", HDI, stat) + labs(title = "Memory and Calories", subtitle= paste(H1title))
+R2 <- RhoPlot(Rho2, "rho[2]", HDI, stat) + labs(title = "Memory and GDP", subtitle= paste(H2title))
+R3 <- RhoPlot(Rho3, "rho[3]", HDI, stat) + labs(title = "Memory and Vision", subtitle= paste(H3title))
+R4 <- RhoPlot(Rho4, "rho[4]", HDI, stat) + labs(title = "GDP and Calories", subtitle= paste(H4title))
+R5 <- RhoPlot(Rho5, "rho[5]", HDI, stat) + labs(title = "Calories and Vision", subtitle= paste(H5title))
+R6 <- RhoPlot(Rho6, "rho[6]", HDI, stat) + labs(title = "GDP and Vision", subtitle= paste(H6title))
 
-#Bayesian Hierarhical fit: 
+
+#Bayesian Hierarhical fit: Comebine plots
 RhoPlot <- ggarrange(R1, R3, R2, R6, R4, R5)
 annotate_figure(RhoPlot, top = text_grob("Hierarhical Bayesian estimation", color = "black", face = "bold", size = 14)) 
 
@@ -282,6 +291,16 @@ ggsave(here("figs", "mrho_grid.png"), height = 7, width = 12)
 Now we will extract the individual participant level Mratio estimates and plot those to visualize the hierarchical correlation model. 
 
 ```{r}
+
+#Mean rho: Same as above
+H1title <- paste("Rho =",round(meanRho$value[1], digits=3)) #Mem-Cal
+H2title <- paste("Rho =",round(meanRho$value[2], digits=3)) #Mem-GDP
+H3title <- paste("Rho =",round(meanRho$value[3], digits=3)) #Mem-Vis
+H4title <- paste("Rho =",round(meanRho$value[4], digits=3)) #GDP-CAL
+H5title <- paste("Rho =",round(meanRho$value[5], digits=3)) #CAl-vis
+H6title <- paste("Rho =",round(meanRho$value[6], digits=3)) #GDP-Vis
+
+
 # Create individual Mratio data frame
 Mratio_indiv <- stat %>% 
   filter(grepl("^M", name)) %>% 
@@ -294,79 +313,42 @@ Mratio_indiv <- stat %>%
   dcast(pp ~ task, value.var = "mean")
 
 # Create plot
-Cor1 <- Mratio_indiv %>% 
-  ggplot(aes(x = Mem, y = Cal)) +
-  geom_point(shape = 1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
-  apatheme +
-  ggtitle("Mem-Cal")+
- #ylim(c(0.2, 2)) +
- # xlim(c(0.2, 2)) +
-  ylab(expression(paste(mu, " Mratio"))) +
-  xlab(expression(paste(mu, " Mratio")))
 
-Cor2 <- Mratio_indiv %>% 
-  ggplot(aes(x = Mem, y = GDP)) +
-  geom_point(shape = 1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
-  apatheme +
-  ggtitle("Mem-GDP")+
- # ylim(c(0.2, 2)) +
- # xlim(c(0.2, 2)) +
-  ylab(expression(paste(mu, " Mratio"))) +
-  xlab(expression(paste(mu, " Mratio")))
-
-Cor3 <- Mratio_indiv %>% 
-  ggplot(aes(x = Mem, y = Vis)) +
-  geom_point(shape = 1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
-  apatheme +
- # ylim(c(0.2, 2)) +
- # xlim(c(0.2, 2)) +
-  ggtitle("Mem-Vision")+
-  ylab(expression(paste(mu, " Mratio"))) +
-  xlab(expression(paste(mu, " Mratio")))
-
-Cor4 <- Mratio_indiv %>% 
-  ggplot(aes(x = Cal, y = GDP)) +
-  geom_point(shape = 1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
-  apatheme +
-  ggtitle("Cal-GDP")+
-#  ylim(c(0.2, 2)) +
- # xlim(c(0.2, 2)) +
-  ylab(expression(paste(mu, " Mratio"))) +
-  xlab(expression(paste(mu, " Mratio")))
-
-Cor5 <- Mratio_indiv %>% 
-  ggplot(aes(x = Cal, y = Vis)) +
-  geom_point(shape = 1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
-  apatheme +
-  ggtitle("Cal-Vision")+
- # ylim(c(0.2, 2)) +
- # xlim(c(0.2, 2)) +
-  ylab(expression(paste(mu, " Mratio"))) +
-  xlab(expression(paste(mu, " Mratio")))
+Cor1 <- ind_hier(Mratio_indiv, Mratio_indiv$Mem,Mratio_indiv$Cal) +
+  scale_y_continuous("Calories") + scale_x_continuous("Memory") +
+  ggtitle(H1title)+ theme(plot.title = element_text( size = 13))
 
 
-Cor6 <- Mratio_indiv %>% 
-  ggplot(aes(x = GDP, y = Vis)) +
-  geom_point(shape = 1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black", size = 1) +
-  apatheme +
-  ggtitle("GDP-Vision")+
-#  ylim(c(0.2, 2)) +
-#  xlim(c(0.2, 2)) +
-  ylab(expression(paste(mu, " Mratio"))) +
-  xlab(expression(paste(mu, " Mratio")))
+Cor2 <- ind_hier(Mratio_indiv, Mratio_indiv$Mem, Mratio_indiv$GDP) +
+  ggtitle(H2title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("GDP") + scale_x_continuous("Memory")
+
+Cor3 <- ind_hier(Mratio_indiv, Mratio_indiv$Mem, Mratio_indiv$Vis)+
+  ggtitle(H3title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("Vis") + scale_x_continuous("Memory") 
+
+Cor4 <- ind_hier(Mratio_indiv, Mratio_indiv$Cal, Mratio_indiv$GDP)+
+  ggtitle(H4title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("GDP") + scale_x_continuous("Calories") 
+
+Cor5 <- ind_hier(Mratio_indiv, Mratio_indiv$Cal, Mratio_indiv$Vis)+
+  ggtitle(H5title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("Vision") + scale_x_continuous("Calories") 
+
+Cor6 <- ind_hier(Mratio_indiv, Mratio_indiv$GDP, Mratio_indiv$Vis)+
+  ggtitle(H6title) + theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("Vision") + scale_x_continuous("GDP") 
+    
+IndPlotHier <- ggarrange(Cor1, Cor2, Cor3, Cor4, Cor5, Cor6) 
+annotate_figure(IndPlotHier, top = text_grob("Hierarhical Bayesian Model", color = "black", 
+                                         face = "bold", size = 18))   
+
+ggsave(here("figs", "Hier_Rho_scatter.png"), height = 7, width = 12)
 
 
-plot_grid(Cor1, Cor2, Cor3, NULL, Cor4, Cor5, NULL, NULL, Cor6, 
-          labels = c("A", "B", "C", "", "D", "E", "", "", "F"), nrow = 3, ncol = 3)
+#plot_grid(Cor1, Cor2, Cor3, Cor4, Cor5, Cor6, 
+          #labels = c("A", "B", "C", "D", "E", "F"), nrow = 3, ncol = 3)
 
-
-ggsave(here("figs", "mrho_scatter_grid.png"), height = 7, width = 12)
 ```
 
 ```{r}

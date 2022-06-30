@@ -33,6 +33,7 @@ source(here("r", "function_apa.R"))
 source(here("r", "fitMLEEven.R"))
 source(here("r", "fitMLEOdd.R"))
 source(here("r", "function_rhoPlotSplit.R"))
+source(here("r", "function_ind_hier.R"))
 
 # set apa theme for plots
 apatheme=theme_bw()+ #theme
@@ -169,10 +170,21 @@ saveRDS(outputV, file = here("data_summary","Split_Vis.rds"))
 
 
 ```
+For Astrid:
+```{r}
+
+outputM <- readRDS("C:/Users/Astrid/Documents/DomainGen/Split_Mem.rds")
+outputC <- readRDS("C:/Users/Astrid/Documents/DomainGen/Split_Cal.rds")
+outputG <- readRDS("C:/Users/Astrid/Documents/DomainGen/Split_GDP.rds")  
+outputV <- readRDS("C:/Users/Astrid/Documents/DomainGen/Split_Vis.rds")   
+  
+```
+
+
+
 
 Pull the relevant data
 ```{r}
-
 
 # Convergence diagnostic
 ValueM <- gelman.diag(outputM, confidence = 0.95)
@@ -251,10 +263,10 @@ meanRhoC <- mcmc.sampleC %>% summarise(value= mean(value, na.rm=TRUE))
 meanRhoG <- mcmc.sampleG %>% summarise(value= mean(value, na.rm=TRUE)) 
 meanRhoV <- mcmc.sampleV %>% summarise(value= mean(value, na.rm=TRUE)) 
 
-H1title <- paste("Rho =",round(meanRhoM$value, digits=3))
-H2title <- paste("Rho =",round(meanRhoC$value, digits=3))
-H3title <- paste("Rho =",round(meanRhoG$value, digits=3))
-H4title <- paste("Rho =",round(meanRhoV$value, digits=3))
+H1title <- paste("Rho =",round(meanRhoM$value, digits=3)) #Mem
+H2title <- paste("Rho =",round(meanRhoC$value, digits=3)) # CAl
+H3title <- paste("Rho =",round(meanRhoG$value, digits=3)) #GDP
+H4title <- paste("Rho =",round(meanRhoV$value, digits=3)) #Vis
 
 Rho1 <- mcmc.sampleM %>% filter(Parameter == "rho") 
 Rho2 <- mcmc.sampleC %>% filter(Parameter == "rho") 
@@ -274,6 +286,79 @@ ggsave(here("figs", "mrho_Split.png"), height = 7, width = 12)
   
 
 ```
+Scatter plot graphs: 
+```{r}
+
+#Mean rho: Same as above
+H1title <- paste("Rho =",round(meanRhoM$value, digits=3)) #Mem
+H2title <- paste("Rho =",round(meanRhoC$value, digits=3)) # CAl
+H3title <- paste("Rho =",round(meanRhoG$value, digits=3)) #GDP
+H4title <- paste("Rho =",round(meanRhoV$value, digits=3)) #Vis
+
+
+# Create individual Mratio data frame
+Mratio_indivC <- statC %>% 
+  filter(grepl("^M", name)) %>% 
+  mutate(task = ifelse(grepl("1]", name), "Even","Odd"),
+         pp = name %>%
+           str_extract(regex("\\d+(?=,)")) %>% 
+           as.integer()) %>% 
+  dcast(pp ~ task, value.var = "mean")
+
+Mratio_indivG <- statG %>% 
+  filter(grepl("^M", name)) %>% 
+  mutate(task = ifelse(grepl("1]", name), "Even","Odd"),
+         pp = name %>%
+           str_extract(regex("\\d+(?=,)")) %>% 
+           as.integer()) %>% 
+  dcast(pp ~ task, value.var = "mean")
+
+Mratio_indivM <- statV %>% 
+  filter(grepl("^M", name)) %>% 
+  mutate(task = ifelse(grepl("1]", name), "Even","Odd"),
+         pp = name %>%
+           str_extract(regex("\\d+(?=,)")) %>% 
+           as.integer()) %>% 
+  dcast(pp ~ task, value.var = "mean")
+
+Mratio_indivV <- statV %>% 
+  filter(grepl("^M", name)) %>% 
+  mutate(task = ifelse(grepl("1]", name), "Even","Odd"),
+         pp = name %>%
+           str_extract(regex("\\d+(?=,)")) %>% 
+           as.integer()) %>% 
+  dcast(pp ~ task, value.var = "mean")
+
+# Create plot
+
+Cor1 <- ind_hier(Mratio_indivC, Mratio_indivC$Even,Mratio_indivC$Odd) +
+  scale_y_continuous("Odd") + scale_x_continuous("Even") +
+  ggtitle(H1title)+ theme(plot.title = element_text( size = 13))
+
+
+Cor2 <- ind_hier(Mratio_indivG, Mratio_indivG$Even,Mratio_indivG$Odd) +
+  ggtitle(H2title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("Odd") + scale_x_continuous("Even")
+
+Cor3 <- ind_hier(Mratio_indivM, Mratio_indivM$Even,Mratio_indivM$Odd)+
+  ggtitle(H3title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("Odd") + scale_x_continuous("Even") 
+
+Cor4 <- ind_hier(Mratio_indivV, Mratio_indivV$Even,Mratio_indivV$Odd)+
+  ggtitle(H4title)+ theme(plot.title = element_text( size = 13)) +
+  scale_y_continuous("Odd") + scale_x_continuous("Even") 
+
+    
+SplitPlotHier <- ggarrange(Cor1, Cor2, Cor3, Cor4) 
+annotate_figure(SplitPlotHier , top = text_grob("Split Half Trials (Hmeta-d')", color = "black", 
+                                         face = "bold", size = 18))   
+
+ggsave(here("figs", "Hier_Split_scatter.png"), height = 7, width = 12)
+
+```
+
+
+
 Table of correlations: 
 ```{r}
 
