@@ -3,8 +3,9 @@ plotBoot <- function (data) {
   df <- as_tibble(with(density(data$bootsamples),data.frame(x,y)))
   ci <- data$conf.int
   
+  
   ggplot(df, aes(x=x, y=y)) + theme_bw() +
-    geom_vline(xintercept = res1$estimate, colour = "grey", size = 1) +
+    geom_vline(xintercept = data$estimate, colour = "grey", size = 1) +
     geom_line(size = 2) +
     scale_x_continuous(breaks = seq(-1, 1, 0.1)) +
     theme(axis.text = element_text(size = 10),
