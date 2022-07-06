@@ -324,9 +324,21 @@ BootPlot3 <- ggarrange(b21, b22, b23, b24, b25, b26)
 annotate_figure(BootPlot3, top = text_grob("Bootstrap samples of Meta-bias correlations", color = "black", 
                                          face = "bold", size = 14))  
 
-BootPlot3
-
 ggsave(here("figs", "bootplot3.png"), height = 8, width = 8, dpi = 300)
+
+
+b31 <- plotBoot(res31) + ggtitle("Memory and Calories")
+b32 <- plotBoot(res32) + ggtitle("Memory and Vision")
+b33 <- plotBoot(res33) + ggtitle("Memory and GDP")
+b34 <- plotBoot(res34) + ggtitle("GDP and Vision")
+b35 <- plotBoot(res35) + ggtitle("GDP and Calories")
+b36 <- plotBoot(res36) + ggtitle("Vision and Calories")
+BootPlot3E <- ggarrange(b31, b32, b33, b34, b35, b36)
+annotate_figure(BootPlot3E, top = text_grob("Bootstrap samples of Cognitive Sensitivity correlations", color = "black", 
+                                         face = "bold", size = 14)) 
+
+ggsave(here("figs", "bootplot4.png"), height = 8, width = 8, dpi = 300)
+
 ```
 
 Now we calculate and plot the Bayes factors for the correlations: 
@@ -375,6 +387,21 @@ ggsave(here("figs","bayes", "avgconf_gdp_cal.png"))
 bf26 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
 ggsave(here("figs","bayes", "avgconf_cal_vis.png"))
 
+#Cognitive Sensitivity
+bf31 <- bayes(corr3$da_memory, corr3$da_Calories) 
+ggsave(here("figs","bayes", "cogsen_Mem_calE.png"))
+bf32 <- bayes(corr3$da_memory, corr3$da_vision)
+ggsave(here("figs","bayes", "cogsen_Mem_visE.png"))
+bf33 <- bayes(corr3$da_memory, corr3$da_GDP) 
+ggsave(here("figs","bayes", "cogsen_Mem_gdpE.png"))
+bf34 <- bayes(corr3$da_GDP, corr3$da_vision)
+ggsave(here("figs","bayes", "cogsen_gdp_visE.png"))
+bf35 <- bayes(corr3$da_GDP, corr3$da_Calories) 
+ggsave(here("figs","bayes", "cogsen_gdp_calE.png"))
+bf36 <- bayes(corr3$da_Calories, corr3$da_vision) 
+ggsave(here("figs","bayes", "cogsen_cal_visE.png"))
+
+
 #Make the APA tables: 
 BayesSen <- data.frame(Pair=character(),
   `Bayes Factor`=double())
@@ -382,10 +409,13 @@ BayesEff <- data.frame( Pair=character(),
   `Bayes Factor`=double())
 BayesBia <- data.frame( Pair=character(),
   `Bayes Factor`=double())
+BayesCog <- data.frame( Pair=character(),
+  `Bayes Factor`=double())
 
 BayesSen <- BayesSen %>% rename( "Bayes Factor"= Bayes.Factor)
 BayesEff <- BayesEff %>% rename( "Bayes Factor"= Bayes.Factor)
 BayesBia <- BayesBia %>% rename( "Bayes Factor"= Bayes.Factor)
+BayesCog <- BayesCog %>% rename( "Bayes Factor"= Bayes.Factor)
 
 BayesSen[1,] <-list(paste0('Memory & Calories'), paste0(round(bf1@bayesFactor$bf,3))) 
 BayesSen[2,] <-list(paste0('Memory & Vision'), paste0(round(bf2@bayesFactor$bf,3))) 
@@ -404,6 +434,12 @@ BayesBia[2,] <-list(paste0('Memory & Vision'), paste0(round(bf22@bayesFactor$bf,
 BayesBia[3,] <-list(paste0('Memory & GDP'), paste0(round(bf23@bayesFactor$bf,3))) 
 BayesBia[4,] <-list(paste0('GDP & Calories'), paste0(round(bf24@bayesFactor$bf,3))) 
 BayesBia[5,] <-list(paste0('Vision & Calories'), paste0(round(bf25@bayesFactor$bf,3))) 
+
+BayesCog[1,] <-list(paste0('Memory & Calories'), paste0(round(bf31@bayesFactor$bf,3))) 
+BayesCog[2,] <-list(paste0('Memory & Vision'), paste0(round(bf32@bayesFactor$bf,3))) 
+BayesCog[3,] <-list(paste0('Memory & GDP'), paste0(round(bf33@bayesFactor$bf,3))) 
+BayesCog[4,] <-list(paste0('GDP & Calories'), paste0(round(bf34@bayesFactor$bf,3))) 
+BayesCog[5,] <-list(paste0('Vision & Calories'), paste0(round(bf35@bayesFactor$bf,3))) 
 
 ```
 
@@ -567,12 +603,21 @@ b25E <- plotBoot(res2.5E) + ggtitle("GDP and Calories")
 b26E <- plotBoot(res2.6E) + ggtitle("Vision and Calories")
 BootPlot3E <- ggarrange(b21E, b22E, b23E, b24E, b25E, b26E)
 annotate_figure(BootPlot3E, top = text_grob("Bootstrap samples of Meta-bias correlations", color = "black", 
-                                         face = "bold", size = 14))  
-
-
-
+                                         face = "bold", size = 14)) 
 
 ggsave(here("figs", "bootplot3E.png"), height = 8, width = 8, dpi = 300)
+
+b31E <- plotBoot(res31E) + ggtitle("Memory and Calories")
+b32E <- plotBoot(res32E) + ggtitle("Memory and Vision")
+b33E <- plotBoot(res33E) + ggtitle("Memory and GDP")
+b34E <- plotBoot(res34E) + ggtitle("GDP and Vision")
+b35E <- plotBoot(res35E) + ggtitle("GDP and Calories")
+b36E <- plotBoot(res36E) + ggtitle("Vision and Calories")
+BootPlot3E <- ggarrange(b31E, b32E, b33E, b34E, b35E, b36E)
+annotate_figure(BootPlot3E, top = text_grob("Bootstrap samples of Cognitive Sensitivity correlations", color = "black", 
+                                         face = "bold", size = 14)) 
+
+ggsave(here("figs", "bootplot4E.png"), height = 8, width = 8, dpi = 300)
 ```
 
 
@@ -622,6 +667,20 @@ ggsave(here("figs","bayes", "avgconf_gdp_calE.png"))
 bf26E <- bayes(corr2E$avg_conf_Calories, corr2E$avg_conf_vision) 
 ggsave(here("figs","bayes", "avgconf_cal_visE.png"))
 
+#Cognitive Sensitivity
+bf31E <- bayes(corr3E$da_memory, corr3E$da_Calories) 
+ggsave(here("figs","bayes", "cogsen_Mem_calE.png"))
+bf32E <- bayes(corr3E$da_memory, corr3E$da_vision)
+ggsave(here("figs","bayes", "cogsen_Mem_visE.png"))
+bf33E <- bayes(corr3E$da_memory, corr3E$da_GDP) 
+ggsave(here("figs","bayes", "cogsen_Mem_gdpE.png"))
+bf34E <- bayes(corr3E$da_GDP, corr3E$da_vision)
+ggsave(here("figs","bayes", "cogsen_gdp_visE.png"))
+bf35E <- bayes(corr3E$da_GDP, corr3E$da_Calories) 
+ggsave(here("figs","bayes", "cogsen_gdp_calE.png"))
+bf36E <- bayes(corr3E$da_Calories, corr3E$da_vision) 
+ggsave(here("figs","bayes", "cogsen_cal_visE.png"))
+
 #Make the APA tables: 
 BayesSenE <- data.frame(Pair=character(),
   `Bayes Factor`=double())
@@ -629,10 +688,13 @@ BayesEffE <- data.frame( Pair=character(),
   `Bayes Factor`=double())
 BayesBiaE <- data.frame( Pair=character(),
   `Bayes Factor`=double())
+BayesCogE <- data.frame( Pair=character(),
+  `Bayes Factor`=double())
 
 BayesSenE <- BayesSenE %>% rename( "Bayes Factor"= Bayes.Factor)
 BayesEffE <- BayesEffE %>% rename( "Bayes Factor"= Bayes.Factor)
 BayesBiaE <- BayesBiaE %>% rename( "Bayes Factor"= Bayes.Factor)
+BayesCogE <- BayesCogE %>% rename( "Bayes Factor"= Bayes.Factor)
 
 BayesSenE[1,] <-list(paste0('Memory & Calories'), paste0(round(bf1E@bayesFactor$bf,3))) 
 BayesSenE[2,] <-list(paste0('Memory & Vision'), paste0(round(bf2E@bayesFactor$bf,3))) 
@@ -651,6 +713,12 @@ BayesBiaE[2,] <-list(paste0('Memory & Vision'), paste0(round(bf22E@bayesFactor$b
 BayesBiaE[3,] <-list(paste0('Memory & GDP'), paste0(round(bf23E@bayesFactor$bf,3))) 
 BayesBiaE[4,] <-list(paste0('GDP & Calories'), paste0(round(bf24E@bayesFactor$bf,3))) 
 BayesBiaE[5,] <-list(paste0('Vision & Calories'), paste0(round(bf25E@bayesFactor$bf,3))) 
+
+BayesCogE[1,] <-list(paste0('Memory & Calories'), paste0(round(bf31E@bayesFactor$bf,3))) 
+BayesCogE[2,] <-list(paste0('Memory & Vision'), paste0(round(bf32E@bayesFactor$bf,3))) 
+BayesCogE[3,] <-list(paste0('Memory & GDP'), paste0(round(bf33E@bayesFactor$bf,3))) 
+BayesCogE[4,] <-list(paste0('GDP & Calories'), paste0(round(bf34E@bayesFactor$bf,3))) 
+BayesCogE[5,] <-list(paste0('Vision & Calories'), paste0(round(bf35E@bayesFactor$bf,3))) 
 
 ```
 
@@ -1319,14 +1387,17 @@ Bayes Factor:
 ```{r}
 
 #Change labels
-BayesSen <- BayesSenE %>% mutate(`meta-d'` = `Bayes Factor`) %>% select(-`Bayes Factor`)
-BayesEff <- BayesEffE %>% mutate(`meta-d/d''` = `Bayes Factor`) %>% select(-`Bayes Factor`)
-BayesBia <- BayesBiaE %>% mutate(`Avg. Conf` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+BayesSen1 <- BayesSenE %>% mutate(`meta-d'` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+BayesEff1 <- BayesEffE %>% mutate(`meta-d/d''` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+BayesBia1 <- BayesBiaE %>% mutate(`Avg. Conf` = `Bayes Factor`) %>% select(-`Bayes Factor`)
+BayesCog1 <- BayesCogE %>% mutate(`d'` = `Bayes Factor`) %>% select(-`Bayes Factor`)
 
 #Join the dataframes:
-Bayes1 <- left_join(BayesSen, BayesEff, 
+Bayes1 <- left_join(BayesSen1, BayesEff1, 
                      by=c("Pair"="Pair"))
-Bayes <- left_join(Bayes1 , BayesBia, 
+Bayes2 <- left_join(BayesCog1, BayesBia1, 
+                     by=c("Pair"="Pair"))
+Bayes <- left_join(Bayes2, Bayes1, 
                      by=c("Pair"="Pair"))
 #write csv
 write.csv(Bayes ,file= here("tables", 'MLECorrBayes_Excl.csv'))
