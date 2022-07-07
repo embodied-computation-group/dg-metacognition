@@ -137,18 +137,34 @@ head(metadata_exc)
 
 
 ```
+Exclude based on Mratio
+```{r}
+
+#exclude those where mratio could not be estimated (MLE):  
+metadata_excMratio <- metadata_exc%>%filter(mratio!="NaN")
+
+#mratio
+metadata_excMratio <- metadata_excMratio%>%
+  group_by(modality) %>%
+  mutate(mratio = remove_outliers_robust(mratio))
+
+metadata_excMratio <- na.omit(metadata_excMratio)
+
+
+```
+
 
 
 Exclude participants who does not have all data points. 
 ```{r}
 # identify whether participants have data points in all domains, by measuring length:
-rownum <- metadata_exc %>% group_by (subject) %>% summarise(length(modality))
+rownum <- metadata_excMratio %>% group_by (subject) %>% summarise(length(modality))
 
 #Identify those with less than four 
 rowExc <- subset(rownum, rownum$`length(modality)`<4)
 rowexcID <-unique(rowExc$subject)
 #Exclude IDs from that vector in original dataframe:
-metadata_exc <- subset(metadata_exc, !is.element(metadata_exc$subject, rowexcID))
+metadata_exc <- subset(metadata_excMratio, !is.element(metadata_excMratio$subject, rowexcID))
 
 
 ```

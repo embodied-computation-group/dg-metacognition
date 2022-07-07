@@ -1121,10 +1121,10 @@ Cog12 <- Cog12 %>%
 #Add labels: 
 Cog12[1,1] <- "Modality"
 Cog12[1,2] <- "n"
-Cog12[1,3] <- "d' (Bayes)"
-Cog12[1,4] <- "d' (Bayes)"
-Cog12[1,5] <- "Criterion (Bayes)"
-Cog12[1,6] <- "Criterion (Bayes)"
+Cog12[1,3] <- "d' (HMeta-d')"
+Cog12[1,4] <- "d' (HMeta-d')"
+Cog12[1,5] <- "Criterion (HMeta-d')"
+Cog12[1,6] <- "Criterion (HMeta-d')"
 Cog12[1,7] <- "n"
 Cog12[1,8] <- "d' (MLE)"
 Cog12[1,9] <- "d' (MLE)"
@@ -1198,12 +1198,12 @@ CorT[,1] <-metadata_cog2$Modality
 CorT[,2] <-metadata_cog2$n1
 CorT[,3] <-metadata_cog2$dprime
 CorT[,4] <-metadata_cog2$dprime_sd
-CorT[2,5] <- table2[5,2] # Cal and GDP
-CorT[3,5] <- table2[1,2] # Cal and Mem
-CorT[4,5] <- table2[6,2] # Cal and Vis
-CorT[3,6] <- table2[3,2] # GDP and Mem
-CorT[4,6] <- table2[4,2] # GDP and Vis
-CorT[4,7] <- table2[2,2] # Mem and Vis
+CorT[2,5] <- table2[1,2] # Mem & Cal
+CorT[3,5] <- table2[3,2] # Mem & GDP
+CorT[4,5] <- table2[2,2] # Mem & Vis
+CorT[3,6] <- table2[5,2] # Cal & GDP
+CorT[4,6] <- table2[6,2] # Cal & Vis
+CorT[4,7] <- table2[4,2] # GDP & Vis
 
 # None of them are significant, as can be seen in the dataframe 'table2' so I am not adding any *. 
 
@@ -1211,8 +1211,8 @@ CorT[4,7] <- table2[2,2] # Mem and Vis
 CorT <- CorT %>% mutate_if(is.numeric, round, 3)
 
 #Rename and select Columns: 
-CorT <- CorT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
-  select(Modality, n, M, SD, Calories, GDP, Memory)
+CorT <- CorT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Memory = X5, Calories = X6, GDP =X7) %>%
+  select(Modality, n, M, SD, Memory, Calories, GDP)
 
 #Save as csv
 write.csv(CorT ,file= here("tables", 'CogCor_MLE.csv'))
@@ -1249,18 +1249,25 @@ MLEMT [,1] <-MetaSum$Modality
 MLEMT [,2] <-MetaSum$n1
 MLEMT [,3] <-paste0(round(MetaSum$mratio1,2))
 MLEMT [,4] <-paste0(round(MetaSum$mratio_sd,2))
-MLEMT [2,5] <- paste0(round(table3[5,2],3)) # Cal and GDP
-MLEMT [3,5] <- paste0(round(table3[1,2],3), "*") # Cal and Mem
-MLEMT [4,5] <- paste0(round(table3[6,2],3)) # Cal and Vis
-MLEMT [3,6] <- paste0(round(table3[3,2],3), "*") # GDP and Mem
-MLEMT [4,6] <- paste0(round(table3[4,2],3), "*") # GDP and Vis
-MLEMT [4,7] <- paste0(round(table3[2,2],3), "*") # Mem and Vis
+MLEMT [2,5] <- paste0(round(table3[1,2],3), "*") # Mem & Cal
+MLEMT [3,5] <- paste0(round(table3[3,2],3), "*")# Mem & GDP
+MLEMT [4,5] <- paste0(round(table3[2,2],3), "*") # Mem & Vis
+MLEMT [3,6] <- paste0(round(table3[5,2],3))# Cal & GDP
+MLEMT [4,6] <- paste0(round(table3[6,2],3), "*")# Cal & Vis
+MLEMT [4,7] <- paste0(round(table3[4,2],3))# GDP & Vis
+
+CorT[2,5] <- table2[1,2] # Mem & Cal
+CorT[3,5] <- table2[3,2] # Mem & GDP
+CorT[4,5] <- table2[2,2] # Mem & Vis
+CorT[3,6] <- table2[5,2] # Cal & GDP
+CorT[4,6] <- table2[6,2] # Cal & Vis
+CorT[4,7] <- table2[4,2] # GDP & Vis
 
 #  * : under 0.05 - can be seen in dataframe table3. 
 
 #Rename and select Columns: 
-MLEMT  <- MLEMT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
-  select(Modality, n, M, SD, Calories, GDP, Memory)
+MLEMT  <- MLEMT %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Memory = X5, Calories = X6, GDP =X7) %>%
+  select(Modality, n, M, SD, Memory, Calories, GDP)
 
 
 #Write csv
@@ -1299,18 +1306,17 @@ MLEBI [,1] <-MetaSum$Modality
 MLEBI [,2] <-MetaSum$n1
 MLEBI [,3] <-paste0(round(MetaSum$avg_conf1,2))
 MLEBI [,4] <-paste0(round(MetaSum$avg_conf_sd,2))
-MLEBI [2,5] <- paste0(round(table3a[5,2],3), "***") # Cal and GDP
-MLEBI [3,5] <- paste0(round(table3a[1,2],3), "***") # Cal and Mem
-MLEBI [4,5] <- paste0(round(table3a[6,2],3), "***") # Cal and Vis
-MLEBI [3,6] <- paste0(round(table3a[3,2],3), "***") # GDP and Mem
-MLEBI [4,6] <- paste0(round(table3a[4,2],3), "***") # GDP and Vis
-MLEBI [4,7] <- paste0(round(table3a[2,2],3), "***") # Mem and Vis
-
+MLEBI [2,5] <- paste0(round(table3a[1,2],3), "***")# Mem & Cal
+MLEBI [3,5] <- paste0(round(table3a[3,2],3), "***")# Mem & GDP
+MLEBI [4,5] <- paste0(round(table3a[2,2],3), "***")# Mem & Vis
+MLEBI [3,6] <- paste0(round(table3a[5,2],3), "***")# Cal & GDP
+MLEBI [4,6] <- paste0(round(table3a[6,2],3), "***")# Cal & Vis
+MLEBI [4,7] <- paste0(round(table3a[4,2],3), "***")# GDP & Vis
 #  * : under 0.05 - can be seen in dataframe table3. 
 
 #Rename and select Columns: 
-MLEBI  <- MLEBI %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
-  select(Modality, n, M, SD, Calories, GDP, Memory)
+MLEBI  <- MLEBI %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Memory = X5, Calories = X6, GDP =X7) %>%
+  select(Modality, n, M, SD, Memory, Calories, GDP)
 
 
 #Write csv
@@ -1348,18 +1354,17 @@ MLESE [,1] <-MetaSum$Modality
 MLESE [,2] <-MetaSum$n1
 MLESE [,3] <-paste0(round(MetaSum$metad,2))
 MLESE [,4] <-paste0(round(MetaSum$metad_sd,2))
-MLESE [2,5] <- paste0(round(table3b[5,2],3)) # Cal and GDP
-MLESE [3,5] <- paste0(round(table3b[1,2],3), "*") # Cal and Mem
-MLESE [4,5] <- paste0(round(table3b[6,2],3), "*") # Cal and Vis
-MLESE [3,6] <- paste0(round(table3b[3,2],3)) # GDP and Mem
-MLESE [4,6] <- paste0(round(table3b[4,2],3)) # GDP and Vis
-MLESE [4,7] <- paste0(round(table3b[2,2],3), "*") # Mem and Vis
-
-#  * : under 0.05 - can be seen in dataframe table3. 
+MLESE [2,5] <- paste0(round(table3b[1,2],3), "*") # Mem & Cal
+MLESE [3,5] <- paste0(round(table3b[3,2],3), "*")# Mem & GDP
+MLESE [4,5] <- paste0(round(table3b[2,2],3))# Mem & Vis
+MLESE [3,6] <- paste0(round(table3b[5,2],3)) # Cal & GDP
+MLESE [4,6] <- paste0(round(table3b[6,2],3), "*") # Cal & Vis
+MLESE [4,7] <- paste0(round(table3b[4,2],3))# GDP & Vis
+#  * : under 0.05 - can be seen in dataframe tabl
 
 #Rename and select Columns: 
-MLESE  <- MLESE %>% mutate(Modality =X1, n=X2, M=X3, SD=X4, Calories = X5, GDP = X6, Memory =X7) %>%
-  select(Modality, n, M, SD, Calories, GDP, Memory)
+MLESE  <- MLESE %>%  mutate(Modality =X1, n=X2, M=X3, SD=X4, Memory = X5, Calories = X6, GDP =X7) %>%
+  select(Modality, n, M, SD, Memory, Calories, GDP)
 
 
 #Write csv
