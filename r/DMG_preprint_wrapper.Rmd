@@ -6,7 +6,7 @@ rm(list = ls())
 
 # check for pacman package and install if not found
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt, rstatix, scales)
+pacman::p_load(afex, readr, dplyr, tidyr, ggplot2, cowplot, devtools, here, tidyverse, magrittr, reshape2, rjags, coda, lattice, ggmcmc, foreach, doParallel, ggpubr, ggpol, patchwork, ggcorrplot, ggstatsplot, GGally, BayesFactor, gridExtra, viridis, gghalves, gt, rstatix, scales, apaTables, ggside, ggExtra)
 
 # load the metaSDT package from github
 if (!require("metaSDT")) devtools::install_github("craddm/metaSDT")
@@ -44,17 +44,7 @@ colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
 
 Load the data. 
 ```{r}
-# read in the data
 
-metacognition_trial_data <- read_csv(here("data_summary", "metacognition_TrialData_master.csv"), 
-    col_types = cols(confidence = col_double(), 
-        rt_conf = col_double()))
-
-# set modality as factor
-metacognition_trial_data$modality <- as.factor(metacognition_trial_data$modality )
-
-# remove any rows containing NaNs (i.e., missing data)
-metacognition_trial_data <- na.omit(metacognition_trial_data)
 
 head(metacognition_trial_data)
 
@@ -65,7 +55,7 @@ Trial-level exclusion (following prereg)
 
 metadata <- metacognition_trial_data %>%
   group_by(subject, modality) %>%
-  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule - SEE PRE REG
+  mutate(rt = remove_outliers_robust(rt)) # remove RT outliers using MAD Rule 
 
 metadata <- na.omit(metadata)
 
@@ -75,7 +65,7 @@ metadata <- metadata%>%filter(rt>=0.05)
 #Exclude those with less than 50% trials (i.e. less than 100 or 50) within condition
 metadata<-metadata%>%mutate(modality=as.factor(modality))
 metadatac<-metadata #create new dataframe
-metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP"))#combine the two trivia tasks in new dataframe
+metadatac$modality <-fct_collapse (metadatac$modality, trivia = c("Calories", "GDP")) #combine the two trivia tasks in new dataframe
 metadatac <- metadatac %>%
   group_by(subject, modality)%>% count(subject) #count number of trials
 excD <- subset(metadatac, metadatac$n<100) 
@@ -381,7 +371,80 @@ ggsave(here("figs", "Figure 2.png"), height = 16.8, width = 16.8, units = "cm", 
   
 ```
 
+```{r}
+corr_data <- fit_data_wide %>% 
+  select(starts_with("da"),starts_with("c"), starts_with("avg"))
 
+#colnames(corr_data) <- c(expression("d"^"Memory"), "dCalories", "dGDP", "dVision",
+ #                        "cMemory", "cCalories", "cGDP", "cVision",
+  #                      "CMemory", "CCalories", "CGDP", "CVision")
+
+pval <- psych::corr.test(corr_data, method = "spearman", adjust = "none")$p
+rval <- psych::corr.test(corr_data, method = "spearman", adjust = "none")$r
+#pval[lower.tri(pval, diag = FALSE)] = 0.01
+cp1 <- ggcorrplot(rval, p.mat = pval, hc.order=FALSE,
+           type='upper', insig='blank', method = "square", sig.level = 0.05, 
+           #outline.col = "gray",
+           lab = FALSE,
+           ggtheme = ggplot2::theme_classic,
+           colors = c("#6D9EC1", "white", "#EA5F21FF")) +
+#  scale_x_discrete(labels = c(expression("d"^"Memory"), expression("d"^"Calories"), expression("d"^"GDP"), expression("d"^"Vision"),
+#                              expression("c"^"Memory"), expression("c"^"Calories"), expression("c"^"GDP"), expression("c"^"Vision"),
+#                             expression("Conf"^"Memory"), expression("Conf"^"Calories"), expression("Conf"^"GDP"), expression("Conf"^"Vision")))+
+#   scale_y_discrete(labels = c(expression("d"^"Memory"), expression("d"^"Calories"), expression("d"^"GDP"), expression("d"^"Vision"),
+#                              expression("c"^"Memory"), expression("c"^"Calories"), expression("c"^"GDP"), expression("c"^"Vision"),
+#                             expression("Conf"^"Memory"), expression("Conf"^"Calories"), expression("Conf"^"GDP"), expression("Conf"^"Vision")))+
+#
+  ggtitle("Spearman Cross Correlations")
+cp1
+
+
+```
+
+Tables - Dprime
+
+```{r}
+
+tabData <- metadata_exc %>% 
+  select(modality, da, subject) %>%
+  pivot_wider(names_from = modality, values_from = da, id_cols = subject) %>% 
+  select(-subject)
+
+colnames(tabData) <- c("Memory", "Calories", "GDP", "Vision")
+
+apa.cor.table(tabData, filename=here("tables","dprimeCoreTable.doc"))
+
+```
+
+
+Tables - Confidence
+
+
+```{r}
+tabData <- metadata_exc %>% 
+  select(modality, avg_conf, subject) %>%
+  pivot_wider(names_from = modality, values_from = avg_conf, id_cols = subject) %>% 
+  select(-subject)
+
+colnames(tabData) <- c("Memory", "Calories", "GDP", "Vision")
+
+apa.cor.table(tabData, filename=here("tables","confCoreTable.doc"))
+```
+
+
+Tables - Mratio - HmetaD
+
+
+```{r}
+tabData <- metadata_exc %>% 
+  select(modality, mratio, subject) %>%
+  pivot_wider(names_from = modality, values_from = mratio, id_cols = subject) %>% 
+  select(-subject)
+
+colnames(tabData) <- c("Memory", "Calories", "GDP", "Vision")
+
+apa.cor.table(tabData, filename=here("tables","MratioMLECorTable.doc"))
+```
 
 
 

@@ -20,7 +20,7 @@ source(here("r", "sdt_functions.R"))
 source(here("r", "Function_metad_groupcorr.R"))
 source(here("r", "BootCorci.R"))
 source(here("r", "function_rhoPlot.R"))
-source(here("r", "function_ind_hier.R"))
+source(here("r", "Function_ind_hier.R"))
 
 
 # set apa theme for plots
