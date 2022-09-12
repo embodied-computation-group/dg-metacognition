@@ -2,8 +2,9 @@
 # get the data
 
 hmm_Mratio <- Mratio_indiv
-mle_Mratio <- fit_data_wideExc %>% 
+mle_Mratio <- mle_wdata_exclude %>% 
   select(subject, starts_with("mratio"))
+
 
 #rename the data
 

@@ -288,8 +288,6 @@ ggsave(here("figs", "mrho_grid.png"), height = 7, width = 12)
 ```
 
 Now we will extract the individual participant level Mratio estimates and plot those to visualize the hierarchical correlation model.
-NOTE: The illustration of this may be a misleading as the points are no longer independent - the 
-correlation therefore looks stronger than it actually is. 
 
 ```{r}
 
@@ -354,9 +352,9 @@ ggsave(here("figs", "Hier_Rho_scatter.png"), height = 7, width = 12)
 ```
 Descriptives: 
 ```{r}
-#Do the same with the hierarhical model:
+#Do the same with the hierarchical model:
 
-#Select Mratio and take the exponential of the value:
+#Select M-ratio and take the exponential of the value:
 meanMratio <- Fit %>% filter(str_detect(name,"mu_logMratio")) %>%
   mutate(Hmratio=exp(mean), 
          lowerHDI=exp(lower),
