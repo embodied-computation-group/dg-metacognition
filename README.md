@@ -7,3 +7,5 @@
 ### Figure 2:
 ![Figure 2: ](figs/Figure2.png)
 
+### Figure 3:
+![Figure 3: ](figs/f3_shrinkage_all_plot.png)
