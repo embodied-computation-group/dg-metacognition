@@ -3,5 +3,4 @@
 .RData
 .Ruserdata
 /osf
-.DS
-_Store
+.DS_Store
