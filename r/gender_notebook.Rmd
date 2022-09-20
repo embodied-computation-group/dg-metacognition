@@ -96,6 +96,7 @@ summary_data <- full_join(summary_data, gender, by = "Sid") %>%
 
 
 ```
+
 ```{r}
 plot_data <- summary_data %>%
   filter(variable == "rt") %>%

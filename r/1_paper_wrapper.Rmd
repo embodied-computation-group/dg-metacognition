@@ -118,6 +118,20 @@ metadata_avg <- mle_metadata_exc %>%
   select(-modality)
 ```
 
+Create Figure 2: summary of basic variables
+
+```{r}
+
+source(here("r", "1_figure2.R"))
+
+figure2
+
+ggsave(here("figs", "Figure2.png"), height = 16.8, width = 16.8, units = "cm", dpi = 300)  
+
+
+```
+
+
 
 Now run the bootstrapped Spearman's correlations, for preregistered hypothesis tests.
 
@@ -235,7 +249,7 @@ source(here("r", "plot_hmm_mratios.R"))
 (memPlot | calPlot) / (gdpPlot | visPlot)
 # Plot posterior distribution for rho value
 
-ggsave(here("figs", "mratio_hdi.png"))
+ggsave(here("figs", "sup_fig1_hmm_mratio.png"))
 ```
 
 Here we plot the same, but for the correlation (rho) estimate for each condition
@@ -276,7 +290,7 @@ R6 <- RhoPlot(Rho6, "rho[6]", HDI, stat) + labs(title = "GDP vs Vision", subtitl
 RhoPlot <- ggarrange(R1, R3, R2, R6, R4, R5)
 annotate_figure(RhoPlot, top = text_grob("Hierarchical Bayesian Estimation", color = "black", face = "bold", size = 14)) 
 
-ggsave(here("figs", "mrho_grid.png"), height = 7, width = 12)
+ggsave(here("figs", "sup_fig2_mrho_grid.png"), height = 7, width = 12)
 ```
 
 ```{r}
