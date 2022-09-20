@@ -2,8 +2,10 @@
 
 
 ### Figure 1:
-![Figure 1: ](figures/boxplot_rest.png)
+![Figure 1: ](figs/fig1_dmg.png)
 
 ### Figure 2:
 ![Figure 2: ](figs/Figure2.png)
 
+### Figure 3:
+![Figure 3: ](figs/f3_shrinkage_all_plot.png)
