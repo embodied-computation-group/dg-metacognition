@@ -10,6 +10,7 @@ Setup
 ```{r}
 # clean slate to be sure
 rm(list = ls())
+if (!require("here")) install.packages("here")
 source(here("r", "setup_depends.R"))
 source(here("r", "bootcormat.R")) 
 
@@ -30,7 +31,6 @@ colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
 ```
 
 Data import
-
 ```{r}
 
 source(here("r", "metacog_data_import.R")) # imports data and runs trial level exclusions from the prereg. 
@@ -63,7 +63,7 @@ source(here("r", "fit_mle_loop.R"))
 head(mle_fit_data)
 ```
 
-Run group level exclusions based on MLE. 
+Run group level exclusions based on ML and create plots: 
 
 ```{r}
 
@@ -76,12 +76,8 @@ p1+p2
 p3+p4
 # mratio plot
 p5+p6
-
 # median contrast
-
 p7+p8
-
-
 
 ```
 
@@ -347,6 +343,8 @@ Now we will combine data from the MLE and HMM fits to create one overall plot (f
 
 ```{r}
 source(here("r", "shrinkplot_Hmm.R"))
+
+#The figure can be found in the folder called 'figs' and is called shrinkage_all_plot. 
 ```
 
 
@@ -456,15 +454,10 @@ HMT [4,6] <- paste0(round(table4[table4[,5] == "GDP and Vision",6],3), " ",
 
 HMT[is.na(HMT)] <- ""
 
-
-
-
   
 ```
 
 ```{r}
-
-
 
 print_table <- nice_table(HMT, 
            title = c("Table X", "Means, 95% High Density Intervals (HDI), and estimated between-task correlations with 95% HDIs"),
@@ -473,5 +466,4 @@ print_table <- nice_table(HMT,
 
 save_as_docx(print_table, path = here("tables", "hmm_mratio_table.docx"))
 ```
-
 

@@ -153,14 +153,10 @@ f2d<-ggplot(mle_metadata_exc, aes(x = modality, y = mratio, fill= modality)) +
         axis.title=element_text(size=10,face="bold")) 
 
 
-
-
 f <- f2c + f2d  +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
   theme(plot.tag = element_text(size = 10))
 
 f
-
-
 
 figure2 <- (f2a + f2b) / (f2c + f2d) +  plot_annotation(tag_levels = 'A',   tag_suffix = ')') & 
   theme(plot.tag = element_text(size = 10))
