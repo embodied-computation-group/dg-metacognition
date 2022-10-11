@@ -23,8 +23,6 @@ apatheme=theme_bw()+ #theme
         text = element_text(size = 15),
         axis.title = element_text(size = 12))
 
-
-
 # spider-man color palette
 
 colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
@@ -63,14 +61,33 @@ head(mle_fit_data)
 ```
 
 Run group level exclusions based on MLE: 
-
 ```{r}
 
 # script to run all group level exclusions
 source(here("r", "mle_fitdata_exclude.R")) 
 
 ```
+1. The ANOVA and t-tests (post-hoc: Holm)
+```{r}
+#Script to run ANOVAs for the MLE
+source(here("r", "Anova_2.R")) 
+
+```
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NEED TO MAKE THE TABLE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+2. The Bootstrap samples from the correlations of the MLE model:
+```{r}
+#?????
+```
 
 
+3. Get the Bayes Factors from the correlations of the MLE model:
+```{r}
+source(here("r", "Function_Bayesfactor.R")) 
+```
+
+
+4. The Split Analysis
 
 

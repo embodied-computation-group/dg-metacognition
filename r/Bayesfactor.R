@@ -1,13 +1,58 @@
-bayes <- function(y, x) {
-  
-  source(here("r", "BootCorci.R"))
-  
-  bf = correlationBF(y = y, x = x)
- 
-  ## Sample from the corresponding posterior distribution
-  samples = correlationBF(y = y, x = x,
-                          posterior = TRUE, iterations = 10000)
-  
-  plot(samples[,"rho"])
-  print(bf)
-}
+source(here("r", "Function_Bayesfactor.R")) 
+
+# Bayes factor is estimated  and plots are saved: 
+# Metacognitive sensitivity 
+bf1<- bayes(corr$mda_memory, corr$mda_Calories)
+ggsave(here("figs","bayes", "mda_Mem_cal.png"))
+bf2 <- bayes(corr$mda_memory, corr$mda_vision)
+ggsave(here("figs","bayes", "mda_Mem_vis.png"))
+bf3 <- bayes(corr$mda_memory, corr$mda_GDP)
+ggsave(here("figs","bayes", "mda_Mem_gdp.png"))
+bf4 <- bayes(corr$mda_GDP, corr$mda_vision)
+ggsave(here("figs","bayes", "mda_gdp_vis.png"))
+bf5 <- bayes(corr$mda_GDP, corr$mda_Calories)
+ggsave(here("figs","bayes", "mda_gdp_cal.png"))
+bf6 <- bayes(corr$mda_Calories, corr$mda_vision)
+ggsave(here("figs","bayes", "mda_cal_vis.png"))
+
+#Metacognitive Efficiency
+bf11 <- bayes(corr1$mratio_memory, corr1$mratio_Calories)
+ggsave(here("figs","bayes", "mratio_Mem_cal.png"))
+bf12 <- bayes(corr1$mratio_memory, corr1$mratio_vision)
+ggsave(here("figs","bayes", "mratio_Mem_vis.png"))
+bf13 <- bayes(corr1$mratio_memory, corr1$mratio_GDP)
+ggsave(here("figs","bayes", "mratio_Mem_gdp.png"))
+bf14 <- bayes(corr1$mratio_GDP, corr1$mratio_vision)
+ggsave(here("figs","bayes", "mratio_gdp_vis.png"))
+bf15 <- bayes(corr1$mratio_GDP, corr1$mratio_Calories)
+ggsave(here("figs","bayes", "mratio_gdp_cal.png"))
+bf16 <- bayes(corr1$mratio_Calories, corr1$mratio_vision)
+ggsave(here("figs","bayes", "mratio_cal_vis.png"))
+
+#Metacognitive bias 
+bf21 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_Calories)
+ggsave(here("figs","bayes", "avgconf_Mem_cal.png"))
+bf22 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_vision)
+ggsave(here("figs","bayes", "avgconf_Mem_vis.png"))
+bf23 <- bayes(corr2$avg_conf_memory, corr2$avg_conf_GDP)
+ggsave(here("figs","bayes", "avgconf_Mem_gdp.png"))
+bf24 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_vision)
+ggsave(here("figs","bayes", "avgconf_gdp_vis.png"))
+bf25 <- bayes(corr2$avg_conf_GDP, corr2$avg_conf_Calories)
+ggsave(here("figs","bayes", "avgconf_gdp_cal.png"))
+bf26 <- bayes(corr2$avg_conf_Calories, corr2$avg_conf_vision)
+ggsave(here("figs","bayes", "avgconf_cal_vis.png"))
+
+#Cognitive Sensitivity
+bf31 <- bayes(corr3$da_memory, corr3$da_Calories) 
+ggsave(here("figs","bayes", "cogsen_Mem_calE.png"))
+bf32 <- bayes(corr3$da_memory, corr3$da_vision)
+ggsave(here("figs","bayes", "cogsen_Mem_visE.png"))
+bf33 <- bayes(corr3$da_memory, corr3$da_GDP) 
+ggsave(here("figs","bayes", "cogsen_Mem_gdpE.png"))
+bf34 <- bayes(corr3$da_GDP, corr3$da_vision)
+ggsave(here("figs","bayes", "cogsen_gdp_visE.png"))
+bf35 <- bayes(corr3$da_GDP, corr3$da_Calories) 
+ggsave(here("figs","bayes", "cogsen_gdp_calE.png"))
+bf36 <- bayes(corr3$da_Calories, corr3$da_vision) 
+ggsave(here("figs","bayes", "cogsen_cal_visE.png"))
