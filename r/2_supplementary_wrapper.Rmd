@@ -1,18 +1,76 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: 'Supplementary Wrapper: Domain General Metacognition'
+output:
+  word_document: default
+  html_notebook: default
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+Setup
 
 ```{r}
-plot(cars)
+# clean slate to be sure
+rm(list = ls())
+if (!require("here")) install.packages("here")
+source(here("r", "setup_depends.R"))
+source(here("r", "bootcormat.R")) 
+
+# set apa theme for plots
+apatheme=theme_bw()+ #theme
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border=element_blank(),
+        axis.line=element_line(),
+        text = element_text(size = 15),
+        axis.title = element_text(size = 12))
+
+
+
+# spider-man color palette
+
+colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+Data import
+```{r}
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+source(here("r", "metacog_data_import.R")) # imports data and runs trial level exclusions from the prereg. 
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+head(metadata)
+
+```
+
+Load or fit the MLE model (if it does not exist).
+
+```{r}
+
+subjects = unique(metadata$subject) # subjects vector, for looping
+modalities = as.character(unique(metadata$modality)) # modalities vector, for looping
+
+
+fit_filename = here("data_summary", "mle_fitdata.Rda")
+
+if (file.exists(fit_filename) == 1 ) {
+
+load(fit_filename)
+  
+}else  {
+  
+source(here("r", "fit_mle_loop.R"))
+
+  }
+
+head(mle_fit_data)
+```
+
+Run group level exclusions based on MLE: 
+
+```{r}
+
+# script to run all group level exclusions
+source(here("r", "mle_fitdata_exclude.R")) 
+
+```
+
+
+
+
