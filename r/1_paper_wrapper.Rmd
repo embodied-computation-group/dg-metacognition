@@ -466,4 +466,3 @@ print_table <- nice_table(HMT,
 
 save_as_docx(print_table, path = here("tables", "hmm_mratio_table.docx"))
 ```
-

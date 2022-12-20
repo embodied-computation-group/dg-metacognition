@@ -196,11 +196,11 @@ corr <- fit_data_wide %>%
   na.omit() %>%
   select(starts_with("mda"))
 res1 <- corci(corr$mda_memory, corr$mda_Calories, method="spearman", nboot = 10000)
-res2 <- corci(corr$mda_memory, corr$mda_vision, method="spearman", nboot = 10000))
-res3 <- corci(corr$mda_memory, corr$mda_GDP, method="spearman", nboot = 10000))
-res4 <- corci(corr$mda_GDP, corr$mda_vision, method="spearman", nboot = 10000))
-res5 <- corci(corr$mda_GDP, corr$mda_Calories, method="spearman", nboot = 10000))
-res6 <- corci(corr$mda_Calories, corr$mda_vision, method="spearman", nboot = 10000))
+res2 <- corci(corr$mda_memory, corr$mda_vision, method="spearman", nboot = 10000)
+res3 <- corci(corr$mda_memory, corr$mda_GDP, method="spearman", nboot = 10000)
+res4 <- corci(corr$mda_GDP, corr$mda_vision, method="spearman", nboot = 10000)
+res5 <- corci(corr$mda_GDP, corr$mda_Calories, method="spearman", nboot = 10000)
+res6 <- corci(corr$mda_Calories, corr$mda_vision, method="spearman", nboot = 10000)
 
 # Each correlation pair is estimated for efficiency: 
 corr1 <- fit_data_wide %>%

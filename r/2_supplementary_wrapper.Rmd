@@ -60,34 +60,77 @@ source(here("r", "fit_mle_loop.R"))
 head(mle_fit_data)
 ```
 
-Run group level exclusions based on MLE: 
+Run group level exclusions based on MLE and pivot: 
 ```{r}
 
 # script to run all group level exclusions
 source(here("r", "mle_fitdata_exclude.R")) 
 
+
 ```
 1. The ANOVA and t-tests (post-hoc: Holm)
 ```{r}
 #Script to run ANOVAs for the MLE
-source(here("r", "Anova_2.R")) 
+source(here("r", "Anova_2.R"))
 
 ```
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!NEED TO MAKE THE TABLE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-2. The Bootstrap samples from the correlations of the MLE model:
+1. Tables of The ANOVA and t-tests (post-hoc: Holm)
 ```{r}
-#?????
+#Script to produce tables for ANOVA and t-test. 
+#This also produces cvs files of the tables which can be found in the folder "tables". 
+source(here("r", "ANOVA_tables.R")) 
+
+ANOT #ANOVAs
+DTT #d' t-test
+CTT #criterion t-test
+MBTT #metacognitive bias t-test
+MSTT #metacognitive sensivity t-test
+METT #metacognitive efficiency t-test
+
 ```
 
-
-3. Get the Bayes Factors from the correlations of the MLE model:
+2. Get the Bayes Factors from the correlations of the MLE model:
 ```{r}
-source(here("r", "Function_Bayesfactor.R")) 
+
+fit_data_wide <- read_csv(here("data_summary", "mle_fit_data_wide.csv"))
+
+source(here("r", "Bayesfactor.R")) 
+
+#The tables of the Bayes Factor
+BayesSen #Metacognitive Sensitivity
+BayesEff #Metacognitive Efficiency
+BayesBia #Metacognitive Bias
+BayesCog #Dpime
+
+```
+3. The Split Half Analysis: MLE
+```{r}
+
+#Fit the Odd and even trials, exclude outliers and pivot:
+source(here("r", "Splithalf_MLE.R")) 
+
+#Estimate the correlations using the robust brostrapped correlations:
+corrdatEven <- fit_data_wideEvenF %>%
+  na.omit() %>%
+  select(starts_with("Even_mratio"))
+
+apa.bootcor.table(corrdatEven, filename=here("tables", "Even_bootCorr_table.doc"))
+
+corrdatOdd <- fit_data_wideOddF %>%
+  na.omit() %>%
+  select(starts_with("Odd_mratio"))
+
+apa.bootcor.table(corrdatOdd, filename=here("tables", "Odd_bootCorr_table.doc"))
+
 ```
 
+Spilt Half Analysis: MLE - plots
+```{r}
+source(here("r", "Splithalf_MLE_tables.R")) 
 
-4. The Split Analysis
+comPlot1
+
+```
 
 

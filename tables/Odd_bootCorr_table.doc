@@ -56,8 +56,8 @@
 \clvertalc\cellx5508 
 \clvertalc\cellx6732 
 \clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{1. da_memory}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{1.33}\cell
+\pard\sa0\sb0\intbl\ql{1. Odd_mratio_memory}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{1.11}\cell
 \pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.43}\cell
 \pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
 \pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
@@ -88,108 +88,12 @@
 \clvertalc\cellx5508 
 \clvertalc\cellx6732 
 \clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{2. da_Calories}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.85}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.11}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.08}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\row
-}
-{
-\trowd \trgaph100
-\clvertalc\cellx1835 
-\clvertalc\cellx3060 
-\clvertalc\cellx4284 
-\clvertalc\cellx5508 
-\clvertalc\cellx6732 
-\clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.02, .19]}}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\row
-}
-{
-\trowd \trgaph100
-\clvertalc\cellx1835 
-\clvertalc\cellx3060 
-\clvertalc\cellx4284 
-\clvertalc\cellx5508 
-\clvertalc\cellx6732 
-\clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\row
-}
-{
-\trowd \trgaph100
-\clvertalc\cellx1835 
-\clvertalc\cellx3060 
-\clvertalc\cellx4284 
-\clvertalc\cellx5508 
-\clvertalc\cellx6732 
-\clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{3. da_GDP}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.80}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.14}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.02}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{-.08}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\row
-}
-{
-\trowd \trgaph100
-\clvertalc\cellx1835 
-\clvertalc\cellx3060 
-\clvertalc\cellx4284 
-\clvertalc\cellx5508 
-\clvertalc\cellx6732 
-\clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.09, .13]}}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.20, .04]}}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\row
-}
-{
-\trowd \trgaph100
-\clvertalc\cellx1835 
-\clvertalc\cellx3060 
-\clvertalc\cellx4284 
-\clvertalc\cellx5508 
-\clvertalc\cellx6732 
-\clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\row
-}
-{
-\trowd \trgaph100
-\clvertalc\cellx1835 
-\clvertalc\cellx3060 
-\clvertalc\cellx4284 
-\clvertalc\cellx5508 
-\clvertalc\cellx6732 
-\clvertalc\cellx7956 
-\pard\sa0\sb0\intbl\ql{4. da_vision}\cell
+\pard\sa0\sb0\intbl\ql{2. Odd_mratio_Calories}\cell
 \pard\sa0\sb0\intbl\tqdec\tldot\tx428{1.03}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.11}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{-.09}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.05}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{-.04}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.69}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.10}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
 \row
 }
 {
@@ -203,9 +107,105 @@
 \pard\sa0\sb0\intbl\ql{ }\cell
 \pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
 \pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.20, .03]}}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.06, .17]}}\cell
-\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.16, .08]}}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.01, .21]}}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\row
+}
+{
+\trowd \trgaph100
+\clvertalc\cellx1835 
+\clvertalc\cellx3060 
+\clvertalc\cellx4284 
+\clvertalc\cellx5508 
+\clvertalc\cellx6732 
+\clvertalc\cellx7956 
+\pard\sa0\sb0\intbl\ql{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\row
+}
+{
+\trowd \trgaph100
+\clvertalc\cellx1835 
+\clvertalc\cellx3060 
+\clvertalc\cellx4284 
+\clvertalc\cellx5508 
+\clvertalc\cellx6732 
+\clvertalc\cellx7956 
+\pard\sa0\sb0\intbl\ql{3. Odd_mratio_GDP}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{1.24}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.86}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.15**}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.04}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\row
+}
+{
+\trowd \trgaph100
+\clvertalc\cellx1835 
+\clvertalc\cellx3060 
+\clvertalc\cellx4284 
+\clvertalc\cellx5508 
+\clvertalc\cellx6732 
+\clvertalc\cellx7956 
+\pard\sa0\sb0\intbl\ql{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[.04, .26]}}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.07, .15]}}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\row
+}
+{
+\trowd \trgaph100
+\clvertalc\cellx1835 
+\clvertalc\cellx3060 
+\clvertalc\cellx4284 
+\clvertalc\cellx5508 
+\clvertalc\cellx6732 
+\clvertalc\cellx7956 
+\pard\sa0\sb0\intbl\ql{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\row
+}
+{
+\trowd \trgaph100
+\clvertalc\cellx1835 
+\clvertalc\cellx3060 
+\clvertalc\cellx4284 
+\clvertalc\cellx5508 
+\clvertalc\cellx6732 
+\clvertalc\cellx7956 
+\pard\sa0\sb0\intbl\ql{4. Odd_mratio_vision}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.67}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{0.46}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.17**}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.09}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{.13*}\cell
+\row
+}
+{
+\trowd \trgaph100
+\clvertalc\cellx1835 
+\clvertalc\cellx3060 
+\clvertalc\cellx4284 
+\clvertalc\cellx5508 
+\clvertalc\cellx6732 
+\clvertalc\cellx7956 
+\pard\sa0\sb0\intbl\ql{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{ }\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[.06, .27]}}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[-.02, .19]}}\cell
+\pard\sa0\sb0\intbl\tqdec\tldot\tx428{{\fs20[.01, .24]}}\cell
 \row
 }
 {

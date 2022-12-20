@@ -365,7 +365,6 @@ Tables Post-hoc t-tests:
 ## Table of all ANOVAS: 
 
 ##Tables of all Post-hoc t-tests: 
-
 DTT <-data.frame(Pair=character(),
                  df=double(),
                  t=double(),
