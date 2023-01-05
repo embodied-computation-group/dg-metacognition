@@ -132,5 +132,10 @@ source(here("r", "Splithalf_MLE_tables.R"))
 comPlot1
 
 ```
+Spli Half Analysis - HMeta-d'. 
+This takes a long time! 
+```{r}
+source(here("r", "Splithalf_HMetad.R")) 
+```
 
 
