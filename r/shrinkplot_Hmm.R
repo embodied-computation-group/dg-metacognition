@@ -1,20 +1,17 @@
 
 # get the data
-
-hmm_Mratio <- Mratio_indiv
 mle_Mratio <- mle_wdata_exclude %>% 
   select(subject, starts_with("mratio"))
-
+hmm_Mratio <- Mratio_indiv
 
 #rename the data
 
 colnames(mle_Mratio) <- c("ID", "mle_Memory", "mle_Calories", "mle_GDP", "mle_Vision")
 colnames(hmm_Mratio) <- c("ID", "hmm_Calories", "hmm_GDP", "hmm_Memory", "hmm_Vision")
 
-# reorder to memory, vision, calories, gdp
-
-mle_Mratio <- mle_Mratio[, c(1, 2, 5, 3, 4)]
-hmm_Mratio <- hmm_Mratio[, c(1, 4, 5, 2, 3)]
+# reorder to memory, calories, gdp, vision,
+mle_Mratio <- mle_Mratio[, c(1, 2, 3, 4, 5)]
+hmm_Mratio <- hmm_Mratio[, c(1, 4, 2, 3, 5)]
 
 # combine data
 
@@ -23,7 +20,7 @@ mratio_all <- full_join(mle_Mratio, hmm_Mratio, by = "ID")
 # pivot
 
 mratio_all_long <- mratio_all %>% 
-  pivot_longer(names_to = c("Model", "Task"), names_sep = "_", cols = mle_Memory:hmm_GDP)
+  pivot_longer(names_to = c("Model", "Task"), names_sep = "_", cols = mle_Memory:hmm_Vision)
 
 # figure params
 
@@ -207,7 +204,7 @@ p6
 #plots <- ggarrange(p1, p2, p3, p4, p5, p6, common.legend = TRUE)
 
 
-p1 + p2 + p3 + p4 + p5 + p6 + plot_layout(ncol = 3, guides = 'collect') &
+shrinkplot<-p1 + p2 + p3 + p4 + p5 + p6 + plot_layout(ncol = 3, guides = 'collect') &
   theme(legend.position = 'top',
         legend.direction = 'horizontal', legend.background = element_blank(),
         legend.box.background = element_rect(colour = "black"),
