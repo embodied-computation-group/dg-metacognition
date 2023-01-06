@@ -95,7 +95,7 @@ METT #metacognitive efficiency t-test
 
 fit_data_wide <- read_csv(here("data_summary", "mle_fit_data_wide.csv"))
 
-source(here("r", "Bayesfactor.R")) 
+source(here("r", "Bayesfactor.R")) #this also creates excel files with the tables, which can be found in the tables folder. 
 
 #The tables of the Bayes Factor
 BayesSen #Metacognitive Sensitivity
@@ -110,32 +110,55 @@ BayesCog #Dpime
 #Fit the Odd and even trials, exclude outliers and pivot:
 source(here("r", "Splithalf_MLE.R")) 
 
+fit_data_wideEvenOddF<-cbind(fit_data_wideEvenF, fit_data_wideOddF)
+
 #Estimate the correlations using the robust brostrapped correlations:
-corrdatEven <- fit_data_wideEvenF %>%
-  na.omit() %>%
-  select(starts_with("Even_mratio"))
+corrdatEvenOdd <- fit_data_wideEvenOddF %>%
+  na.omit()%>%
+  select(contains("mratio"))
 
-apa.bootcor.table(corrdatEven, filename=here("tables", "Even_bootCorr_table.doc"))
-
-corrdatOdd <- fit_data_wideOddF %>%
-  na.omit() %>%
-  select(starts_with("Odd_mratio"))
-
-apa.bootcor.table(corrdatOdd, filename=here("tables", "Odd_bootCorr_table.doc"))
+#We use the same procedure here as in the Paper wrapper, but note that it yields
+#many irrellevant correlations, please omit those not needed yourself.
+apa.bootcor.table(corrdatEvenOdd, filename=here("tables", "EvenOdd_bootCorr_table.doc"))
 
 ```
 
 Spilt Half Analysis: MLE - plots
 ```{r}
-source(here("r", "Splithalf_MLE_tables.R")) 
+source(here("r", "Splithalf_MLE_figures.R")) 
 
 comPlot1
 
 ```
-Spli Half Analysis - HMeta-d'. 
+Split Half MLE - table: 
+```{r}
+
+```
+
+
+Split Half Analysis - HMeta-d'. 
 This takes a long time! 
 ```{r}
 source(here("r", "Splithalf_HMetad.R")) 
+
+```
+Make the figures for the HMEta
+```{r}
+source(here("r", "function_rhoPlotSplit.R")) 
+source(here("r", "Splithalf_HMetad_figures.R")) 
+#source(here("r", "Splithalf_HMetad_traceplots.R")) #un-comment to get the traceplots,
+#these take a while to run.
+
+RhoPlot
+SplitPlotHier
+
+```
+Make the Splithalf HMeta-d' table
+```{r}
+source(here("r", "Splithalf_HMetad_tables.R")) 
+table4s #Note that the format is not APA, please adjust yourself. 
+
+
 ```
 
 
