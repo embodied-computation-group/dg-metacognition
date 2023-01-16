@@ -178,6 +178,7 @@ Next we will fit (or load) the hierarchical metacognition model
 # (around 250 mb), we download them to a local directory. The /osf directory the files are # # downloaded too is included in the .gitignore file ensuring it is only created locally.
 
 # check if already exists to avoid redownloading
+#If you want to fit it yourself, please have a look at the markdown called "fit_hierarchical_metamodel.Rmd
 
 fit_filename = here("osf/HMM", "modelfit.RDS")
 
@@ -251,6 +252,8 @@ ggsave(here("figs", "sup_fig1_hmm_mratio.png"))
 Here we plot the same, but for the correlation (rho) estimate for each condition
 
 ```{r}
+source(here("r", "function_rhoPlot.R"))
+
 #calculate mean rho for each plot
 mcmc.rho <- mcmc.sample %>% 
   filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
