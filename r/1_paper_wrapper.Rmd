@@ -280,7 +280,7 @@ Rho6 <- mcmc.sample %>% filter(Parameter == "rho[6]")
 R1 <- RhoPlot(Rho1, "rho[1]", HDI, stat) + labs(title = "Memory vs Calories", subtitle= paste(H1title))
 R2 <- RhoPlot(Rho2, "rho[2]", HDI, stat) + labs(title = "Memory vs GDP", subtitle= paste(H2title))
 R3 <- RhoPlot(Rho3, "rho[3]", HDI, stat) + labs(title = "Memory vs Vision", subtitle= paste(H3title))
-R4 <- RhoPlot(Rho4, "rho[4]", HDI, stat) + labs(title = "GDP vs Calories", subtitle= paste(H4title))
+R4 <- RhoPlot(Rho4, "rho[4]", HDI, stat) + labs(title = "Calories vs GDP", subtitle= paste(H4title))
 R5 <- RhoPlot(Rho5, "rho[5]", HDI, stat) + labs(title = "Calories vs Vision", subtitle= paste(H5title))
 R6 <- RhoPlot(Rho6, "rho[6]", HDI, stat) + labs(title = "GDP vs Vision", subtitle= paste(H6title))
 
@@ -310,7 +310,6 @@ Mratio_indiv <- stat %>%
 Cor1 <- ind_hier(Mratio_indiv, Mratio_indiv$Mem,Mratio_indiv$Cal) +
   scale_y_continuous("Calories") + scale_x_continuous("Memory") +
   ggtitle(H1title)+ theme(plot.title = element_text( size = 13))
-
 
 Cor2 <- ind_hier(Mratio_indiv, Mratio_indiv$Mem, Mratio_indiv$GDP) +
   ggtitle(H2title)+ theme(plot.title = element_text( size = 13)) +
