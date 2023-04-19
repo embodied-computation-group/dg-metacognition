@@ -42,7 +42,7 @@ p1 <- ggplot(plot_data, aes(x = Memory, y = Vision, colour = Model, group = Mode
                           length=unit(1, "mm"))) +
   geom_point(size = 1, shape = 21, alpha = .75) +
   stat_ellipse(type = "norm", size = big_line_size, linetype = 2) +
-  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMM", "MLE"))+
+  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMeta-d'", "MLE"))+
   geom_smooth(method='lm', formula= y~x, se = FALSE, size = big_line_size, fullrange = TRUE) +
   theme_cowplot() +
 #  xlim(xcoords)+
@@ -70,7 +70,7 @@ p2 <- ggplot(plot_data, aes(x = Memory, y = Calories, colour = Model, group = Mo
                           length=unit(1, "mm"))) +
   geom_point(size = 1, shape = 21, alpha = .75) +
   stat_ellipse(type = "norm", size = big_line_size, linetype = 2) +
-  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMM", "MLE"))+
+  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMeta-d'", "MLE"))+
   geom_smooth(method='lm', formula= y~x, se = FALSE, size = big_line_size, fullrange = TRUE) +
 #  xlim(xcoords)+
 #  ylim(ycoords)+
@@ -98,7 +98,7 @@ p3 <- ggplot(plot_data, aes(x = Memory, y = GDP, colour = Model, group = Model))
                           length=unit(1, "mm"))) +
   geom_point(size = 1, shape = 21, alpha = .75) +
   stat_ellipse(type = "norm", size = big_line_size, linetype = 2) +
-  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMM", "MLE"))+
+  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMeta-d'", "MLE"))+
   geom_smooth(method='lm', formula= y~x, se = FALSE, size = big_line_size, fullrange = TRUE) +
 #  xlim(xcoords)+
 #  ylim(ycoords)+
@@ -125,7 +125,7 @@ p4 <- ggplot(plot_data, aes(x = Vision, y = Calories, colour = Model, group = Mo
                           length=unit(1, "mm"))) +
   geom_point(size = 1, shape = 21, alpha = .75) +
   stat_ellipse(type = "norm", size = big_line_size, linetype = 2) +
-  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMM", "MLE"))+
+  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMeta-d'", "MLE"))+
   geom_smooth(method='lm', formula= y~x, se = FALSE, size = big_line_size, fullrange = TRUE) +
 #  xlim(xcoords)+
 #  ylim(ycoords)+
@@ -153,7 +153,7 @@ p5 <- ggplot(plot_data, aes(x = Vision, y = GDP, colour = Model, group = Model))
                           length=unit(1, "mm"))) +
   geom_point(size = 1, shape = 21, alpha = .75) +
   stat_ellipse(type = "norm", size = big_line_size, linetype = 2) +
-  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMM", "MLE"))+
+  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMeta-d'", "MLE"))+
   geom_smooth(method='lm', formula= y~x, se = FALSE, size = big_line_size, fullrange = TRUE) +
 #  xlim(xcoords)+
 #  ylim(ycoords)+
@@ -183,7 +183,7 @@ p6 <- ggplot(plot_data, aes(x = Calories, y = GDP, colour = Model, group = Model
                           length=unit(1, "mm"))) +
   geom_point(size = 1, shape = 21, alpha = .75) +
   stat_ellipse(type = "norm", size = big_line_size, linetype = 2) +
-  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMM", "MLE"))+
+  scale_color_manual(values = c("#425B8D", "#D38D57"), labels = c("HMeta-d'", "MLE"))+
   geom_smooth(method='lm', formula= y~x, se = FALSE, size = big_line_size, fullrange = TRUE) +
 #  xlim(xcoords)+
 #  ylim(ycoords)+
