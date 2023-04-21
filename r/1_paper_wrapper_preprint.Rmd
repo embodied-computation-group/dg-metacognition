@@ -345,9 +345,9 @@ max_width_cm <- 17.6
 # Calculate the height while maintaining the aspect ratio (7:12)
 height_cm <- max_width_cm * (7 / 12)
 
-ggsave(here("figs", "Hier_Rho_scatter.png"), width = max_width_cm, height = height_cm, units = "cm", dpi = 300)
+ggsave(here("figs", "Fig3.png"), width = max_width_cm, height = height_cm, units = "cm", dpi = 300)
 
-ggsave(here("figs", "Hier_Rho_scatter.jpeg"), width = max_width_cm, height = height_cm, units = "cm", dpi = 300)
+ggsave(here("figs", "Fig3.jpeg"), width = max_width_cm, height = height_cm, units = "cm", dpi = 300)
 
 
 ```

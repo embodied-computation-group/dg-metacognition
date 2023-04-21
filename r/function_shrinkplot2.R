@@ -228,7 +228,7 @@ p1 + p2 + p3 + p4 + p5 + p6 + plot_layout(ncol = 3, guides = 'collect') &
         legend.box.background = element_rect(colour = "black"),
         legend.margin = margin(6, 6, 6, 6))
 
-ggsave(filename = here("figs", "f3_shrinkage_all_plot.png"), units = "cm", dpi = 600, width = 17.6, height = 17.6)
+ggsave(filename = here("figs", "sFig5.png"), units = "cm", dpi = 600, width = 17.6, height = 17.6)
 
 
 #ggexport(plots, filename = here("figs", "shrinkage_all_plot.pdf"), res = 600)
