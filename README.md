@@ -10,6 +10,8 @@ Link to [preprint](https://psyarxiv.com/p97s5)
 Cite as:
 Lund, A. E., Correa, C., Fardo, F., Fleming, S. M., & Allen, M. (2023, April 21). Domain Generality in Metacognitive Ability: A Confirmatory Study Across Visual Perception, Memory, and General Knowledge. Retrieved from psyarxiv.com/p97s5
 
+## Figures
+
 
 ### Figure 1:
 | ![Figure 1: ](figs/fig1_final.png)  |
