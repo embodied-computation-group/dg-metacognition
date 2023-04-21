@@ -1,0 +1,157 @@
+function p = triviaGetParams
+% Params for trivia metacognition task
+% GM 2019
+
+%% Load Mat files
+p.list_countries = load('list_countries_complete.mat');
+p.list_food = load('list_food_complete.mat');
+
+%%  Subject Parameters
+
+p.subID = inputdlg('Please Enter SubjectID', 'SubjectID');
+
+p.filename = ['triviaData_' p.subID{1} '.mat'];
+
+if IsWin
+    dataDir = [pwd '\triviaData\'];
+else
+    dataDir = [pwd '/triviaData/'];
+end
+
+if ~exist('triviaData')
+    mkdir triviaData
+end
+
+
+p.filename = [dataDir p.filename];
+
+%% Windows parameters
+p.gray = [127 127 127 ]; p.white = [255 255 255]; p.black = [0 0 0];
+p.red = [250 0 0]; p.green = [0 250 50]; p.blue = [50 0 250];
+p.bgcolor = p.black;
+p.textColor = p.white;
+p.textSize = 40;
+p.countriesTextSize = 24;
+
+p.screenNum = 0;
+
+Screen('Preference', 'SkipSyncTests', 1);
+[p.window, p.rect] = Screen(p.screenNum, 'OpenWindow');
+Screen('FillRect', p.window, p.bgcolor);
+[p.xCenter, p.yCenter] = RectCenter(p.rect);
+[p.screenXpixels, p.screenYpixels] = Screen('WindowSize', p.window);
+% Screen(p.window, 'Flip');
+
+%% Task Parameters
+
+% Number of conditions
+p.nConditions = 2;
+
+% Number of blocks
+p.numberOfBlocks = 8;
+
+%Number of trials per block per condition, the total number of trials will be (p.trialsPerCondit * p.nConditions * p.numberOfBlocks)
+p.trialsPerCondit = 13; 
+
+p.trialsPerBlock = p.trialsPerCondit * p.nConditions;
+
+p.totalNumTrial = p.trialsPerCondit * p.numberOfBlocks;
+
+%% countries Image and Text parameters
+
+p.xposition_left = p.screenXpixels * .25;
+p.xposition_right = p.screenXpixels * .75;
+
+% Image Position
+imBase = [0 0 300 200];
+p.imPos_left = CenterRectOnPointd(imBase, p.xposition_left, p.screenYpixels/2);
+p.imPos_right = CenterRectOnPointd(imBase, p.xposition_right, p.screenYpixels/2);
+p.imPos_center = CenterRectOnPointd(imBase, p.screenXpixels/2, p.screenYpixels/2 - 60);
+
+
+% Frame Position
+frameBase = [0 0 305 205];
+p.framePos_left = CenterRectOnPointd(frameBase, p.xposition_left, p.screenYpixels/2);
+p.framePos_right = CenterRectOnPointd(frameBase, p.xposition_right, p.screenYpixels/2);
+p.framePos_center = CenterRectOnPointd(frameBase, p.screenXpixels/2, p.screenYpixels/2 - 60);
+
+
+
+% Text Position
+
+% p.textXpos_left = p.screenXpixels * .15;
+% p.textXpos_right = p.screenXpixels * .70;
+p.textYpos = p.yCenter + 200;
+
+
+
+
+p.textYPosfam = p.yCenter + 100;
+
+
+
+
+
+
+%% Create a matrix of all the pairwise differences
+% Food - RANK FROM ORDER
+food = zeros(length(p.list_food.list_food_complete), 1);
+
+for v = 1: length(p.list_food.list_food_complete)
+    food(v) = p.list_food.list_food_complete{v, 5}; % population is ranked from the most populated to the least
+end
+
+for r = 1:length(food)
+    for c = 1:length(food)
+        p.diff_square_food(r,c) = food(r) - food(c);
+    end
+end
+
+% countries
+
+% Create a matrix of all the pairwise differences - RANK FROM ORDER
+% population = zeros(length(p.list_countries.list_countries_complete), 1);
+% 
+% for v = 1: length(p.list_countries.list_countries_complete)
+%     population(v) = p.list_countries.list_countries_complete{v, 5}; % population is ranked from the most populated to the least
+% end
+% 
+% for r = 1:length(population)
+%     for c = 1:length(population)
+%         p.diff_square_countries(r,c) = population(r) - population(c);
+%     end
+% end
+
+% Create a matrix of all the pairwise differences - RANK FROM RAW DATA
+population = zeros(length(p.list_countries.list_countries_complete), 1);
+
+for v = 1: length(p.list_countries.list_countries_complete)
+    population(v) = p.list_countries.list_countries_complete{v, 4}; % population is ranked from the most populated to the least
+end
+
+for r = 1:length(population)
+    for c = 1:length(population)
+        p.diff_square_countries(r,c) = population(r) - population(c);
+    end
+end
+
+
+
+
+
+
+p.diff_square = cell(2,1);
+p.diff_square{1}=p.diff_square_countries; 
+p.diff_square{2}=p.diff_square_food;
+
+
+
+
+
+
+
+
+
+
+
+end

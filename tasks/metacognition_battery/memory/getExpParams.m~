@@ -1,0 +1,91 @@
+function p = getExpParams(sID)
+% Modified by SF 24/10/12 to have only one day, six sessions
+
+
+
+p.textColor = [0 0 0];
+p.bgColor = [127 127 127];
+p.sittingDist = 60; % in cm
+
+p.exitKey='ESCAPE';
+
+if IsOSX
+    p.keyboardNumber = getKeyboardNumber;
+else
+    p.keyboardNumber = [];
+end
+
+p.isTaken = 0;
+% p.age = inputdlg('Age? ','Age');
+% p.gender = inputdlg('Gender? M/F','Gender');
+% p.hand = inputdlg('Handedness? R/L ','Hand');
+
+% check if this filename is OK
+p.filename = ['memData' subID(sID) '.mat'];
+%p.filename = ['memData' int2str(sID) '.mat'];
+
+
+if IsWin
+    dataDir = [pwd '\memData\'];
+else
+    dataDir = [pwd '/memData/'];
+end
+
+% check inputs
+d = dir(dataDir);
+
+for i = 1:length(d)
+    if strcmp(p.filename,d(i).name)
+        disp('This subjectID / day combination is already taken! Please use a different subject ID.');
+        p.isTaken = 1;
+        return
+    end
+end
+
+p.filename = [dataDir p.filename];
+
+% confidence scale
+p.VASwidth_inDegrees = 6;
+p.VASheight_inDegrees = 2;
+p.VASoffset_inDegrees = 0;
+p.arrowWidth_inDegrees = 0.5;
+
+
+p.VASwidth_inPixels = degrees2pixels(p.VASwidth_inDegrees, p.sittingDist);
+p.VASheight_inPixels = degrees2pixels(p.VASheight_inDegrees, p.sittingDist);
+p.VASoffset_inPixels = degrees2pixels(p.VASoffset_inDegrees, p.sittingDist);
+p.arrowWidth_inPixels = degrees2pixels(p.arrowWidth_inDegrees, p.sittingDist);
+
+% Stimulus timings
+
+p.chDuration_inSecs       = 0.7;
+p.memDuration_inSecs = Inf;
+p.memConfirm_inSecs = .5;
+p.confDuration_inSecs = 4;
+p.confFBDuration_inSecs = 0.25;
+p.ITIDuration_inSecs      = 0.25;  % extra time at end of trial to finalize data collection
+
+% NEW STUDY TIME ORDERS, latin square
+p.timeGroup1day1 = [0.5 1 1.5 1]*60;
+p.timeGroup2day1 = [1 1.5 1 0.5]*60;
+p.timeGroup3day1 = [1.5 1 0.5 1]*60;
+
+p.studyListOrder1 = [1 3 5 7 9 11];
+p.studyListOrder2 = [2 4 6 8 10 12];
+p.studyListOrder3 = [11 9 7 5 3 1];
+p.studyListOrder4 = [12 10 8 7 4 2];
+
+p.listGroup = 0;
+while (p.listGroup < 1 || p.listGroup > 4)
+    p.listGroup = inputdlg('Please Enter List Group (1-4)','List Group');
+    p.listGroup = str2num(p.listGroup{1});
+end
+eval(['p.studyListOrder = p.studyListOrder' num2str(p.listGroup) '([1 2 3 4 5 6]);']);
+
+
+p.timeGroup = 0;
+while (p.timeGroup < 1 || p.timeGroup > 3)
+    p.timeGroup = inputdlg('Enter Time Order Group (1-3)', 'Time Order Group');
+    p.timeGroup = str2num(p.timeGroup{1});
+end
+eval(['p.studyTimeOrder = p.timeGroup' num2str(p.timeGroup) 'day1;']);
