@@ -2,7 +2,7 @@
 
 
 ### Figure 1:
-![Figure 1: ](figs/fig1_dmg.png)
+![Figure 1: ](figs/fig1_final.png)
 
 ### Figure 2:
 ![Figure 2: ](figs/Figure2.png)
