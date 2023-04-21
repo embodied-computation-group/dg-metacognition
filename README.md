@@ -11,7 +11,7 @@
 ### Figure 2:
 | ![Figure 2: ](figs/Figure2.png) |
 |:--:| 
-| *Figure 2: Cognitive and metacognitive abilities across domains. * |
+| Figure 2: Cognitive and metacognitive abilities across domains. |
 >A) Cognitive sensitivity (d-prime) was significantly greater in the memory and vision tasks, but equivalent in the two trivia domains concerning caloric and socioeconomic (GDP) decisions. Individual dots show subject-level d-prime estimates for each task, box plots depict medians and interquartile ranges. B) Accuracy was stabilized across the visual and trivia tasks using a two-down one-up staircase procedure converging at 71% accuracy at the limit. This stabilizing effect can also be seen in the inter- subject spread of d-prime for the three staircased tasks, whereas memory sensitivity varies substantially. Line plots depict grand mean hit-rate at each task quarter, error bars show 95% confidence interval. Bottom row shows metacognitive results for C) average confidence across hit and miss trials and D) estimated metacognitive efficiency for each task. Metacognitive efficiency is significantly better for GDP and memory judgments. Inspection of accuracy- split confidence ratings suggests that these differences arise from relative under-confidence on these modalities, as well as potential overconfidence for caloric judgments. Notably, the average confidence for incorrect caloric trials is significantly higher than that of correct GDP and memory trial ratings. Box plots depict medians and interquartile ranges, individual dots present subject-level estimates.
 
 ### Figure 3:
