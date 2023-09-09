@@ -167,8 +167,17 @@ apa.bootcor.table(corrdat, filename=here("tables", "mratio_bootCorr_table.doc"))
 #mda_results <- bootcormat(corrdat)
 
 
+```
+
+Test the differences between correlation coefficiencts: 
+
+```{r}
+library(cocor)
+
+source(here("r", "MLEcorrelationsSig.R"))
 
 ```
+
 
 Next we will fit (or load) the hierarchical metacognition model 
 

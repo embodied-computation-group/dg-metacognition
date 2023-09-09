@@ -93,7 +93,7 @@ f
 
 
 
-f2c <- ggplot(data=ConfByError, 
+f2c <- ggplot(data=Pilot, 
               aes(x = modality, y = avgCF_Corr, fill=modality, shape = accuracy)) + 
   
   geom_half_point(aes(color = modality), range_scale = 1/2, alpha = 1/10,
