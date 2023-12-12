@@ -119,8 +119,10 @@ for n=1:numel(sID)
     trial = [1:length(response)]';
     %do_exclude = [repmat(exclude(n), 1, length(response))]';
     
+    repeat_exclude = zeros(length(trial), 1);
+    
     subject_data = table(subject, modality, trial, signal, response, accuracy, confidence,...
-        rt, rt_conf, contrast);
+        rt, rt_conf, contrast, repeat_exclude);
     
     %subject_data = table(subject, modality, trial, signal, response, accuracy, confidence,...
         %rt, rt_conf, contrast, do_exclude);

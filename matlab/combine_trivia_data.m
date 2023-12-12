@@ -81,7 +81,9 @@ for n = 1:numel(sID)
         subject_id_vector = [repmat(sID(n), 1, length(response))];
         subject = subject_id_vector';
         
-        output_table = table(subject, modality, trial, signal, response, accuracy, confidence, rt, rt_conf, contrast);
+        repeat_exclude = exclude_repeats(results)';
+        
+        output_table = table(subject, modality, trial, signal, response, accuracy, confidence, rt, rt_conf, contrast, repeat_exclude);
         
         all_data = vertcat(all_data, output_table);
         

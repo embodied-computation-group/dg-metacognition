@@ -76,10 +76,12 @@ for n=1:numel(sID)
         modality = {'vision'};
         modality = [repmat(modality, 1, length(response))]';
         trial = [1:length(response)]';
-        subject_data = [subject_id_vector', trial, signal, response, accuracy, confidence, rt, rt_conf, contrast];
+        repeat_exclude = zeros(length(trial),1);
+        
+        subject_data = [subject_id_vector', trial, signal, response, accuracy, confidence, rt, rt_conf, contrast, repeat_exclude];
         
         subject = subject_id_vector';
-        output_table = table(subject, modality, trial, signal, response, accuracy, confidence, rt, rt_conf, contrast);
+        output_table = table(subject, modality, trial, signal, response, accuracy, confidence, rt, rt_conf, contrast, repeat_exclude);
         
        
         

@@ -1,0 +1,19 @@
+function results = exclude_repeats(results)
+
+pairs = results.Pairs; 
+
+
+these_pairs = results.Pairs(results.ConditionVectors==1);
+exclude_vectorA = zeros(1,length(these_pairs));
+repeatsA = findRepeatedPairs(these_pairs);
+exclude_vectorA(repeatsA) = 1;
+
+
+these_pairs = results.Pairs(results.ConditionVectors==2);
+exclude_vectorB = zeros(1,length(these_pairs));
+repeatsB = findRepeatedPairs(these_pairs);
+exclude_vectorB(repeatsB) = 1;
+
+
+
+end
