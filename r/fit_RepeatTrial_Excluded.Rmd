@@ -1,0 +1,443 @@
+
+Setup
+
+```{r}
+# clean slate to be sure
+rm(list = ls())
+if (!require("here")) install.packages("here")
+source(here("r", "setup_depends.R"))
+source(here("r", "bootcormat.R")) 
+
+# set apa theme for plots
+apatheme=theme_bw()+ #theme
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border=element_blank(),
+        axis.line=element_line(),
+        text = element_text(size = 15),
+        axis.title = element_text(size = 12))
+
+
+
+# spider-man color palette
+
+colors = c("#DF1F2D", "#B11313", "#2B3784", "#447BBE")
+```
+
+Data import
+```{r}
+
+source(here("r", "metacog_data_import.R")) # imports data and runs trial level exclusions from the prereg. 
+
+head(metadata)
+
+```
+
+
+FIT Models without repeat trials:
+```{r}
+#Exclude repeat trials:
+
+metadataRep <- metadata %>%  filter(repeat_exclude==0)
+```
+
+MLE Model Fit
+```{r}
+
+# Fit MLE:
+source(here("r", "fit_mleRep.R"))
+
+subjects = unique(metadataRep$subject) # subjects vector, for looping
+modalities = as.character(unique(metadataRep$modality)) # modalities vector, for looping
+
+
+fit_filename = here("data_summary", "mle_fitdatarepeat.Rda")
+
+if (file.exists(fit_filename) == 1 ) {
+
+load(fit_filename)
+  
+}else  {
+  
+source(here("r", "fit_mle_loopRep.R"))
+
+  }
+
+head(mle_fit_dataRep)
+
+```
+HMeta-d'
+```{r}
+
+subjects = unique(metadataRep$subject) # subjects vector, for looping
+modalities = as.character(unique(metadataRep$modality)) # modalities vector, for
+
+subjects <- subjects[-320]
+
+#Loop over modalities and subjects to get into correct format for model. 
+
+nR_S1 = list() 
+nR_S2 = list()
+      
+for (m in 1:length(modalities)){
+  
+  nR_S1_tmp_modality = data.frame((matrix(NA, nrow=14, ncol=319)))
+  nR_S2_tmp_modality = data.frame((matrix(NA, nrow=14, ncol=319)))
+
+  for (s in 1:length(subjects)){
+    
+
+     subdata <- filter(metadataRep, subject == subjects[s] & modality == modalities[m])  
+      
+      #transform trial data to counts
+      newlist <- trials2counts(subdata$signal, subdata$response, subdata$confidence, 7, padAmount = 1,padCells=1)
+      nR_S1_tmp <- unlist(newlist[1], recursive = TRUE, use.names = TRUE)
+      nR_S2_tmp <- unlist(newlist[2], recursive = TRUE, use.names = TRUE)
+      
+      nR_S1_tmp_modality[,s] <- nR_S1_tmp
+      nR_S2_tmp_modality[,s] <- nR_S2_tmp
+  
+      
+  } 
+  nR_S1 [[m]]<- nR_S1_tmp_modality
+  nR_S2 [[m]]<- nR_S2_tmp_modality
+
+}
+
+#Fit the hierarhical model and correlation
+## NOTE THAT THIS WILL TAKE A LONG TIME!
+## First check if you already have the file. The file is too large for github, so first time 
+## Users will need to download it from our OSF repo here: www.wwww..www
+
+fit_filename = here("data_summary", "metad_groupfit_Repeat.RDS") ## change this to the correct place! 
+
+if (file.exists(fit_filename) == 1 ) {
+
+outputRep <- readRDS(fit_filename)
+  
+}else  {
+  
+outputRep <- metad_groupcorr(nR_S1, nR_S2)
+
+}
+
+# write out the data file
+#metad
+saveRDS(outputRep, file = "C:/Users/Astrid Emilie Lund/Desktop/metad_groupfit_Repeat.RDS")
+#d' and criterion
+saveRDS(d1, file = "C:/Users/Astrid Emilie Lund/Desktop/d_groupfit_Repeat.RDS")
+saveRDS(c1, file = "C:/Users/Astrid Emilie Lund/Desktop/criterion_groupfit_Repeat.RDS")
+
+```
+
+Pull data:
+```{r}
+
+
+## Model output ------------------------------------------------------------
+# note that this section can take a while to run and creates a lot of large variables.
+
+# Convergence diagnostic
+ValueR <- gelman.diag(outputRep, confidence = 0.95)
+RhatR <- data.frame(conv = ValueR$psrf)
+
+# Values (mean and CI)
+ValueR <- summary(outputRep)
+statR <- data.frame(mean = ValueR$statistics[,"Mean"])
+statR %<>%
+  rownames_to_column(var = "name") %>% 
+  cbind(CILow = ValueR$quantiles[,"2.5%"]) %>% 
+  cbind(CIUp = ValueR$quantiles[,"97.5%"])
+
+# HDI function 
+HDIR<- data.frame(HPDinterval(outputRep, prob = 0.95))
+HDIR %<>%
+  rownames_to_column(var = "name")
+
+
+## Plot trace mcmc ---------------------------------------------------------
+# creates many plots and takes a long time to run... uncomment to see sampling traces
+# traceplot(output)
+
+## Plot posterior distributions -------------------------------------------------------------------
+mcmc.sampleR <- ggs(outputRep)
+
+```
+
+Get table for MLE
+```{r}
+
+
+#Exclude outliers based on MAD rule (confidence, d' and criterion)
+# Get confidence from raw data:
+Avgmeta <- metadata %>% 
+  group_by(subject, modality) %>% 
+  summarise(avg_conf=mean(confidence, na_rm=TRUE)) #calculate Mean confidence for each modality
+
+MedianContrast <- metadata %>% 
+  group_by(subject, modality) %>% 
+  summarise(medContrast=median(contrast, na_rm=TRUE))
+
+#join Avgmeta with fit_data 
+mle_fit_data_fullR <- mle_fit_dataRep %>% full_join(Avgmeta, 
+                                     by= c('subject'='subject', 
+                                           'modality' = 'modality'))
+
+mle_fit_data_fullR <- mle_fit_data_fullR %>% full_join(MedianContrast, 
+                                                by= c('subject'='subject', 
+                                                      'modality' = 'modality'))
+
+# remove any NAs - outlier function returns all NAs otherwise...
+
+mle_fit_data_fullR <- na.omit(mle_fit_data_fullR)
+
+# remove outliers
+mle_metadata_excR <- mle_fit_data_fullR %>%
+  group_by(modality) %>%
+  mutate(avg_conf = remove_outliers_robust(avg_conf)) # remove confidence outliers using MAD Rule 
+
+
+# da 
+mle_metadata_excR <- mle_metadata_excR%>%
+  group_by(modality) %>%
+  mutate(da = remove_outliers_robust(da)) 
+
+# criterion 
+mle_metadata_excR <- mle_metadata_excR%>%
+  group_by(modality) %>%
+  mutate(c = remove_outliers_robust(c)) # remove criterion outliers using MAD Rule 
+
+# mratio 
+mle_metadata_excR <- mle_metadata_excR%>%
+  group_by(modality) %>%
+  mutate(mratio = remove_outliers_robust(mratio)) # remove mratio outliers using MAD Rule 
+
+# signal contrast 
+mle_metadata_excR <- mle_metadata_excR%>%
+  group_by(modality) %>%
+  mutate(medContrast = remove_outliers_robust(medContrast)) # remove mratio outliers using MAD Rule 
+
+total_outliers <- sum(is.na(mle_metadata_excR))
+
+sprintf("removing %d outlier observations", sum(is.na(mle_metadata_excR)))
+
+mle_metadata_excR <- na.omit(mle_metadata_excR)
+
+mle_wdata_excludeR <- mle_metadata_excR %>% pivot_wider(
+  names_from = modality,
+  values_from = c(da, mda, mratio, c, avg_conf, medContrast)
+)
+
+
+write.csv(mle_wdata_excludeR, file = here("data_summary","mle_fit_data_wide_repeat.csv"))
+
+
+#Average everything and calculate standard deviations for the MLE model: 
+metadata_avgR <- mle_metadata_excR %>% 
+  group_by(modality) %>% 
+  summarise(dprime=mean(da, na_rm=TRUE), 
+            criterion=mean(c, na_rm=TRUE),
+            metad=mean(mda, na_rm=TRUE),
+            mratio1=mean(mratio, na_rm=TRUE),
+            avg_conf1=mean(avg_conf, na_rm=TRUE),
+            dprime_sd=sd(da),
+            criterion_sd=sd(c),
+            metad_sd=sd(mda),
+            mratio_sd=sd(mratio),
+            avg_conf_sd=sd(avg_conf), 
+            n1 = n()
+            )  %>% mutate(Modality=c("Calories", "GDP", "Memory", "Vision")) %>%
+  select(-modality)
+
+head(metadata_avgR)
+
+write.csv(metadata_avgR, file = here("data_summary","MLE_rho_table_repeat.csv"))
+
+
+```
+
+Do correlations:
+```{r}
+
+# cognitive sensitivity - dprime
+
+corrdatR <- mle_wdata_excludeR %>%
+  na.omit() %>%
+  select(starts_with("da"))
+
+apa.bootcor.table(corrdatR, filename=here("tables", "da_bootCorr_table_repeat.doc"))
+
+# average confidence - metabias 
+
+corrdatR <- mle_wdata_excludeR %>%
+  na.omit() %>%
+  select(starts_with("avg_conf"))
+
+apa.bootcor.table(corrdatR, filename=here("tables", "conf_bootCorr_table_repeat.doc"))
+
+# metacognitive sensitivity 
+
+corrdatR <- mle_wdata_excludeR %>%
+  na.omit() %>%
+  select(starts_with("mda"))
+
+apa.bootcor.table(corrdatR, filename=here("tables", "MDA_bootCorr_table_repeat.doc"))
+
+# metacognitive efficiency
+corrdatR <- mle_wdata_excludeR %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+
+apa.bootcor.table(corrdatR, filename=here("tables", "mratio_bootCorr_table_repeat.doc"))
+
+
+```
+
+
+Get table for Meta-d' 
+```{r}
+
+#calculate mean rho for each plot
+mcmc.rhoR <- mcmc.sampleR %>% 
+  filter(Parameter == "rho[1]"| Parameter == "rho[2]"| Parameter == "rho[3]"| Parameter == "rho[4]"| Parameter == "rho[5]"| Parameter == "rho[6]")
+
+meanRhoR <- mcmc.rhoR %>% group_by(Parameter) %>% summarise(value= mean(value, na.rm=TRUE)) 
+
+
+# Report the mean rho for each plot
+H1title <- paste("Rho =",round(meanRhoR$value[1], digits=3)) #Mem-Cal
+H2title <- paste("Rho =",round(meanRhoR$value[2], digits=3)) #Mem-GDP
+H3title <- paste("Rho =",round(meanRhoR$value[3], digits=3)) #Mem-Vis
+H4title <- paste("Rho =",round(meanRhoR$value[4], digits=3)) #Cal-GDP
+H5title <- paste("Rho =",round(meanRhoR$value[5], digits=3)) #Cal-vis
+H6title <- paste("Rho =",round(meanRhoR$value[6], digits=3)) #GDP-Vis
+
+association_names <- c("Mem-Cal", "Mem-GDP", "Mem-Vis", "Cal-GDP", "Cal-Vis", "GDP-Vis")
+
+meanRhoNamesR <- meanRhoR %>%
+  mutate(Association = association_names)
+
+#Fit stats summary. 
+FitR <- statR %>%
+   cbind(lower = HDIR$lower,
+         upper = HDIR$upper,
+        RhatR = RhatR[,1]) 
+
+#Select Mratio and take the exponential of the value:
+meanMratioR <- FitR %>% filter(str_detect(name,"mu_logMratio")) %>%
+  mutate(Hmratio=exp(mean), 
+         lowerHDI=exp(lower),
+         upperHDI=exp(upper)) %>% 
+    mutate(Modality=c("Memory", "Calories", "GDP", "Vision"), 
+           n2="319") %>%
+  select(Modality, Hmratio, lowerHDI, upperHDI, n2)
+
+
+# select the HDIs for each rho  
+rHDIR <- HDIR %>% filter(str_detect(name,"rho")) %>% select(name, lower, upper)
+#join these HDIs with mean rho
+RhoHDIR <- full_join(meanRhoR, rHDIR, 
+                    by= c("Parameter"="name"))
+
+#Change names and layout: 
+table4R <- RhoHDIR %>% mutate(Pair= c("Memory & Calories",
+                                    "Memory and GDP",
+                                    "Memory and Vision", 
+                                    "GDP and Calories", 
+                                    "Calories and Vision",
+                                    "GDP and Vision"),
+                            Rho=round(value,2),
+                            HDIr = paste(round(lower,2), round(upper,2), sep=" ; "))
+
+table4R <- table4R %>% mutate(HDI = paste0("[", table4R$HDIr, "]"))
+
+
+#Load criterion and dprime 
+#c1 <-readRDS(here("osf/HMM", "d_groupfit_Repeat"))
+#d1 <-readRDS(here("osf/HMM", "criterion_groupfit_Repeat"))
+
+#Label tasks and pivot the vectors: 
+c1 <- data.frame(c1)
+d1 <- data.frame(d1)
+c1 <- c1 %>% mutate (Memory=T1, Calories= T2, GDP = T3, Vision = T4, subject = row_number())%>% select(-T1, -T2, -T3, -T4)
+d1 <- d1 %>% mutate (Memory=T1, Calories= T2, GDP = T3, Vision = T4, subject = row_number())%>% select(-T1, -T2, -T3, -T4)
+
+c1l <- c1 %>% pivot_longer(
+  cols = c("Memory", "Calories", "GDP", "Vision"), 
+  names_to="Modality",
+  values_to ="Criterion")
+
+d1l <- d1 %>% pivot_longer(
+  cols = c("Memory", "Calories", "GDP", "Vision"), 
+  names_to="Modality",
+  values_to ="d'")
+
+#Summarise - mean and SD: 
+c1l_avg <- c1l %>% 
+  group_by(Modality) %>% 
+  summarise(Hcriterion=mean(Criterion, na_rm=TRUE), 
+            Hcriterion_sd=sd(Criterion), n3=n())
+
+d1l_avg <- d1l %>% 
+  group_by(Modality) %>% 
+  summarise(Hdprime=mean(`d'`, na_rm=TRUE), 
+            Hdprime_SD= sd(`d'`), n4=n())
+
+#Join the two: 
+HdcSumR <- left_join(c1l_avg , d1l_avg , 
+                     by=c("Modality"="Modality"))
+
+#Joim Hier cognitive and metacognitive: 
+MetaHierR<- left_join(meanMratioR , HdcSumR , 
+                     by=c("Modality"="Modality"))
+
+#Join MLE and Hier: 
+MetaSumR <- left_join(MetaHierR , metadata_avgR , 
+                     by=c("Modality"="Modality"))
+
+
+
+#HDI for mean mratio: 
+meanMratio1R <- MetaSumR %>% mutate(HDIr = paste(round(lowerHDI,2), round(upperHDI,2), sep=" ; "))
+meanMratio1R  <- meanMratio1R  %>% mutate(HDI = paste0("[", meanMratio1R$HDIr, "]"))
+
+HMTR <- data.frame((matrix(NA, nrow=4, ncol=7)))
+HMTR [,1] <-meanMratio1R$Modality
+HMTR [,2] <-paste0(round(meanMratio1R$Hmratio,2))
+HMTR [,3] <-meanMratio1R$HDI
+
+colnames(HMTR) <- c("Variable", "M", "95% HDI", "Memory", "Calorie", "GDP", "Vision")
+
+HMTR [2,4] <- paste0(round(table4R[table4R[,5] == "Memory & Calories",6],2), " ",
+                    table4R[table4R[,5] == "Memory & Calories",8]) 
+HMTR [3,4] <- paste0(round(table4R[table4R[,5] == "Memory and GDP",6],2), " ",
+                    table4R[table4R[,5] == "Memory and GDP",8]) 
+HMTR [4,4] <- paste0(round(table4R[table4R[,5] == "Memory and Vision",6],2), " ",
+                    table4R[table4R[,5] == "Memory and Vision",8]) 
+HMTR [3,5] <- paste0(round(table4R[table4R[,5] == "GDP and Calories",6],2), " ",
+                    table4R[table4R[,5] == "GDP and Calories",8]) 
+HMTR [4,5] <- paste0(round(table4R[table4R[,5] == "Calories and Vision",6],2), " ",
+                    table4R[table4R[,5] == "Calories and Vision",8]) 
+HMTR [4,6] <- paste0(round(table4R[table4R[,5] == "GDP and Vision",6],2), " ",
+                    table4R[table4R[,5] == "GDP and Vision",8]) 
+
+
+HMTR[is.na(HMTR)] <- ""
+
+head(HMTR)
+
+write.csv(HMTR, file = here("data_summary","HMetad_rho_table_repeat.csv"))
+
+```
+
+Print table
+```{r}
+
+print_table <- nice_table(HMTR,
+           title = c("Table X", "Means, 95% High Density Intervals (HDI), and estimated between-task correlations with 95% HDIs"),
+           note = c("M and 95% HDI are used to represent mean and the 95% high density interval, respectively. Values in square brackets represents the 95% HDI for the estimated parameter. All values are posterior estimates from the Bayesian Hierarchical Metacognition Model (HMeta-d')."))
+
+
+save_as_docx(print_table, path = here("tables", "hmm_mratio_table_Repeat.docx"))
+```
+
