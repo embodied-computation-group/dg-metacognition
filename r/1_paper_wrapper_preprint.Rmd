@@ -166,8 +166,6 @@ apa.bootcor.table(corrdat, filename=here("tables", "mratio_bootCorr_table.doc"))
 
 #mda_results <- bootcormat(corrdat)
 
-
-
 ```
 
 Next we will fit (or load) the hierarchical metacognition model 
