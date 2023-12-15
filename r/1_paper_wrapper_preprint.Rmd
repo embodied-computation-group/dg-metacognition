@@ -484,14 +484,6 @@ print_table <- nice_table(HMT,
 save_as_docx(print_table, path = here("tables", "hmm_mratio_table.docx"))
 ```
 
-load data: 
-```{r}
-output <- readRDS("C:/Users/Astrid Emilie Lund/Desktop/modelfit.RDS")
-
-
-```
-
-
 HeatMaps: HHMEtad
 ```{r}
 meanRhoNames1 <- meanRhoNames %>% select(-Parameter) %>% 
@@ -522,10 +514,10 @@ HeatMap: MLE
 ```{r}
 #Based on the table which is made directly into a word document previously, 
 # a matrix was made in excel
-
+library(readxl)
 mle_eff <- read_excel(here("data_summary/mle_corr_matrix.xlsx"))
-rownames(mle_eff) <- c("Cal", "GDP", "Mem", "Vis")
 mle_eff <- mle_eff %>% select(-...1)
+rownames(mle_eff) <- c("Cal", "GDP", "Mem", "Vis")
 
 png(here::here("figs", "MLE_heatmap_all.png"))
 heatmap(as.matrix(mle_eff), Rowv = NA, Colv = NA, 
