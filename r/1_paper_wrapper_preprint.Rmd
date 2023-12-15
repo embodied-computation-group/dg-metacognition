@@ -58,7 +58,8 @@ load(fit_filename)
   
 source(here("r", "fit_mle_loop.R"))
 
-  }
+}
+
 
 head(mle_fit_data)
 ```
@@ -164,7 +165,6 @@ corrdat <- mle_wdata_exclude %>%
 
 apa.bootcor.table(corrdat, filename=here("tables", "mratio_bootCorr_table.doc"))
 
-#mda_results <- bootcormat(corrdat)
 
 ```
 
@@ -483,3 +483,54 @@ print_table <- nice_table(HMT,
 
 save_as_docx(print_table, path = here("tables", "hmm_mratio_table.docx"))
 ```
+
+load data: 
+```{r}
+output <- readRDS("C:/Users/Astrid Emilie Lund/Desktop/modelfit.RDS")
+
+
+```
+
+
+HeatMaps: HHMEtad
+```{r}
+meanRhoNames1 <- meanRhoNames %>% select(-Parameter) %>% 
+  separate(Association, into = c("Task1", "Task2"), sep = "-")
+
+meanRhoNames_flipped <- meanRhoNames1
+names(meanRhoNames_flipped)[1:3] <- c("value","Task2", "Task1")
+meanRhoNames_sym <- rbind(meanRhoNames1, meanRhoNames_flipped)
+
+meanRhoNames_wide <- meanRhoNames_sym %>%
+  spread(key = Task2, value = value)
+
+rownames(meanRhoNames_wide) <- meanRhoNames_wide$Task1
+meanRhoNames_wide$Task1 <- NULL
+
+meanRhoNames_wide[is.na(meanRhoNames_wide)] <- 1
+
+rownames(meanRhoNames_wide) <- c("Cal", "GDP", "Mem", "Vis")
+
+png(here::here("figs", "HHMetad_heatmap_all.png"))
+heatmap(as.matrix(meanRhoNames_wide), Rowv = NA, Colv = NA, 
+        col = colorRampPalette(c("blue", "white", "purple"))(25), 
+        scale="row", margins = c(5,10))
+dev.off()
+
+```
+HeatMap: MLE 
+```{r}
+#Based on the table which is made directly into a word document previously, 
+# a matrix was made in excel
+
+mle_eff <- read_excel(here("data_summary/mle_corr_matrix.xlsx"))
+rownames(mle_eff) <- c("Cal", "GDP", "Mem", "Vis")
+mle_eff <- mle_eff %>% select(-...1)
+
+png(here::here("figs", "MLE_heatmap_all.png"))
+heatmap(as.matrix(mle_eff), Rowv = NA, Colv = NA, 
+        col = colorRampPalette(c("blue", "white", "purple"))(25), 
+        scale="row", margins = c(5,10))
+dev.off()
+```
+
