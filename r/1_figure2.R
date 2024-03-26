@@ -43,7 +43,7 @@ f2a<-ggplot(mle_metadata_exc, aes(x = modality, y = da, fill= modality)) +
   geom_half_boxplot(outlier.shape = NA, notch = TRUE, width = 1/4,
                     alpha = 1, color = "black", side = "r")+
   guides(fill="none") +
-  ggtitle("Cognitive Sensitivity") +  labs(y = "D-prime", x = "Modality") + 
+  ggtitle("Cognitive Sensitivity") +  labs(y = "d'", x = "Modality") + 
   theme_cowplot() + 
   scale_fill_manual(values = colors)+
   scale_x_discrete(labels = c("Calories", "GDP","Memory", "Vision")) +
