@@ -349,6 +349,45 @@ ggsave(here("figs", "Fig3.jpeg"), width = max_width_cm, height = height_cm, unit
 
 ```
 
+MLE figure: 
+```{r}
+
+source(here("r", "Function_scatterplot.R"))
+
+# Assuming corrdat is already created
+corrdat <- mle_wdata_exclude %>%
+  na.omit() %>%
+  select(starts_with("mratio"))
+
+s1 <-scatter(corrdat, corrdat$mratio_memory, corrdat$mratio_Calories) + 
+  scale_y_continuous("Memory")+ scale_x_continuous("Calories")
+s2 <-scatter(corrdat, corrdat$mratio_memory, corrdat$mratio_GDP) + 
+  scale_y_continuous("Memory")+ scale_x_continuous("GDP")
+s3 <-scatter(corrdat, corrdat$mratio_memory, corrdat$mratio_vision) + 
+  scale_y_continuous("Memory")+ scale_x_continuous("Vision")
+s4 <-scatter(corrdat, corrdat$mratio_Calories, corrdat$mratio_GDP) + 
+  scale_y_continuous("Calories")+ scale_x_continuous("GDP")
+s5 <-scatter(corrdat, corrdat$mratio_Calories, corrdat$mratio_vision) + 
+  scale_y_continuous("Calories")+ scale_x_continuous("Vision")
+s6 <-scatter(corrdat, corrdat$mratio_GDP, corrdat$mratio_vision) + 
+  scale_y_continuous("GDP")+ scale_x_continuous("Vision")
+
+comPlotMLE <- ggarrange(s1, s2, s3, s4, s5, s6)
+annotate_figure(comPlotMLE, top = text_grob("MLE Correlation Metacognitive Efficiency", color = "black", face = "bold", size = 14))  
+
+
+ggsave(here("figs", "Corr_MLE.png")) 
+
+
+
+
+
+```
+
+
+
+
+
 Now we will combine data from the MLE and HMM fits to create one overall plot (figure 3)
 
 ```{r}
